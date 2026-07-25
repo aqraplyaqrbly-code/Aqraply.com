@@ -41,16 +41,20 @@ export default function UnifiedLogin() {
     setIsLoading(true);
 
     try {
-      await signIn('password', {
-        email: email.trim().toLowerCase(),
-        password,
-        flow: 'signIn',
-      });
+      // Sign in using custom auth
+      await signIn(email.trim().toLowerCase(), password);
 
       toast.success('تم تسجيل الدخول بنجاح');
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'فشل تسجيل الدخول. يرجى التحقق من بياناتك');
+      const message = error.message || 'فشل تسجيل الدخول. يرجى التحقق من بياناتك';
+      if (message.includes("Invalid credentials")) {
+        toast.error('كلمة المرور غير صحيحة');
+      } else if (message.includes("Account already exists")) {
+        toast.error('الحساب موجود بالفعل. يرجى تسجيل الدخول');
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsLoading(false);
     }

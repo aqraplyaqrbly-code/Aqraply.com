@@ -67,7 +67,8 @@ export const createProfile = mutation({
       .first();
 
     if (existingProfile) {
-      throw new Error("Profile already exists");
+      // Return existing profile instead of throwing error (idempotent)
+      return existingProfile._id;
     }
 
     const profileId = await ctx.db.insert("profiles", {

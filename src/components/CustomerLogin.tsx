@@ -40,21 +40,17 @@ export default function CustomerLogin() {
     setIsSubmitting(true);
 
     try {
-      // تسجيل الدخول فقط
-      await signIn("password", {
-        email,
-        password,
-        flow: "signIn",
-      } as any);
+      // تسجيل الدخول باستخدام custom auth
+      await signIn(email, password);
       toast.success(t('auth.loginSuccess'));
       navigate(redirectTo);
     } catch (error) {
-      if (isMissingPasswordAccountError(error)) {
-        toast.error("الحساب غير موجود. يرجى إنشاء حساب جديد.");
-      } else if (error instanceof Error && error.message.includes("Invalid password")) {
+      const message = error instanceof Error ? error.message : t('errors.somethingWentWrong');
+      if (message.includes("Invalid credentials")) {
         toast.error("كلمة المرور غير صحيحة.");
+      } else if (message.includes("Account already exists")) {
+        toast.error("الحساب موجود بالفعل. يرجى تسجيل الدخول.");
       } else {
-        const message = error instanceof Error ? error.message : t('errors.somethingWentWrong');
         toast.error(message);
       }
       console.error('Auth error:', error);

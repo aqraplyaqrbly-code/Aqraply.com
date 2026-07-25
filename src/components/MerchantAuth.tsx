@@ -109,6 +109,7 @@ export default function MerchantAuth() {
 
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent duplicate submissions
     setLoading(true);
 
     if (!fullName || fullName.trim().length < 3) {

@@ -39,10 +39,11 @@ export default function CustomerRegister() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent duplicate submissions
     setIsSubmitting(true);
 
     try {
-      // Sign up the user
+      // Sign up the user using custom auth
       const emailToUse = email || `${phone}@delivery.local`;
       const result = await signUp(emailToUse, password);
 

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 export default function UnifiedRegister() {
   const navigate = useNavigate();
   const { role: roleParam } = useParams<{ role?: string }>();
-  const { signIn, createProfile } = useAuth();
+  const { signIn, signUp, createProfile, sessionToken } = useAuth();
 
   const [step, setStep] = useState<'role' | 'auth' | 'profile'>('role');
   const [selectedRole, setSelectedRole] = useState<'customer' | 'merchant' | 'captain'>(
@@ -55,18 +55,34 @@ export default function UnifiedRegister() {
     setIsLoading(true);
 
     try {
-      // Sign up with Convex Auth
-      await signIn('password', {
-        email: email.trim().toLowerCase(),
-        password,
-        flow: 'signUp',
-      });
+      // Sign up using custom auth
+      const result = await signUp(email.trim().toLowerCase(), password);
 
       toast.success('تم إنشاء الحساب بنجاح');
       setStep('profile');
     } catch (error: any) {
       console.error('Auth error:', error);
-      toast.error(error.message || 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى');
+      const message = error.message || 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى';
+      if (message.includes("Account already exists")) {
+        // If account exists, try to sign in instead
+        try {
+          const signInResult = await signIn(email.trim().toLowerCase(), password);
+          toast.success('تم تسجيل الدخول بنجاح');
+          setStep('profile');
+        } catch (signInError: any) {
+          toast.error('هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول أو استخدام بريد آخر', {
+            duration: 5000,
+            action: {
+              label: 'تسجيل الدخول',
+              onClick: () => navigate('/login'),
+            },
+          });
+        }
+      } else if (message.includes("Password must be at least 8 characters")) {
+        toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,14 +90,15 @@ export default function UnifiedRegister() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent duplicate submissions
     setIsLoading(true);
 
     try {
       const profileData: any = {
+        sessionToken,
         role: selectedRole,
         fullName,
         phone,
-        email,
       };
 
       // Add role-specific data
