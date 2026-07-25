@@ -1,0 +1,19 @@
+import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const fixProductAvailability = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Get all products
+    const products = await ctx.db.query("products").collect();
+    
+    // Update all products to be available
+    for (const product of products) {
+      await ctx.db.patch(product._id, {
+        isAvailable: true
+      });
+    }
+    
+    return `تم تفعيل ${products.length} منتج`;
+  },
+});

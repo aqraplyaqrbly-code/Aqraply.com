@@ -1,0 +1,47 @@
+import MerchantAuth from "./MerchantAuth";
+import MerchantDashboardContent from "./MerchantDashboardContent";
+import { NavigationBar } from "./NavigationBar";
+import SuspensionCheck from "./SuspensionCheck";
+import { useAuth } from "../contexts/AuthContextNew";
+
+export default function MerchantDashboard() {
+  const { user, isAuthenticated } = useAuth();
+
+  // إذا لم يكن المستخدم مسجل دخول أو لا يوجد ملف شخصي
+  if (!isAuthenticated || !user || !user.profile) {
+    return <MerchantAuth />;
+  }
+
+  // التحقق من أن المستخدم تاجر
+  if (user.profile.role !== "merchant") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex items-center justify-center p-4" dir="rtl">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-red-200">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">غير مصرح</h2>
+            <p className="text-gray-600 mb-6">
+              هذه الصفحة مخصصة للتجار فقط. حسابك مسجل كـ {user.profile.role === "customer" ? "عميل" : user.profile.role === "captain" ? "كابتن" : "مدير"}.
+            </p>
+            <button
+              onClick={() => window.location.href = "/"}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+            >
+              العودة للصفحة الرئيسية
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // عرض لوحة التحكم
+  return (
+    <SuspensionCheck allowedRoles={['merchant', 'admin']}>
+      <NavigationBar />
+      <MerchantDashboardContent profile={user.profile} />
+    </SuspensionCheck>
+  );
+}

@@ -1,0 +1,8 @@
+export const DELIVERY_FEES = {
+  STANDARD: 15,
+  EXPRESS: 25,
+  FREE_THRESHOLD: 200,
+};
+
+export const ORDER_TIMEOUT_MINUTES = 30;
+export const MAX_PRODUCTS_PER_STORE = 1000;

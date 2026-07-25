@@ -1,0 +1,144 @@
+{
+  "users": [
+    {
+      "email": "ahmed@example.com",
+      "phone": "01234567890",
+      "name": "أحمد محمد",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "fatma@example.com",
+      "phone": "01098765432",
+      "name": "فاطمة علي",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "mohamed@example.com",
+      "phone": "01123456789",
+      "name": "محمد سعيد",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "khadija@example.com",
+      "phone": "01234567891",
+      "name": "خديجة إبراهيم",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "youssef@example.com",
+      "phone": "01087654321",
+      "name": "يوسف عمر",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "nadia@example.com",
+      "phone": "01198765432",
+      "name": "نادية أحمد",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "kareem@example.com",
+      "phone": "01256789012",
+      "name": "كريم محمود",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "mona@example.com",
+      "phone": "01023456789",
+      "name": "منى عبدالله",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "hassan@example.com",
+      "phone": "01187654321",
+      "name": "حسن علي",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    },
+    {
+      "email": "mark@example.com",
+      "phone": "01234567800",
+      "name": "Mark",
+      "isAnonymous": false,
+      "password": "$2b$10$abcdefghijklmnopqrstuvwxyz"
+    }
+  ],
+  "profiles": [
+    {
+      "userId": "user_1",
+      "role": "merchant",
+      "fullName": "أحمد محمد",
+      "phone": "01234567890",
+      "phoneVerified": true,
+      "email": "ahmed@example.com",
+      "isActive": true,
+      "isOnline": true,
+      "lastSeen": 1714975440000,
+      "registrationDate": 1714975440000,
+      "isSuspended": false,
+      "location": {
+        "address": "Cairo, 15 Gala Street, First Floor",
+        "addressAr": "القاهرة، 15 شارع الجلاء، الدور الأول",
+        "latitude": 30.0444,
+        "longitude": 31.2357
+      },
+      "businessName": "متجر الأزهار",
+      "businessNameAr": "متجر الأزهار"
+    },
+    {
+      "userId": "user_2",
+      "role": "merchant",
+      "fullName": "فاطمة إبراهيم",
+      "phone": "01098765432",
+      "phoneVerified": true,
+      "email": "fatma@example.com",
+      "isActive": true,
+      "isOnline": true,
+      "lastSeen": 1714975440000,
+      "registrationDate": 1714975440000,
+      "isSuspended": false,
+      "location": {
+        "address": "Alexandria, 25 King Fouad Street, Second Floor",
+        "addressAr": "الإسكندرية، 25 شارع الملك فؤاد، الدور الثاني",
+        "latitude": 31.2001,
+        "longitude": 29.9187
+      },
+      "businessName": "مطعم الأمجاد",
+      "businessNameAr": "مطعم الأمجاد"
+    }
+  ],
+  "stores": [
+    {
+      "name": "Flower Store",
+      "nameAr": "متجر الأزهار",
+      "description": "Fresh flowers",
+      "descriptionAr": "الورود الطازجة",
+      "category": "flowers",
+      "ownerId": "profile_1",
+      "phone": "01234567890",
+      "rating": 4.5,
+      "totalRatings": 20,
+      "minOrderAmount": 50,
+      "deliveryFee": 20,
+      "estimatedDeliveryTime": 30,
+      "isActive": true,
+      "isOnline": true,
+      "location": {
+        "address": "Cairo, 15 Gala Street, First Floor",
+        "addressAr": "القاهرة، 15 شارع الجلاء، الدور الأول",
+        "latitude": 30.0444,
+        "longitude": 31.2357
+      },
+      "createdAt": 1714975440000,
+      "updatedAt": 1714975440000
+    }
+  ]
+}
