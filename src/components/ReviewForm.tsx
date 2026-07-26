@@ -3,6 +3,7 @@ import { Star, MessageSquare, Send } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContextNew';
 
 interface ReviewFormProps {
   orderId: string;
@@ -26,6 +27,7 @@ export default function ReviewForm({
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { sessionToken } = useAuth();
 
   const createStoreReview = useMutation(api.reviews.createStoreReview);
   const createProductReview = useMutation(api.reviews.createProductReview);
@@ -43,6 +45,7 @@ export default function ReviewForm({
     try {
       if (reviewType === 'store') {
         await createStoreReview({
+          sessionToken,
           storeId: storeId as any,
           orderId: orderId as any,
           rating,
@@ -51,6 +54,7 @@ export default function ReviewForm({
         toast.success('تم إضافة تقييم المتجر بنجاح!');
       } else {
         await createProductReview({
+          sessionToken,
           productId: productId as any,
           storeId: storeId as any,
           orderId: orderId as any,

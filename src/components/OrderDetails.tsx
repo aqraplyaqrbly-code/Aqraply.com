@@ -8,8 +8,8 @@ import { useAuth } from "../contexts/AuthContextNew";
 
 export default function OrderDetails() {
   const { orderId } = useParams<{ orderId: string }>();
-  const { sessionToken, isAuthenticated } = useAuth();
-  const [order] = useQuery(api.orders.getOrderById, isAuthenticated && sessionToken && orderId ? { sessionToken, orderId: orderId as any } : "skip");
+  const { isAuthenticated } = useAuth();
+  const [order] = useQuery(api.orders.getOrderById, isAuthenticated && orderId ? { orderId: orderId as any } : "skip");
 
   if (!order) {
     return (

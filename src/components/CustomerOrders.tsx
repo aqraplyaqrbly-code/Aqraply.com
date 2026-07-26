@@ -138,7 +138,7 @@ export default function CustomerOrders() {
                 <div className="flex gap-3">
                   {order.status === 'delivered' && (
                     <button
-                      onClick={() => navigate(`/customer/review/order/${order._id}`)}
+                      onClick={() => navigate(`/customer/review/products/${order._id}`)}
                       className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                     >
                       {t('customer.addReview')}

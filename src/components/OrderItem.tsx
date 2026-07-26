@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 interface OrderItemProps {
   item: {
@@ -20,9 +22,15 @@ export default function OrderItem({ item }: OrderItemProps) {
     return `https://picsum.photos/seed/${seed}/100/100.jpg`;
   };
 
-  const src = item.imageUrl && item.imageUrl.startsWith('http') 
-    ? item.imageUrl 
-    : generatePlaceholderUrl(item.name);
+  // Resolve storage ID to URL
+  const imageUrl = useQuery(
+    api.files.getFileUrl,
+    item.imageUrl && !item.imageUrl.startsWith('http') ? { storageId: item.imageUrl } : "skip"
+  );
+
+  const src = item.imageUrl?.startsWith('http')
+    ? item.imageUrl
+    : (imageUrl || generatePlaceholderUrl(item.name));
 
   return (
     <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">

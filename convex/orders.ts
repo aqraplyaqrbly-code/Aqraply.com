@@ -80,8 +80,8 @@ export const createOrder = mutation({
       // Use the imageUrl sent from cart (customer's selected image), fallback to product's first image
       const imageUrl =
         item.imageUrl ||
-        product.images?.[0] ||
-        (product.imageIds?.length ? String(product.imageIds[0]) : undefined);
+        (product.imageIds?.length ? String(product.imageIds[0]) : undefined) ||
+        product.images?.[0];
 
       orderItems.push({
         productId: item.productId,
@@ -161,7 +161,7 @@ export const getCustomerOrders = query({
                 return {
                   ...item,
                   // Ensure we have the correct image from the product
-                  imageUrl: item.imageUrl || product.images?.[0] || (product.imageIds?.length ? String(product.imageIds[0]) : undefined),
+                  imageUrl: item.imageUrl || (product.imageIds?.length ? String(product.imageIds[0]) : undefined) || product.images?.[0],
                   // Ensure we have the correct product code
                   productCode: item.productCode || (product as any).productCode || product.sku,
                   sku: item.sku || product.sku,
@@ -171,7 +171,7 @@ export const getCustomerOrders = query({
                     _id: product._id,
                     name: product.name,
                     nameAr: product.nameAr,
-                    imageUrl: product.images?.[0] || (product.imageIds?.length ? String(product.imageIds[0]) : undefined),
+                    imageUrl: (product.imageIds?.length ? String(product.imageIds[0]) : undefined) || product.images?.[0],
                     productCode: (product as any).productCode,
                     sku: product.sku,
                   },
@@ -444,6 +444,9 @@ export const getOrderById = query({
       return null;
     }
 
+    // Fetch store info
+    const store = await ctx.db.get(order.storeId);
+
     // Fetch full product details for each item to ensure correct images and codes
     const itemsWithProductDetails = await Promise.all(
       order.items.map(async (item) => {
@@ -453,7 +456,7 @@ export const getOrderById = query({
             return {
               ...item,
               // Ensure we have the correct image from the product
-              imageUrl: item.imageUrl || product.images?.[0] || (product.imageIds?.length ? String(product.imageIds[0]) : undefined),
+              imageUrl: item.imageUrl || (product.imageIds?.length ? String(product.imageIds[0]) : undefined) || product.images?.[0],
               // Ensure we have the correct product code
               productCode: item.productCode || (product as any).productCode || product.sku,
               sku: item.sku || product.sku,
@@ -463,7 +466,7 @@ export const getOrderById = query({
                 _id: product._id,
                 name: product.name,
                 nameAr: product.nameAr,
-                imageUrl: product.images?.[0] || (product.imageIds?.length ? String(product.imageIds[0]) : undefined),
+                imageUrl: (product.imageIds?.length ? String(product.imageIds[0]) : undefined) || product.images?.[0],
                 productCode: (product as any).productCode,
                 sku: product.sku,
               },
@@ -477,6 +480,17 @@ export const getOrderById = query({
     return {
       ...order,
       items: itemsWithProductDetails,
+      orderNumber: `#${order._id.slice(-6).toUpperCase()}`,
+      total: order.total ?? order.totalAmount,
+      storeInfo: store
+        ? {
+            name: store.nameAr,
+            nameEn: store.name,
+            address: store.address ?? store.location.address,
+            addressAr: store.location.addressAr,
+            phone: store.phone,
+          }
+        : null,
     };
   },
 });
@@ -516,7 +530,7 @@ export const getAllOrders = query({
                 return {
                   ...item,
                   // Ensure we have the correct image from the product
-                  imageUrl: item.imageUrl || product.images?.[0] || (product.imageIds?.length ? String(product.imageIds[0]) : undefined),
+                  imageUrl: item.imageUrl || (product.imageIds?.length ? String(product.imageIds[0]) : undefined) || product.images?.[0],
                   // Ensure we have the correct product code
                   productCode: item.productCode || (product as any).productCode || product.sku,
                   sku: item.sku || product.sku,
@@ -526,7 +540,7 @@ export const getAllOrders = query({
                     _id: product._id,
                     name: product.name,
                     nameAr: product.nameAr,
-                    imageUrl: product.images?.[0] || (product.imageIds?.length ? String(product.imageIds[0]) : undefined),
+                    imageUrl: (product.imageIds?.length ? String(product.imageIds[0]) : undefined) || product.images?.[0],
                     productCode: (product as any).productCode,
                     sku: product.sku,
                   },

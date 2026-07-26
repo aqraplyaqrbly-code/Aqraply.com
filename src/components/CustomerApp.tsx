@@ -387,6 +387,11 @@ export default function CustomerApp() {
             <CustomerReviewPage />
           </ProtectedRoute>
         } />
+        <Route path="/customer/review/:reviewType/:orderId" element={
+          <ProtectedRoute allowedRoles={['customer', 'admin']}>
+            <CustomerReviewPage />
+          </ProtectedRoute>
+        } />
         <Route path="/ratings/store/:storeId" element={<StoreRatingsPage />} />
         <Route path="/ratings/product/:productId" element={<ProductRatingsPage />} />
       </Routes>

@@ -11,13 +11,13 @@ import { useAuth } from '../contexts/AuthContextNew';
 export default function CustomerReviewPage() {
   const { orderId, reviewType } = useParams();
   const navigate = useNavigate();
-  const { sessionToken, isAuthenticated } = useAuth();
-  
+  const { isAuthenticated } = useAuth();
+
   const [showForm, setShowForm] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // جلب بيانات الطلب
-  const order = useQuery(api.orders.getOrderById, isAuthenticated && sessionToken && orderId ? { sessionToken, orderId: orderId as any } : "skip");
+  const order = useQuery(api.orders.getOrderById, isAuthenticated && orderId ? { orderId: orderId as any } : "skip");
 
   // جلب المراجعات
   const storeReviews = useQuery(api.reviews.getStoreReviews, {

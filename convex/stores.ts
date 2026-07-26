@@ -6,10 +6,29 @@ import type { Id } from "./_generated/dataModel";
 
 export const getActiveStores = query({
   handler: async (ctx) => {
-    return await ctx.db
+    const stores = await ctx.db
       .query("stores")
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .collect();
+
+    // Convert imageId to imageUrl for all stores
+    return await Promise.all(
+      stores.map(async (store) => {
+        let imageUrl = store.imageUrl;
+        if (store.imageId && !imageUrl) {
+          try {
+            const url = await ctx.storage.getUrl(store.imageId);
+            imageUrl = url || undefined;
+          } catch (error) {
+            console.error("Failed to get image URL:", error);
+          }
+        }
+        return {
+          ...store,
+          imageUrl: imageUrl || store.imageUrl,
+        };
+      })
+    );
   },
 });
 
@@ -18,7 +37,26 @@ export const getStoreById = query({
     storeId: v.id("stores"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.storeId);
+    const store = await ctx.db.get(args.storeId);
+    if (!store) {
+      return null;
+    }
+
+    // Convert imageId to imageUrl if it exists
+    let imageUrl = store.imageUrl;
+    if (store.imageId && !imageUrl) {
+      try {
+        const url = await ctx.storage.getUrl(store.imageId);
+        imageUrl = url || undefined;
+      } catch (error) {
+        console.error("Failed to get image URL:", error);
+      }
+    }
+
+    return {
+      ...store,
+      imageUrl: imageUrl || store.imageUrl,
+    };
   },
 });
 
