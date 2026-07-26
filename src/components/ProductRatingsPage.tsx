@@ -11,12 +11,11 @@ import { useAuth } from '../contexts/AuthContextNew';
 export default function ProductRatingsPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { sessionToken, isAuthenticated } = useAuth();
-  
+  const { isAuthenticated } = useAuth();
+
   // جلب بيانات المنتج
-  const product = useQuery(api.products.getProductWithImage, isAuthenticated && sessionToken && productId ? { 
-    sessionToken,
-    productId: productId as any 
+  const product = useQuery(api.products.getProductWithImage, isAuthenticated && productId ? {
+    productId: productId as any
   } : "skip");
 
   // جلب المراجعات

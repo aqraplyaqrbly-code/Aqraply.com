@@ -147,14 +147,14 @@ export default function CustomerReviewPage() {
         )}
 
         {/* رسالة عند عدم وجود مراجعات */}
-        {!showForm && (!reviews || reviews.length === 0) && (
+        {(!reviews || reviews.length === 0) && (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              شكراً لتقييمك!
+              {!showForm ? 'شكراً لتقييمك!' : 'لا توجد تقييمات بعد'}
             </h3>
             <p className="text-gray-600">
-              سيتم نشر تقييمك بعد التحقق منه
+              {!showForm ? 'سيتم نشر تقييمك بعد التحقق منه' : `كن أول من يقيم ${isStoreReview ? 'هذا المتجر' : 'هذا المنتج'}`}
             </p>
           </div>
         )}
