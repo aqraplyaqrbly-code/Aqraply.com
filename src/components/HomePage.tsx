@@ -244,17 +244,17 @@ export default function HomePage() {
               </button> */}
             </nav>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <LanguageSwitcher />
               <button
                 onClick={() => navigate("/login")}
-                className="px-4 py-2 text-gray-700 hover:text-orange-600 transition-colors font-medium hidden md:block"
+                className="px-3 py-2 text-gray-700 hover:text-orange-600 transition-colors font-medium hidden md:block text-sm"
               >
                 تسجيل الدخول
               </button>
               <button
                 onClick={() => navigate("/customer")}
-                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all text-sm"
               >
                 ابدأ الآن
               </button>
@@ -308,19 +308,18 @@ export default function HomePage() {
       {/* Categories Bar - Sticky at Top */}
       <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 py-3 overflow-x-auto">
-            {scrollPosition > 0 && (
-              <button
-                onClick={() => handleScroll("left")}
-                className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex-shrink-0"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            )}
+          <div className="flex items-center gap-3 py-3 overflow-x-auto" dir="ltr">
+            <button
+              onClick={() => handleScroll("left")}
+              className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex-shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
             <div
               id="categories-scroll"
               className="flex-1 overflow-x-auto scrollbar-hide"
+              dir={document.documentElement.dir === "rtl" ? "rtl" : "ltr"}
             >
               <div className="flex gap-3 pb-0 min-w-max justify-center sm:justify-start">
                 {availableCategories.map((category) => (
@@ -343,7 +342,7 @@ export default function HomePage() {
               onClick={() => handleScroll("right")}
               className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex-shrink-0"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>

@@ -224,9 +224,15 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
 function StoresManagement() {
   const { sessionToken, isAuthenticated } = useAuth();
   const stores = useQuery(api.admin.getAllStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
+  const pendingStores = useQuery(api.stores.getPendingStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const toggleStore = useMutation(api.admin.toggleStoreActive);
+  const approveStore = useMutation(api.stores.approveStore);
+  const rejectStore = useMutation(api.stores.rejectStore);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
+  const [showPending, setShowPending] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectingStore, setRejectingStore] = useState<string | null>(null);
 
   const filteredStores = (stores || [])
     .filter((s) => filterActive === null || s.isActive === filterActive)
@@ -250,6 +256,37 @@ function StoresManagement() {
     }
   };
 
+  const handleApproveStore = async (storeId: string) => {
+    try {
+      await approveStore({
+        sessionToken,
+        storeId: storeId as Id<"stores">,
+      });
+      toast.success("تمت الموافقة على المتجر بنجاح");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "فشلت الموافقة على المتجر");
+    }
+  };
+
+  const handleRejectStore = async (storeId: string) => {
+    if (!rejectionReason.trim()) {
+      toast.error("يرجى إدخال سبب الرفض");
+      return;
+    }
+    try {
+      await rejectStore({
+        sessionToken,
+        storeId: storeId as Id<"stores">,
+        reason: rejectionReason,
+      });
+      toast.success("تم رفض المتجر بنجاح");
+      setRejectionReason("");
+      setRejectingStore(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "فشل رفض المتجر");
+    }
+  };
+
   const categoryLabels: Record<string, string> = {
     restaurant: "مطعم",
     grocery: "بقالة",
@@ -269,7 +306,7 @@ function StoresManagement() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -299,6 +336,17 @@ function StoresManagement() {
           </div>
           <p className="text-3xl font-bold text-gray-900">
             {stores?.filter((s) => !s.isActive).length ?? "—"}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-orange-600" />
+            </div>
+            <span className="text-sm text-gray-500">معلقة للموافقة</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">
+            {pendingStores?.length ?? "—"}
           </p>
         </div>
       </div>
@@ -334,6 +382,16 @@ function StoresManagement() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => setShowPending(!showPending)}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            showPending
+              ? "bg-orange-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {showPending ? "عرض الكل" : "المعلقة فقط"}
+        </button>
       </div>
 
       {/* Stores Grid */}
@@ -354,7 +412,7 @@ function StoresManagement() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStores.map((store) => (
+          {(showPending ? pendingStores : filteredStores).map((store) => (
             <div
               key={store._id}
               className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden"
@@ -370,7 +428,7 @@ function StoresManagement() {
                 ) : (
                   <Store className="w-12 h-12 text-purple-300" />
                 )}
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 left-3 flex gap-2">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-bold ${
                       store.isActive
@@ -380,6 +438,11 @@ function StoresManagement() {
                   >
                     {store.isActive ? "نشط" : "معطل"}
                   </span>
+                  {store.isApproved === false && (
+                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-orange-500 text-white">
+                      معلقة
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -422,21 +485,76 @@ function StoresManagement() {
                     <span className="text-gray-500">العمولة: </span>
                     <span className="font-bold text-gray-900">{store.commissionRate}%</span>
                   </div>
-                  <button
-                    onClick={() => handleToggle(store._id, store.isActive)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                      store.isActive
-                        ? "bg-red-100 text-red-700 hover:bg-red-200"
-                        : "bg-green-100 text-green-700 hover:bg-green-200"
-                    }`}
-                  >
-                    <Power className="w-4 h-4" />
-                    {store.isActive ? "تعطيل" : "تفعيل"}
-                  </button>
+                  <div className="flex gap-2">
+                    {store.isApproved === false && (
+                      <>
+                        <button
+                          onClick={() => handleApproveStore(store._id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-semibold hover:bg-green-200 transition-all"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          موافقة
+                        </button>
+                        <button
+                          onClick={() => setRejectingStore(store._id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition-all"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          رفض
+                        </button>
+                      </>
+                    )}
+                    {store.isApproved !== false && (
+                      <button
+                        onClick={() => handleToggle(store._id, store.isActive)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                          store.isActive
+                            ? "bg-red-100 text-red-700 hover:bg-red-200"
+                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                        }`}
+                      >
+                        <Power className="w-4 h-4" />
+                        {store.isActive ? "تعطيل" : "تفعيل"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Store Rejection Reason Modal */}
+      {rejectingStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">سبب الرفض</h3>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="أدخل سبب رفض المتجر..."
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 resize-none"
+              rows={4}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setRejectionReason("");
+                  setRejectingStore(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => handleRejectStore(rejectingStore)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+              >
+                رفض
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -447,8 +565,14 @@ function StoresManagement() {
 function CaptainsManagement() {
   const { sessionToken, isAuthenticated } = useAuth();
   const captains = useQuery(api.captains.getAllCaptains, isAuthenticated && sessionToken ? { sessionToken } : "skip");
+  const pendingCaptains = useQuery(api.captains.getPendingCaptains, isAuthenticated && sessionToken ? { sessionToken } : "skip");
+  const approveCaptain = useMutation(api.captains.approveCaptain);
+  const rejectCaptain = useMutation(api.captains.rejectCaptain);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOnline, setFilterOnline] = useState<boolean | null>(null);
+  const [showPending, setShowPending] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectingCaptain, setRejectingCaptain] = useState<string | null>(null);
 
   const filteredCaptains = (captains || [])
     .filter((c) => filterOnline === null || c.isOnline === filterOnline)
@@ -458,6 +582,37 @@ function CaptainsManagement() {
         c.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+  const handleApprove = async (captainId: string) => {
+    try {
+      await approveCaptain({
+        sessionToken,
+        captainId: captainId as any,
+      });
+      toast.success("تمت الموافقة على الكابتن بنجاح");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "فشلت الموافقة على الكابتن");
+    }
+  };
+
+  const handleReject = async (captainId: string) => {
+    if (!rejectionReason.trim()) {
+      toast.error("يرجى إدخال سبب الرفض");
+      return;
+    }
+    try {
+      await rejectCaptain({
+        sessionToken,
+        captainId: captainId as any,
+        reason: rejectionReason,
+      });
+      toast.success("تم رفض الكابتن بنجاح");
+      setRejectionReason("");
+      setRejectingCaptain(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "فشل رفض الكابتن");
+    }
+  };
 
   return (
     <div className="p-8">
@@ -469,7 +624,7 @@ function CaptainsManagement() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -499,6 +654,17 @@ function CaptainsManagement() {
           </div>
           <p className="text-3xl font-bold text-gray-900">
             {captains?.filter((c) => c.isActive).length ?? "—"}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-orange-600" />
+            </div>
+            <span className="text-sm text-gray-500">معلقة للموافقة</span>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">
+            {pendingCaptains?.length ?? "—"}
           </p>
         </div>
       </div>
@@ -534,6 +700,16 @@ function CaptainsManagement() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => setShowPending(!showPending)}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            showPending
+              ? "bg-orange-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {showPending ? "عرض الكل" : "المعلقة فقط"}
+        </button>
       </div>
 
       {/* Captains Table */}
@@ -547,6 +723,7 @@ function CaptainsManagement() {
                 <th className="px-6 py-4 text-start text-xs font-semibold text-gray-600 uppercase">الحالة</th>
                 <th className="px-6 py-4 text-start text-xs font-semibold text-gray-600 uppercase">آخر ظهور</th>
                 <th className="px-6 py-4 text-start text-xs font-semibold text-gray-600 uppercase">تاريخ التسجيل</th>
+                <th className="px-6 py-4 text-start text-xs font-semibold text-gray-600 uppercase">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -565,7 +742,7 @@ function CaptainsManagement() {
                   </td>
                 </tr>
               ) : (
-                filteredCaptains.map((captain) => (
+                (showPending ? pendingCaptains : filteredCaptains).map((captain) => (
                   <tr key={captain._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -605,6 +782,11 @@ function CaptainsManagement() {
                             معطل
                           </span>
                         )}
+                        {captain.isApproved === false && (
+                          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                            معلقة
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
@@ -615,6 +797,26 @@ function CaptainsManagement() {
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(captain._creationTime).toLocaleDateString("ar-EG")}
                     </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {captain.isApproved === false && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(captain._id)}
+                              className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold hover:bg-green-200 transition-colors"
+                            >
+                              موافقة
+                            </button>
+                            <button
+                              onClick={() => setRejectingCaptain(captain._id)}
+                              className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200 transition-colors"
+                            >
+                              رفض
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -622,6 +824,39 @@ function CaptainsManagement() {
           </table>
         </div>
       </div>
+
+      {/* Rejection Reason Modal */}
+      {rejectingCaptain && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">سبب الرفض</h3>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="أدخل سبب رفض الكابتن..."
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 resize-none"
+              rows={4}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setRejectionReason("");
+                  setRejectingCaptain(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => handleReject(rejectingCaptain)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+              >
+                رفض
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

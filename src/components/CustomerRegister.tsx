@@ -7,6 +7,12 @@ import { User, Mail, Lock, Phone, UserCircle, MapPin, Store } from "lucide-react
 import { useAuth } from "../contexts/AuthContextNew";
 import CustomerLocationTracker from "./CustomerLocationTracker";
 import { useTranslation } from "react-i18next";
+import {
+  validateEmail,
+  validatePassword,
+  validateFullName,
+  validatePhone,
+} from "../utils/validation";
 
 export default function CustomerRegister() {
   const { t } = useTranslation();
@@ -23,8 +29,47 @@ export default function CustomerRegister() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerLocation, setCustomerLocation] = useState<any>(null);
 
+  // Error states
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+
   // Get redirect path from location state
   const redirectTo = location.state?.redirectTo || '/customer';
+
+  // Validation handlers
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value, 6);
+    setPasswordError(result.error);
+  };
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    const result = validateFullName(value);
+    setNameError(result.error);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    const result = validatePhone(value);
+    setPhoneError(result.error);
+  };
+
+  const isFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password, 6).isValid;
+    const nameValid = validateFullName(name).isValid;
+    const phoneValid = validatePhone(phone).isValid;
+    return emailValid && passwordValid && nameValid && phoneValid;
+  };
 
   // Guard to prevent duplicate redirects
   const hasRedirected = useRef(false);
@@ -40,6 +85,24 @@ export default function CustomerRegister() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent duplicate submissions
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 6);
+    setPasswordError(passwordResult.error);
+
+    const nameResult = validateFullName(name);
+    setNameError(nameResult.error);
+
+    const phoneResult = validatePhone(phone);
+    setPhoneError(phoneResult.error);
+
+    if (!isFormValid()) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -98,13 +161,17 @@ export default function CustomerRegister() {
               <UserCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pr-10 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                onChange={(e) => handleNameChange(e.target.value)}
+                className={`w-full pr-10 pl-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-orange-200 transition-all ${
+                  nameError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                }`}
                 placeholder={t('auth.enterFullName')}
               />
             </div>
+            {nameError && (
+              <p className="text-red-500 text-sm mt-1 text-start">{nameError}</p>
+            )}
           </div>
 
           <div>
@@ -115,13 +182,18 @@ export default function CustomerRegister() {
               <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="tel"
-                required
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full pr-10 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className={`w-full pr-10 pl-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-orange-200 transition-all ${
+                  phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                }`}
                 placeholder="01xxxxxxxxx"
+                dir="ltr"
               />
             </div>
+            {phoneError && (
+              <p className="text-red-500 text-sm mt-1 text-start">{phoneError}</p>
+            )}
           </div>
 
           <div>
@@ -133,11 +205,17 @@ export default function CustomerRegister() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pr-10 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                onChange={(e) => handleEmailChange(e.target.value)}
+                className={`w-full pr-10 pl-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-orange-200 transition-all ${
+                  emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                }`}
                 placeholder={t('auth.emailOptional')}
+                dir="ltr"
               />
             </div>
+            {emailError && (
+              <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+            )}
           </div>
 
           <div>
@@ -148,14 +226,17 @@ export default function CustomerRegister() {
               <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="password"
-                required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pr-10 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={`w-full pr-10 pl-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-orange-200 transition-all ${
+                  passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                }`}
                 placeholder="••••••••"
-                minLength={6}
               />
             </div>
+            {passwordError && (
+              <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1 text-start">
               {t('auth.passwordMin6')}
             </p>
@@ -174,7 +255,7 @@ export default function CustomerRegister() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isFormValid()}
             className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? t('auth.processing') : t('auth.createAccountBtn')}

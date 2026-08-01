@@ -12,6 +12,7 @@ import {
   Home
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import NotificationBell from './NotificationBell';
 
 export function NavigationBar() {
   const { user, role, isAuthenticated, logout } = useAuth();
@@ -78,6 +79,9 @@ export function NavigationBar() {
 
           {/* معلومات المستخدم والإعدادات */}
           <div className="flex items-center space-x-4">
+            {/* الإشعارات */}
+            <NotificationBell />
+
             {/* معلومات الدور */}
             <div className="flex items-center space-x-2">
               <div className={`w-8 h-8 rounded-full ${getRoleColor(role || '')} flex items-center justify-center text-white`}>

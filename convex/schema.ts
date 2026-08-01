@@ -29,6 +29,7 @@ export default defineSchema({
     avatar: v.optional(v.string()),
     isActive: v.boolean(),
     isOnline: v.boolean(),
+    isApproved: v.optional(v.boolean()),
     lastSeen: v.number(),
     connectedAt: v.optional(v.number()), // Timestamp when captain went online
     registrationDate: v.number(),
@@ -41,6 +42,7 @@ export default defineSchema({
     isSuspended: v.boolean(),
     suspensionReason: v.optional(v.string()),
     suspensionDate: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
     isOwner: v.optional(v.boolean()),
     // Old format fields
     businessName: v.optional(v.string()),
@@ -71,6 +73,7 @@ export default defineSchema({
     minOrderAmount: v.number(),
     isActive: v.boolean(),
     isOnline: v.optional(v.boolean()),
+    isApproved: v.optional(v.boolean()),
     ownerId: v.optional(v.string()),
     location: v.object({
       address: v.string(),
@@ -80,6 +83,7 @@ export default defineSchema({
     }),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
     // Old format fields
     phone: v.optional(v.string()),
     address: v.optional(v.string()),

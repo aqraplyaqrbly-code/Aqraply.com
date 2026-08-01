@@ -343,6 +343,7 @@ export const createUserProfile = mutation({
       phoneVerified: false,
       isActive: true,
       isOnline: true,
+      isApproved: true,
       lastSeen: Date.now(),
       registrationDate: Date.now(),
       location: args.location ?? {

@@ -71,14 +71,25 @@ export const createProfile = mutation({
       return existingProfile._id;
     }
 
+    // Check if captain approval is required from system settings
+    const systemSettings = await ctx.db.query("systemSettings").first();
+    const requireCaptainApproval = systemSettings?.captainApprovalRequired ?? true;
+    const requireStoreApproval = systemSettings?.storeApprovalRequired ?? true;
+
+    // Determine if approval is required based on role
+    const needsApproval = 
+      (role === "captain" && requireCaptainApproval) ||
+      (role === "merchant" && requireStoreApproval);
+
     const profileId = await ctx.db.insert("profiles", {
       userId,
       role: role,
       fullName: fullName,
       phone: phone,
       phoneVerified: false,
-      isActive: true,
-      isOnline: true,
+      isActive: !needsApproval, // Only active if approval not required
+      isOnline: !needsApproval,
+      isApproved: !needsApproval, // Set approval status
       lastSeen: Date.now(),
       registrationDate: Date.now(),
       location: location ?? {
@@ -148,6 +159,7 @@ export const ensureAdminRole = mutation({
       phoneVerified: false,
       isActive: true,
       isOnline: true,
+      isApproved: true,
       lastSeen: Date.now(),
       registrationDate: Date.now(),
       location: {

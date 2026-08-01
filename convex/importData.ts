@@ -88,6 +88,7 @@ export const importAllData = mutation({
                 phoneVerified: true,
                 isActive: true,
                 isOnline: true,
+                isApproved: true,
                 lastSeen: Date.now(),
                 registrationDate: Date.now(),
                 isSuspended: false,
@@ -121,6 +122,7 @@ export const importAllData = mutation({
               estimatedDeliveryTime: 30,
               isActive: true,
               isOnline: true,
+              isApproved: true,
               createdAt: Date.now(),
               updatedAt: Date.now(),
             });

@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import { LayoutDashboard, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContextNew";
+import { validateEmail, validatePassword } from "../utils/validation";
 
 export default function AdminAuth() {
   const { signIn, sessionToken } = useAuth();
@@ -16,6 +17,29 @@ export default function AdminAuth() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("markezzat39@gmail.com");
   const [password, setPassword] = useState("");
+
+  // Error states
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  // Validation handlers
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value, 8);
+    setPasswordError(result.error);
+  };
+
+  const isFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password, 8).isValid;
+    return emailValid && passwordValid;
+  };
 
   // Ref لتتبع ما إذا تم بالفعل إنشاء الملف الشخصي
   const hasCreatedProfile = useRef(false);
@@ -54,6 +78,18 @@ export default function AdminAuth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    if (!isFormValid()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -115,12 +151,17 @@ export default function AdminAuth() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-purple-200 transition-all outline-none ${
+                    emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
                   placeholder="markezzat39@gmail.com"
-                  required
+                  dir="ltr"
                 />
               </div>
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+              )}
             </div>
 
             {/* Password */}
@@ -133,10 +174,11 @@ export default function AdminAuth() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pe-10 ps-12 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none"
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  className={`w-full pe-10 ps-12 py-3 border-2 rounded-xl focus:ring-2 focus:ring-purple-200 transition-all outline-none ${
+                    passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
                   placeholder="••••••••"
-                  required
                 />
                 <button
                   type="button"
@@ -146,12 +188,15 @@ export default function AdminAuth() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {passwordError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isFormValid()}
               className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}

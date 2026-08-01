@@ -59,6 +59,7 @@ import SuspensionCheck from "./SuspensionCheck";
 import CustomerReviewPage from "./CustomerReviewPage";
 import StoreRatingsPage from "./StoreRatingsPage";
 import ProductRatingsPage from "./ProductRatingsPage";
+import NotificationBell from "./NotificationBell";
 
 // Fallback NavigationBar component in case import fails
 const FallbackNavigationBar = () => {
@@ -73,6 +74,7 @@ const FallbackNavigationBar = () => {
           <h1 className="text-lg sm:text-xl font-bold text-orange-600">Aqraply أقربلي</h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <NotificationBell />
           <button
             onClick={() => navigate('/customer/cart')}
             className="text-gray-600 hover:text-orange-600 transition-colors relative p-1 sm:p-0"

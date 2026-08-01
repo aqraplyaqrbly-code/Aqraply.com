@@ -25,6 +25,7 @@ import {
 import { Loader2, Wallet } from "lucide-react";
 import { ALLOWED_SETTINGS_FIELDS } from "../lib/allowedSettingsFields";
 import { useSystemSettings } from "../contexts/SystemSettingsContext";
+import { useAuth } from "../contexts/AuthContextNew";
 
 interface SystemSettings {
   _id?: string;
@@ -87,6 +88,7 @@ interface SystemSettings {
 
 export default function SystemSettings() {
   const { refreshSettings } = useSystemSettings();
+  const { sessionToken, user, role } = useAuth();
   const [settings, setSettings] = useState<SystemSettings>({
     siteName: "Aqraply",
     siteNameAr: "أقربلي",
@@ -179,6 +181,17 @@ export default function SystemSettings() {
   }, [hasUnsavedChanges]);
 
   const handleSaveSettings = async () => {
+    // Log authentication state
+    console.log('sessionToken =', sessionToken);
+    console.log('user =', user);
+    console.log('role =', role);
+
+    // Check if user is authenticated
+    if (!sessionToken) {
+      toast.error("يجب تسجيل الدخول مرة أخرى");
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('Current settings state:', settings);
@@ -195,7 +208,10 @@ export default function SystemSettings() {
       });
       
       console.log('Settings to save:', settingsToSave);
-      const result = await updateSettings(settingsToSave);
+      const result = await updateSettings({
+        ...settingsToSave,
+        sessionToken,
+      });
       console.log('Settings saved successfully:', result);
       
       // Update last saved time and clear unsaved changes flag

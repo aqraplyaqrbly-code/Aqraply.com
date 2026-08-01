@@ -83,6 +83,7 @@ export default function CaptainDashboard() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(true);
   
   // Mutations
   const { user, isAuthenticated, isLoading, sessionToken } = useAuth();
@@ -168,10 +169,15 @@ export default function CaptainDashboard() {
   
   const unreadCount = notifications.filter((n: CaptainNotification) => !n.isRead).length;
 
+  // Filter notifications based on showUnreadOnly
+  const filteredNotifications = showUnreadOnly 
+    ? notifications.filter((n: CaptainNotification) => !n.isRead)
+    : notifications;
+
   // Handle online/offline status toggle
   const handleToggleOnlineStatus = async () => {
     try {
-      await updateStatus({ isOnline: !isOnline });
+      await updateStatus({ sessionToken, isOnline: !isOnline });
       const message = !isOnline 
         ? "✓ تم الاتصال بنجاح - أنت الآن متصل وجاهز لاستقبال الطلبات"
         : "✗ تم قطع الاتصال - لن تتلقى طلبات جديدة";
@@ -184,7 +190,7 @@ export default function CaptainDashboard() {
 
   const handleMarkAsRead = async (notificationId: Id<"notifications">) => {
     try {
-      await markAsRead({ notificationId });
+      await markAsRead({ sessionToken, notificationId });
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -393,16 +399,33 @@ export default function CaptainDashboard() {
                         <Bell className="w-5 h-5" />
                         الإشعارات
                       </h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+                          className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                        >
+                          {showUnreadOnly ? 'عرض الكل' : 'غير المقروءة فقط'}
+                        </button>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => markAllAsRead({ sessionToken })}
+                            className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                          >
+                            <CheckCheck className="w-4 h-4" />
+                            اقرأ الكل
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="overflow-y-auto max-h-80">
-                      {notifications.length === 0 ? (
+                      {filteredNotifications.length === 0 ? (
                         <div className="p-8 text-center">
                           <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                           <p className="text-gray-500">لا توجد إشعارات</p>
                         </div>
                       ) : (
-                        notifications.map((notification: CaptainNotification) => (
+                        filteredNotifications.map((notification: CaptainNotification) => (
                           <div
                             key={notification._id}
                             onClick={() => handleMarkAsRead(notification._id)}

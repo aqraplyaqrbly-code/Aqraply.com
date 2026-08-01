@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { Truck, Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContextNew";
+import {
+  validateEmail,
+  validatePassword,
+  validateFullName,
+  validatePhone,
+  validateVehicleInfo,
+  validateRequired,
+} from "../utils/validation";
 
 type AuthMode = "login" | "signup" | "profile";
 
@@ -22,11 +30,72 @@ export default function CaptainAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Login errors
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   // بيانات الملف الشخصي
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
+
+  // Profile errors
+  const [fullNameError, setFullNameError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [vehicleTypeError, setVehicleTypeError] = useState("");
+  const [vehicleNumberError, setVehicleNumberError] = useState("");
+
+  // Validation handlers for login
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value, 8);
+    setPasswordError(result.error);
+  };
+
+  const isLoginFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password, 8).isValid;
+    return emailValid && passwordValid;
+  };
+
+  // Validation handlers for profile
+  const handleFullNameChange = (value: string) => {
+    setFullName(value);
+    const result = validateFullName(value);
+    setFullNameError(result.error);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    const result = validatePhone(value);
+    setPhoneError(result.error);
+  };
+
+  const handleVehicleTypeChange = (value: string) => {
+    setVehicleType(value);
+    const result = validateRequired(value, 'نوع المركبة');
+    setVehicleTypeError(result.error);
+  };
+
+  const handleVehicleNumberChange = (value: string) => {
+    setVehicleNumber(value);
+    const result = validateRequired(value, 'رقم المركبة');
+    setVehicleNumberError(result.error);
+  };
+
+  const isProfileFormValid = () => {
+    const fullNameValid = validateFullName(fullName).isValid;
+    const phoneValid = validatePhone(phone).isValid;
+    const vehicleValid = validateVehicleInfo(vehicleType, vehicleNumber).isValid;
+    return fullNameValid && phoneValid && vehicleValid;
+  };
 
   // Ref لتتبع ما إذا تم بالفعل تغيير الـ mode
   const hasSetProfileMode = useRef(false);
@@ -45,6 +114,18 @@ export default function CaptainAuth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    if (!isLoginFormValid()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -71,21 +152,19 @@ export default function CaptainAuth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    if (!isLoginFormValid()) {
+      return;
+    }
+
     setLoading(true);
-
-    // التحقق من صحة البريد الإلكتروني
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      toast.error(t('captain.invalidEmail'));
-      setLoading(false);
-      return;
-    }
-
-    if (!password || password.length < 8) {
-      toast.error(t('captain.passwordMin8'));
-      setLoading(false);
-      return;
-    }
 
     try {
       await signUp(email, password);
@@ -108,37 +187,23 @@ export default function CaptainAuth() {
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return; // Prevent duplicate submissions
+
+    // Validate all fields
+    const fullNameResult = validateFullName(fullName);
+    setFullNameError(fullNameResult.error);
+
+    const phoneResult = validatePhone(phone);
+    setPhoneError(phoneResult.error);
+
+    const vehicleResult = validateVehicleInfo(vehicleType, vehicleNumber);
+    setVehicleTypeError(vehicleResult.error);
+    setVehicleNumberError(vehicleResult.error);
+
+    if (!isProfileFormValid()) {
+      return;
+    }
+
     setLoading(true);
-
-    if (!fullName || fullName.trim().length < 3) {
-      toast.error(t('captain.fullNameMin3'));
-      setLoading(false);
-      return;
-    }
-
-    if (!phone || phone.trim().length !== 11) {
-      toast.error(t('captain.phoneMin11'));
-      setLoading(false);
-      return;
-    }
-
-    if (!/^\d+$/.test(phone.trim())) {
-      toast.error(t('captain.phoneNumbersOnly'));
-      setLoading(false);
-      return;
-    }
-
-    if (!vehicleType) {
-      toast.error(t('captain.vehicleTypeRequired'));
-      setLoading(false);
-      return;
-    }
-
-    if (!vehicleNumber || vehicleNumber.trim().length < 3) {
-      toast.error(t('captain.vehicleNumberMin3'));
-      setLoading(false);
-      return;
-    }
 
     try {
       await createProfile({
@@ -150,7 +215,12 @@ export default function CaptainAuth() {
         vehicleNumber,
       });
       toast.success(t('captain.profileCreated'));
-      window.location.reload();
+      toast.info("في انتظار الموافقة لرفع الحساب على الموقع", {
+        duration: 5000,
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('captain.profileCreateFailed');
       toast.error(message);
@@ -188,12 +258,17 @@ export default function CaptainAuth() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                      emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                    }`}
                     placeholder="captain@example.com"
-                    required
+                    dir="ltr"
                   />
                 </div>
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -206,10 +281,11 @@ export default function CaptainAuth() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pe-10 ps-12 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className={`w-full pe-10 ps-12 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                      passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                    }`}
                     placeholder="••••••••"
-                    required
                   />
                   <button
                     type="button"
@@ -219,12 +295,15 @@ export default function CaptainAuth() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+                )}
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isLoginFormValid()}
                 className="w-full py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? t('captain.loggingIn') : t('captain.login')}
@@ -289,12 +368,17 @@ export default function CaptainAuth() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                      emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                    }`}
                     placeholder="captain@example.com"
-                    required
+                    dir="ltr"
                   />
                 </div>
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -307,11 +391,11 @@ export default function CaptainAuth() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pe-10 ps-12 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className={`w-full pe-10 ps-12 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                      passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                    }`}
                     placeholder="••••••••"
-                    required
-                    minLength={8}
                   />
                   <button
                     type="button"
@@ -321,13 +405,16 @@ export default function CaptainAuth() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1 text-start">{t('captain.passwordMin8Hint')}</p>
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isLoginFormValid()}
                 className="w-full py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? t('captain.creatingAccount') : t('captain.createAccount')}
@@ -381,12 +468,16 @@ export default function CaptainAuth() {
                 <input
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                  onChange={(e) => handleFullNameChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                    fullNameError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                  }`}
                   placeholder="أحمد محمد"
-                  required
                 />
               </div>
+              {fullNameError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{fullNameError}</p>
+              )}
             </div>
 
             {/* Phone */}
@@ -399,13 +490,17 @@ export default function CaptainAuth() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  maxLength={11}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                    phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                  }`}
                   placeholder={t('captain.phonePlaceholder')}
-                  required
+                  dir="ltr"
                 />
               </div>
+              {phoneError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{phoneError}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1 text-start">{t('captain.phoneMin11Hint')}</p>
             </div>
 
@@ -416,9 +511,10 @@ export default function CaptainAuth() {
               </label>
               <select
                 value={vehicleType}
-                onChange={(e) => setVehicleType(e.target.value)}
-                className="w-full pe-4 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
-                required
+                onChange={(e) => handleVehicleTypeChange(e.target.value)}
+                className={`w-full pe-4 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                  vehicleTypeError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                }`}
               >
                 <option value="">{t('captain.selectVehicleType')}</option>
                 <option value="motorcycle">{t('captain.motorcycle')}</option>
@@ -426,6 +522,9 @@ export default function CaptainAuth() {
                 <option value="bicycle">{t('captain.bicycle')}</option>
                 <option value="van">{t('captain.van')}</option>
               </select>
+              {vehicleTypeError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{vehicleTypeError}</p>
+              )}
             </div>
 
             {/* Vehicle Number */}
@@ -436,17 +535,21 @@ export default function CaptainAuth() {
               <input
                 type="text"
                 value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
-                className="w-full pe-4 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                onChange={(e) => handleVehicleNumberChange(e.target.value)}
+                className={`w-full pe-4 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-green-200 transition-all outline-none ${
+                  vehicleNumberError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                }`}
                 placeholder={t('captain.vehicleNumberPlaceholder')}
-                required
               />
+              {vehicleNumberError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{vehicleNumberError}</p>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isProfileFormValid()}
               className="w-full py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? t('captain.saving') : t('captain.completeRegistration')}

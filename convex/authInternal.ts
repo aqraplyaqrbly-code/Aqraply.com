@@ -132,6 +132,7 @@ export const createAdminProfile = internalMutation({
       avatar: undefined,
       isActive: true,
       isOnline: false,
+      isApproved: true,
       lastSeen: Date.now(),
       registrationDate: Date.now(),
       location: {

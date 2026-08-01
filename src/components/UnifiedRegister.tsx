@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContextNew';
 import { toast } from 'sonner';
+import {
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validateFullName,
+  validatePhone,
+  validateBusinessName,
+  validateVehicleInfo,
+  validateRequired,
+} from '../utils/validation';
 
 export default function UnifiedRegister() {
   const navigate = useNavigate();
@@ -19,9 +29,18 @@ export default function UnifiedRegister() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Auth form errors
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
   // Profile form
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+
+  // Profile form errors
+  const [fullNameError, setFullNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
   // Merchant specific
   const [storeName, setStoreName] = useState('');
@@ -29,26 +48,70 @@ export default function UnifiedRegister() {
   const [storeAddress, setStoreAddress] = useState('');
   const [storeAddressAr, setStoreAddressAr] = useState('');
 
+  // Merchant errors
+  const [storeNameError, setStoreNameError] = useState('');
+  const [storeAddressError, setStoreAddressError] = useState('');
+
   // Captain specific
   const [nationalId, setNationalId] = useState('');
   const [vehicleType, setVehicleType] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
+
+  // Captain errors
+  const [nationalIdError, setNationalIdError] = useState('');
+  const [vehicleTypeError, setVehicleTypeError] = useState('');
+  const [vehicleNumberError, setVehicleNumberError] = useState('');
 
   const handleRoleSelect = (role: 'customer' | 'merchant' | 'captain') => {
     setSelectedRole(role);
     setStep('auth');
   };
 
+  // Validation handlers for auth form
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value, 8);
+    setPasswordError(result.error);
+    // Re-validate confirm password if it has a value
+    if (confirmPassword) {
+      const confirmResult = validateConfirmPassword(value, confirmPassword);
+      setConfirmPasswordError(confirmResult.error);
+    }
+  };
+
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    const result = validateConfirmPassword(password, value);
+    setConfirmPasswordError(result.error);
+  };
+
+  const isAuthFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password, 8).isValid;
+    const confirmPasswordValid = validateConfirmPassword(password, confirmPassword).isValid;
+    return emailValid && passwordValid && confirmPasswordValid;
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error('كلمات المرور غير متطابقة');
-      return;
-    }
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
 
-    if (password.length < 8) {
-      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    const confirmPasswordResult = validateConfirmPassword(password, confirmPassword);
+    setConfirmPasswordError(confirmPasswordResult.error);
+
+    if (!isAuthFormValid()) {
       return;
     }
 
@@ -88,9 +151,108 @@ export default function UnifiedRegister() {
     }
   };
 
+  // Validation handlers for profile form
+  const handleFullNameChange = (value: string) => {
+    setFullName(value);
+    const result = validateFullName(value);
+    setFullNameError(result.error);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    const result = validatePhone(value);
+    setPhoneError(result.error);
+  };
+
+  const handleStoreNameChange = (value: string) => {
+    setStoreName(value);
+    const result = validateBusinessName(value);
+    setStoreNameError(result.error);
+  };
+
+  const handleStoreAddressChange = (value: string) => {
+    setStoreAddress(value);
+    const result = validateRequired(value, 'عنوان المتجر');
+    setStoreAddressError(result.error);
+  };
+
+  const handleNationalIdChange = (value: string) => {
+    setNationalId(value);
+    const result = validateRequired(value, 'الرقم القومي');
+    setNationalIdError(result.error);
+  };
+
+  const handleVehicleTypeChange = (value: string) => {
+    setVehicleType(value);
+    const result = validateRequired(value, 'نوع المركبة');
+    setVehicleTypeError(result.error);
+  };
+
+  const handleVehicleNumberChange = (value: string) => {
+    setVehicleNumber(value);
+    const result = validateRequired(value, 'رقم المركبة');
+    setVehicleNumberError(result.error);
+  };
+
+  const isProfileFormValid = () => {
+    const fullNameValid = validateFullName(fullName).isValid;
+    const phoneValid = validatePhone(phone).isValid;
+    
+    if (!fullNameValid || !phoneValid) {
+      return false;
+    }
+
+    if (selectedRole === 'merchant') {
+      const storeNameValid = validateBusinessName(storeName).isValid;
+      const storeAddressValid = validateRequired(storeAddress, 'عنوان المتجر').isValid;
+      if (!storeNameValid || !storeAddressValid) {
+        return false;
+      }
+    }
+
+    if (selectedRole === 'captain') {
+      const nationalIdValid = validateRequired(nationalId, 'الرقم القومي').isValid;
+      const vehicleValid = validateVehicleInfo(vehicleType, vehicleNumber).isValid;
+      if (!nationalIdValid || !vehicleValid) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return; // Prevent duplicate submissions
+
+    // Validate all fields
+    const fullNameResult = validateFullName(fullName);
+    setFullNameError(fullNameResult.error);
+
+    const phoneResult = validatePhone(phone);
+    setPhoneError(phoneResult.error);
+
+    if (selectedRole === 'merchant') {
+      const storeNameResult = validateBusinessName(storeName);
+      setStoreNameError(storeNameResult.error);
+
+      const storeAddressResult = validateRequired(storeAddress, 'عنوان المتجر');
+      setStoreAddressError(storeAddressResult.error);
+    }
+
+    if (selectedRole === 'captain') {
+      const nationalIdResult = validateRequired(nationalId, 'الرقم القومي');
+      setNationalIdError(nationalIdResult.error);
+
+      const vehicleResult = validateVehicleInfo(vehicleType, vehicleNumber);
+      setVehicleTypeError(vehicleResult.error);
+      setVehicleNumberError(vehicleResult.error);
+    }
+
+    if (!isProfileFormValid()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -226,12 +388,16 @@ export default function UnifiedRegister() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                    emailError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="example@email.com"
                   dir="ltr"
                 />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
               </div>
 
               <div>
@@ -241,11 +407,15 @@ export default function UnifiedRegister() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                    passwordError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="••••••••"
                 />
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                )}
               </div>
 
               <div>
@@ -255,16 +425,20 @@ export default function UnifiedRegister() {
                 <input
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                    confirmPasswordError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="••••••••"
                 />
+                {confirmPasswordError && (
+                  <p className="text-red-500 text-sm mt-1">{confirmPasswordError}</p>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !isAuthFormValid()}
                 className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'جاري إنشاء الحساب...' : 'التالي'}
@@ -290,11 +464,15 @@ export default function UnifiedRegister() {
                 <input
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  onChange={(e) => handleFullNameChange(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                    fullNameError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="الاسم الكامل"
                 />
+                {fullNameError && (
+                  <p className="text-red-500 text-sm mt-1">{fullNameError}</p>
+                )}
               </div>
 
               <div>
@@ -304,12 +482,16 @@ export default function UnifiedRegister() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                    phoneError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="01xxxxxxxxx"
                   dir="ltr"
                 />
+                {phoneError && (
+                  <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+                )}
               </div>
 
               {/* Merchant specific fields */}
@@ -322,11 +504,15 @@ export default function UnifiedRegister() {
                     <input
                       type="text"
                       value={storeName}
-                      onChange={(e) => setStoreName(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      onChange={(e) => handleStoreNameChange(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                        storeNameError ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="اسم المتجر"
                     />
+                    {storeNameError && (
+                      <p className="text-red-500 text-sm mt-1">{storeNameError}</p>
+                    )}
                   </div>
 
                   <div>
@@ -349,11 +535,15 @@ export default function UnifiedRegister() {
                     <input
                       type="text"
                       value={storeAddress}
-                      onChange={(e) => setStoreAddress(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      onChange={(e) => handleStoreAddressChange(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                        storeAddressError ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="عنوان المتجر"
                     />
+                    {storeAddressError && (
+                      <p className="text-red-500 text-sm mt-1">{storeAddressError}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -368,12 +558,16 @@ export default function UnifiedRegister() {
                     <input
                       type="text"
                       value={nationalId}
-                      onChange={(e) => setNationalId(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      onChange={(e) => handleNationalIdChange(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                        nationalIdError ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="الرقم القومي"
                       dir="ltr"
                     />
+                    {nationalIdError && (
+                      <p className="text-red-500 text-sm mt-1">{nationalIdError}</p>
+                    )}
                   </div>
 
                   <div>
@@ -382,15 +576,19 @@ export default function UnifiedRegister() {
                     </label>
                     <select
                       value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      onChange={(e) => handleVehicleTypeChange(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                        vehicleTypeError ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     >
                       <option value="">اختر نوع المركبة</option>
                       <option value="motorcycle">دراجة نارية</option>
                       <option value="car">سيارة</option>
                       <option value="bicycle">دراجة هوائية</option>
                     </select>
+                    {vehicleTypeError && (
+                      <p className="text-red-500 text-sm mt-1">{vehicleTypeError}</p>
+                    )}
                   </div>
 
                   <div>
@@ -400,18 +598,22 @@ export default function UnifiedRegister() {
                     <input
                       type="text"
                       value={vehicleNumber}
-                      onChange={(e) => setVehicleNumber(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      onChange={(e) => handleVehicleNumberChange(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                        vehicleNumberError ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="رقم المركبة"
                     />
+                    {vehicleNumberError && (
+                      <p className="text-red-500 text-sm mt-1">{vehicleNumberError}</p>
+                    )}
                   </div>
                 </>
               )}
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !isProfileFormValid()}
                 className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'جاري إنشاء الملف الشخصي...' : 'إكمال التسجيل'}

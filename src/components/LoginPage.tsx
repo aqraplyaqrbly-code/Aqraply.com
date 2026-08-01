@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { useAuth, UserRole } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
+import { validateEmail, validatePassword } from "../utils/validation";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -179,12 +180,47 @@ function AuthForm({ role, onBack, t }: { role: "merchant" | "captain" | "admin";
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Error states
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   const { signIn, sessionToken } = useAuth();
   const ensureAdminRole = useMutation(api.profiles.ensureAdminRole);
   const navigate = useNavigate();
 
+  // Validation handlers
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value, 8);
+    setPasswordError(result.error);
+  };
+
+  const isFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password, 8).isValid;
+    return emailValid && passwordValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    if (!isFormValid()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -278,12 +314,17 @@ function AuthForm({ role, onBack, t }: { role: "merchant" | "captain" | "admin";
                 id="email-address"
                 name="email"
                 type="email"
-                required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="relative block w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 text-right"
+                onChange={(e) => handleEmailChange(e.target.value)}
+                className={`relative block w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 text-right ${
+                  emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500'
+                }`}
                 placeholder={t('auth.emailPlaceholder')}
+                dir="ltr"
               />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+              )}
             </div>
 
             <div>
@@ -292,17 +333,21 @@ function AuthForm({ role, onBack, t }: { role: "merchant" | "captain" | "admin";
                 id="password"
                 name="password"
                 type="password"
-                required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="relative block w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 text-right"
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={`relative block w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 text-right ${
+                  passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500'
+                }`}
                 placeholder={t('auth.passwordPlaceholder')}
               />
+              {passwordError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !isFormValid()}
               className="group relative flex w-full justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
             >
               {isLoading ? t('auth.loggingIn') : t('auth.loginButton')}

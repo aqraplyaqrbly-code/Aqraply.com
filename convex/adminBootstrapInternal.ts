@@ -85,6 +85,7 @@ export const ensureAdminProfileInternal = internalMutation({
         phoneVerified: false,
         isActive: true,
         isOnline: true,
+        isApproved: true,
         lastSeen: Date.now(),
         registrationDate: Date.now(),
         location: {

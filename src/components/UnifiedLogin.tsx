@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContextNew';
 import { toast } from 'sonner';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 export default function UnifiedLogin() {
   const navigate = useNavigate();
@@ -12,7 +13,30 @@ export default function UnifiedLogin() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Error states
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
   const from = location.state?.from?.pathname || '/';
+
+  // Validation handlers
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value);
+    setPasswordError(result.error);
+  };
+
+  const isFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password).isValid;
+    return emailValid && passwordValid;
+  };
 
   // Redirect based on role after successful login
   useEffect(() => {
@@ -38,6 +62,18 @@ export default function UnifiedLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password);
+    setPasswordError(passwordResult.error);
+
+    if (!isFormValid()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -80,12 +116,16 @@ export default function UnifiedLogin() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                onChange={(e) => handleEmailChange(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                  emailError ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="example@email.com"
                 dir="ltr"
               />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1">{emailError}</p>
+              )}
             </div>
 
             {/* Password */}
@@ -96,11 +136,15 @@ export default function UnifiedLogin() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                  passwordError ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="••••••••"
               />
+              {passwordError && (
+                <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+              )}
             </div>
 
             {/* Forgot Password */}
@@ -117,7 +161,7 @@ export default function UnifiedLogin() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !isFormValid()}
               className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}

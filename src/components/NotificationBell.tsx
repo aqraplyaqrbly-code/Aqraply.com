@@ -21,12 +21,18 @@ interface Notification {
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { sessionToken, isAuthenticated } = useAuth();
 
   // Fetch notifications data
   const notifications = useQuery(api.notifications.getUserNotifications, isAuthenticated && sessionToken ? { sessionToken, limit: 20 } : "skip") || [];
   const unreadCount = useQuery(api.notifications.getUnreadCount, isAuthenticated && sessionToken ? { sessionToken } : "skip") || 0;
+
+  // Filter notifications based on showUnreadOnly
+  const filteredNotifications = showUnreadOnly 
+    ? notifications.filter((n: Notification) => !n.isRead)
+    : notifications;
 
   // Mutations
   const markAsRead = useMutation(api.notifications.markAsRead);
@@ -85,21 +91,29 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">الإشعارات</h3>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={handleMarkAllAsRead}
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+                className="text-sm text-gray-600 hover:text-gray-800 font-medium"
               >
-                <CheckCheck className="w-4 h-4" />
-                اقرأ الكل
+                {showUnreadOnly ? 'عرض الكل' : 'غير المقروءة فقط'}
               </button>
-            )}
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                >
+                  <CheckCheck className="w-4 h-4" />
+                  اقرأ الكل
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Notifications List */}
           <div className="divide-y divide-gray-200">
-            {notifications && notifications.length > 0 ? (
-              notifications.map((notification: Notification) => (
+            {filteredNotifications && filteredNotifications.length > 0 ? (
+              filteredNotifications.map((notification: Notification) => (
                 <div
                   key={notification._id}
                   className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${

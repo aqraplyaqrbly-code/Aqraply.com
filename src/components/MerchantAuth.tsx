@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { Store, Mail, Lock, User, Phone, Building2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContextNew";
+import {
+  validateEmail,
+  validatePassword,
+  validateFullName,
+  validatePhone,
+  validateBusinessName,
+  validateRequired,
+} from "../utils/validation";
 
 type AuthMode = "login" | "signup" | "profile";
 
@@ -22,11 +30,73 @@ export default function MerchantAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Login errors
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   // بيانات الملف الشخصي
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessNameAr, setBusinessNameAr] = useState("");
+
+  // Profile errors
+  const [fullNameError, setFullNameError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [businessNameError, setBusinessNameError] = useState("");
+  const [businessNameArError, setBusinessNameArError] = useState("");
+
+  // Validation handlers for login
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    const result = validatePassword(value, 8);
+    setPasswordError(result.error);
+  };
+
+  const isLoginFormValid = () => {
+    const emailValid = validateEmail(email).isValid;
+    const passwordValid = validatePassword(password, 8).isValid;
+    return emailValid && passwordValid;
+  };
+
+  // Validation handlers for profile
+  const handleFullNameChange = (value: string) => {
+    setFullName(value);
+    const result = validateFullName(value);
+    setFullNameError(result.error);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    const result = validatePhone(value);
+    setPhoneError(result.error);
+  };
+
+  const handleBusinessNameChange = (value: string) => {
+    setBusinessName(value);
+    const result = validateBusinessName(value);
+    setBusinessNameError(result.error);
+  };
+
+  const handleBusinessNameArChange = (value: string) => {
+    setBusinessNameAr(value);
+    const result = validateRequired(value, 'اسم المتجر بالعربية');
+    setBusinessNameArError(result.error);
+  };
+
+  const isProfileFormValid = () => {
+    const fullNameValid = validateFullName(fullName).isValid;
+    const phoneValid = validatePhone(phone).isValid;
+    const businessNameValid = validateBusinessName(businessName).isValid;
+    const businessNameArValid = validateRequired(businessNameAr, 'اسم المتجر بالعربية').isValid;
+    return fullNameValid && phoneValid && businessNameValid && businessNameArValid;
+  };
 
   // Ref لتتبع ما إذا تم بالفعل تغيير الـ mode
   const hasSetProfileMode = useRef(false);
@@ -45,6 +115,18 @@ export default function MerchantAuth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    if (!isLoginFormValid()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -71,21 +153,19 @@ export default function MerchantAuth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    setEmailError(emailResult.error);
+
+    const passwordResult = validatePassword(password, 8);
+    setPasswordError(passwordResult.error);
+
+    if (!isLoginFormValid()) {
+      return;
+    }
+
     setLoading(true);
-
-    // التحقق من صحة البريد الإلكتروني
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      toast.error(t('merchant.invalidEmail'));
-      setLoading(false);
-      return;
-    }
-
-    if (!password || password.length < 8) {
-      toast.error(t('merchant.passwordMin8'));
-      setLoading(false);
-      return;
-    }
 
     try {
       await signUp(email, password);
@@ -110,37 +190,25 @@ export default function MerchantAuth() {
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return; // Prevent duplicate submissions
+
+    // Validate all fields
+    const fullNameResult = validateFullName(fullName);
+    setFullNameError(fullNameResult.error);
+
+    const phoneResult = validatePhone(phone);
+    setPhoneError(phoneResult.error);
+
+    const businessNameResult = validateBusinessName(businessName);
+    setBusinessNameError(businessNameResult.error);
+
+    const businessNameArResult = validateRequired(businessNameAr, 'اسم المتجر بالعربية');
+    setBusinessNameArError(businessNameArResult.error);
+
+    if (!isProfileFormValid()) {
+      return;
+    }
+
     setLoading(true);
-
-    if (!fullName || fullName.trim().length < 3) {
-      toast.error(t('merchant.fullNameMin3'));
-      setLoading(false);
-      return;
-    }
-
-    if (!phone || phone.trim().length !== 11) {
-      toast.error(t('merchant.phoneMin11'));
-      setLoading(false);
-      return;
-    }
-
-    if (!/^\d+$/.test(phone.trim())) {
-      toast.error(t('merchant.phoneNumbersOnly'));
-      setLoading(false);
-      return;
-    }
-
-    if (!businessName || businessName.trim().length < 3) {
-      toast.error(t('merchant.businessNameMin3'));
-      setLoading(false);
-      return;
-    }
-
-    if (!businessNameAr || businessNameAr.trim().length < 3) {
-      toast.error(t('merchant.businessNameArMin3'));
-      setLoading(false);
-      return;
-    }
 
     try {
       await createProfile({
@@ -152,7 +220,12 @@ export default function MerchantAuth() {
         businessNameAr,
       });
       toast.success(t('merchant.profileCreated'));
-      window.location.reload();
+      toast.info("في انتظار الموافقة لرفع المتجر على الموقع", {
+        duration: 5000,
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('merchant.profileCreateFailed');
       toast.error(message);
@@ -190,12 +263,17 @@ export default function MerchantAuth() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                      emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                    }`}
                     placeholder="merchant@example.com"
-                    required
+                    dir="ltr"
                   />
                 </div>
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -208,10 +286,11 @@ export default function MerchantAuth() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pe-10 ps-12 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className={`w-full pe-10 ps-12 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                      passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                    }`}
                     placeholder="••••••••"
-                    required
                   />
                   <button
                     type="button"
@@ -221,12 +300,15 @@ export default function MerchantAuth() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+                )}
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isLoginFormValid()}
                 className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? t('merchant.loggingIn') : t('merchant.login')}
@@ -291,12 +373,17 @@ export default function MerchantAuth() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                      emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                    }`}
                     placeholder="merchant@example.com"
-                    required
+                    dir="ltr"
                   />
                 </div>
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{emailError}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -309,11 +396,11 @@ export default function MerchantAuth() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pe-10 ps-12 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className={`w-full pe-10 ps-12 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                      passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                    }`}
                     placeholder="••••••••"
-                    required
-                    minLength={8}
                   />
                   <button
                     type="button"
@@ -323,13 +410,16 @@ export default function MerchantAuth() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1 text-start">{passwordError}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1 text-start">{t('merchant.passwordMin8Hint')}</p>
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isLoginFormValid()}
                 className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? t('merchant.creatingAccount') : t('merchant.createAccount')}
@@ -383,12 +473,16 @@ export default function MerchantAuth() {
                 <input
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  onChange={(e) => handleFullNameChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                    fullNameError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                  }`}
                   placeholder="أحمد محمد"
-                  required
                 />
               </div>
+              {fullNameError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{fullNameError}</p>
+              )}
             </div>
 
             {/* Phone */}
@@ -401,13 +495,17 @@ export default function MerchantAuth() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  maxLength={11}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                    phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                  }`}
                   placeholder={t('merchant.phonePlaceholder')}
-                  required
+                  dir="ltr"
                 />
               </div>
+              {phoneError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{phoneError}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1 text-start">{t('merchant.phoneMin11Hint')}</p>
             </div>
 
@@ -421,12 +519,16 @@ export default function MerchantAuth() {
                 <input
                   type="text"
                   value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  onChange={(e) => handleBusinessNameChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                    businessNameError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                  }`}
                   placeholder={t('merchant.businessNameEnPlaceholder')}
-                  required
                 />
               </div>
+              {businessNameError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{businessNameError}</p>
+              )}
             </div>
 
             {/* Business Name (Arabic) */}
@@ -439,24 +541,41 @@ export default function MerchantAuth() {
                 <input
                   type="text"
                   value={businessNameAr}
-                  onChange={(e) => setBusinessNameAr(e.target.value)}
-                  className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  onChange={(e) => handleBusinessNameArChange(e.target.value)}
+                  className={`w-full pe-10 ps-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-200 transition-all outline-none ${
+                    businessNameArError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                  }`}
                   placeholder={t('merchant.businessNameArPlaceholder')}
-                  required
                 />
               </div>
+              {businessNameArError && (
+                <p className="text-red-500 text-sm mt-1 text-start">{businessNameArError}</p>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isProfileFormValid()}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? t('merchant.saving') : t('merchant.completeRegistration')}
+              {loading ? t('merchant.creatingProfile') : t('merchant.completeProfileBtn')}
               <ArrowRight className="w-5 h-5 rotate-180" />
             </button>
           </form>
+
+          {/* Switch to Login */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              {t('auth.alreadyHaveAccount')}{" "}
+              <button
+                onClick={() => setMode("login")}
+                className="text-orange-600 font-semibold hover:text-orange-700 transition-colors"
+              >
+                {t('merchant.login')}
+              </button>
+            </p>
+          </div>
         </div>
       </div>
     </div>
