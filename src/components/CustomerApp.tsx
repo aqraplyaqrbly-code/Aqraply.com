@@ -48,7 +48,13 @@ import {
   Plus,
   Minus,
   Truck,
-  Store
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Mail,
+  Store,
+  Phone,
 } from "lucide-react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -2329,6 +2335,7 @@ function MyOrders() {
 function Profile() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const systemSettings = useQuery(api.systemSettings.getSettings);
 
   const handleSignOut = async () => {
     try {
@@ -2404,6 +2411,66 @@ function Profile() {
               </div>
               <ArrowLeft className="w-5 h-5 text-red-400" />
             </button>
+          </div>
+        </div>
+
+        {/* Contact & Social Media Section */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">تواصل معنا</h3>
+          
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center gap-3 text-gray-600">
+              <Mail className="w-5 h-5 text-orange-600" />
+              <span>{systemSettings?.supportEmail || 'support@aqraply.com'}</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-600">
+              <Phone className="w-5 h-5 text-orange-600" />
+              <span>{systemSettings?.supportPhone || '+20 100 123 4567'}</span>
+            </div>
+          </div>
+
+          {/* Social Media Links */}
+          <div className="flex gap-4 mt-4">
+            {systemSettings?.socialLinks?.facebook && (
+              <a
+                href={systemSettings.socialLinks.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+            )}
+            {systemSettings?.socialLinks?.twitter && (
+              <a
+                href={systemSettings.socialLinks.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-400 rounded-full hover:bg-blue-200 transition-colors"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+            )}
+            {systemSettings?.socialLinks?.instagram && (
+              <a
+                href={systemSettings.socialLinks.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 bg-pink-100 text-pink-600 rounded-full hover:bg-pink-200 transition-colors"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+            )}
+            {systemSettings?.socialLinks?.linkedin && (
+              <a
+                href={systemSettings.socialLinks.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+              >
+                <Linkedin className="w-5 h-5" />
+              </a>
+            )}
           </div>
         </div>
       </div>

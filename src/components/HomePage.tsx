@@ -20,6 +20,11 @@ import {
   X,
   ShoppingCart,
   Zap,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Mail,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -50,6 +55,7 @@ export default function HomePage() {
   const allProducts = useQuery(api.products.getAllProductsWithImages, {
     availableOnly: false,
   }) || [];
+  const systemSettings = useQuery(api.systemSettings.getSettings);
   
   // Mutations for seeding/updating products with images
   const seedProducts = useMutation(api.products.seedProductsWithImages);
@@ -1073,11 +1079,55 @@ export default function HomePage() {
               <div>
                 <h4 className="font-bold mb-4 text-start">{t('errors.contact')}</h4>
                 <p className="text-gray-400 text-sm">
-                  {t('errors.emailLabel')}: info@aqraply.com
+                  {t('errors.emailLabel')}: {systemSettings?.supportEmail || 'support@aqraply.com'}
                 </p>
                 <p className="text-gray-400 text-sm mt-2">
-                  {t('errors.phoneLabel')}: +20 100 123 4567
+                  {t('errors.phoneLabel')}: {systemSettings?.supportPhone || '+20 100 123 4567'}
                 </p>
+                
+                {/* Social Media Links */}
+                <div className="flex gap-4 mt-4">
+                  {systemSettings?.socialLinks?.facebook && (
+                    <a
+                      href={systemSettings.socialLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-blue-500 transition-colors"
+                    >
+                      <Facebook className="w-5 h-5" />
+                    </a>
+                  )}
+                  {systemSettings?.socialLinks?.twitter && (
+                    <a
+                      href={systemSettings.socialLinks.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-blue-400 transition-colors"
+                    >
+                      <Twitter className="w-5 h-5" />
+                    </a>
+                  )}
+                  {systemSettings?.socialLinks?.instagram && (
+                    <a
+                      href={systemSettings.socialLinks.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-pink-500 transition-colors"
+                    >
+                      <Instagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {systemSettings?.socialLinks?.linkedin && (
+                    <a
+                      href={systemSettings.socialLinks.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-blue-700 transition-colors"
+                    >
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
