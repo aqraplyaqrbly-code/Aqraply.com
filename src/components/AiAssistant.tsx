@@ -54,17 +54,7 @@ export default function AiAssistant() {
   };
 
   if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-red-600 px-5 py-3 text-white shadow-lg hover:shadow-xl transition-all"
-        aria-label={t('errors.openAiAssistant')}
-      >
-        <MessageCircle className="h-5 w-5" />
-        <span className="font-semibold text-sm">{t('errors.aqraplyAssistant')}</span>
-      </button>
-    );
+    return null;
   }
 
   return (
@@ -87,7 +77,7 @@ export default function AiAssistant() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-80">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-96 min-h-[200px]">
         {messages.map((msg, i) => {
           const isUser = msg.role === "user";
           return (
