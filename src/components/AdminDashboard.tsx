@@ -55,6 +55,7 @@ import {
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 import { NavigationBar } from "./NavigationBar";
 import AdminAuth from "./AdminAuth";
@@ -64,6 +65,7 @@ import { UsersTable } from "./admin/UsersTable";
 import { KpiCard } from "./admin/StatisticsCards";
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
@@ -77,13 +79,13 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
       <div className="text-center p-8 bg-white rounded-2xl shadow-sm border">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">دخول غير مصرح به</h2>
-        <p className="mb-6 text-gray-600">عذراً، هذه اللوحة مخصصة للمديرين فقط.</p>
+        <h2 className="text-2xl font-bold text-red-600 mb-4">{t('admin.unauthorized')}</h2>
+        <p className="mb-6 text-gray-600">{t('admin.adminOnly')}</p>
         <button
           onClick={() => navigate("/")}
           className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
         >
-          العودة للرئيسية
+          {t('admin.backToHome')}
         </button>
       </div>
     </div>

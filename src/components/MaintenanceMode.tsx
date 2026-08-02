@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useSystemSettings } from "../contexts/SystemSettingsContext";
 import { AlertTriangle, Wrench, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface MaintenanceModeProps {
   children: React.ReactNode;
 }
 
 export default function MaintenanceMode({ children }: MaintenanceModeProps) {
+  const { t } = useTranslation();
   const { settings } = useSystemSettings();
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
@@ -28,29 +30,28 @@ export default function MaintenanceMode({ children }: MaintenanceModeProps) {
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            الموقع تحت الصيانة
+            {t('errors.siteUnderMaintenance')}
           </h1>
           
           <p className="text-gray-600 mb-6">
-            نحن نقوم بتحسين الموقع لتقديم خدمة أفضل لك. 
-            نعتذر عن أي إزعاج وسنعود قريباً.
+            {t('errors.maintenanceMessage')}
           </p>
           
           {/* Additional Info */}
           <div className="bg-orange-50 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-center gap-2 text-orange-600 mb-2">
               <Clock className="w-5 h-5" />
-              <span className="font-medium">وقت الصيانة المتوقع</span>
+              <span className="font-medium">{t('errors.expectedMaintenanceTime')}</span>
             </div>
             <p className="text-sm text-gray-600">
-              قد تستغرق الصيانة من بضع دقائق إلى ساعة قليلة
+              {t('errors.maintenanceDuration')}
             </p>
           </div>
           
           {/* Contact Info */}
           <div className="border-t pt-6">
             <p className="text-sm text-gray-500 mb-2">
-              هل تحتاج إلى مساعدة عاجلة؟
+              {t('errors.needHelp')}
             </p>
             <div className="flex flex-col gap-2">
               {settings?.supportEmail && (
@@ -74,7 +75,7 @@ export default function MaintenanceMode({ children }: MaintenanceModeProps) {
           
           {/* Admin Access Notice */}
           <div className="mt-6 text-xs text-gray-400">
-            <p>يمكن للمسؤولين الوصول إلى لوحة الإدارة</p>
+            <p>{t('errors.adminAccessNotice')}</p>
           </div>
         </div>
       </div>

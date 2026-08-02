@@ -60,20 +60,24 @@ import CustomerReviewPage from "./CustomerReviewPage";
 import StoreRatingsPage from "./StoreRatingsPage";
 import ProductRatingsPage from "./ProductRatingsPage";
 import NotificationBell from "./NotificationBell";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 // Fallback NavigationBar component in case import fails
 const FallbackNavigationBar = () => {
   const navigate = useNavigate();
   const { cartItems } = useCart();
+  const { t } = useTranslation();
   
   return (
   <nav className="bg-white shadow-md sticky top-0 z-50">
     <div className="max-w-7xl mx-auto px-3 sm:px-4">
       <div className="flex justify-between items-center h-14 sm:h-16">
         <div className="flex items-center gap-2 sm:gap-4">
-          <h1 className="text-lg sm:text-xl font-bold text-orange-600">Aqraply أقربلي</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-orange-600">{t('common.siteName')}</h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <LanguageSwitcher />
           <NotificationBell />
           <button
             onClick={() => navigate('/customer/cart')}
@@ -152,8 +156,11 @@ function ProductDetailModal({
   size: string | null;
   onSelectSize: (size: string | null) => void;
 }) {
+  const { t, i18n } = useTranslation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  
+  const isArabic = i18n.language === 'ar';
   
   // جلب بيانات المنتج المحدثة من DB (السعر والمقاسات والصور)
   const liveProduct = useQuery(api.products.getProductWithImage, { 
@@ -177,7 +184,7 @@ function ProductDetailModal({
       <div className="bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-40">
-          <h2 className="text-lg font-bold text-gray-900">{displayProduct.nameAr}</h2>
+          <h2 className="text-lg font-bold text-gray-900">{isArabic ? displayProduct.nameAr : displayProduct.name}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
@@ -233,7 +240,7 @@ function ProductDetailModal({
                     >
                       <img
                         src={image}
-                        alt={`صورة ${idx + 1}`}
+                        alt={`${t('common.image')} ${idx + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -250,13 +257,13 @@ function ProductDetailModal({
           {/* Product Info */}
           <div className="space-y-4 border-b border-gray-100 pb-4">
             <div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">{displayProduct.nameAr}</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">{displayProduct.descriptionAr}</p>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">{isArabic ? displayProduct.nameAr : displayProduct.name}</h3>
+              <p className="text-gray-600 text-lg leading-relaxed">{isArabic ? displayProduct.descriptionAr : displayProduct.description}</p>
             </div>
             
             <div className="flex items-baseline gap-2 pt-2">
               <span className="text-4xl font-bold text-orange-600">{displayProduct.price}</span>
-              <span className="text-xl text-gray-600 font-semibold">EGP</span>
+              <span className="text-xl text-gray-600 font-semibold">{t('common.currency')}</span>
               {displayProduct.originalPrice && displayProduct.originalPrice > displayProduct.price && (
                 <div className="flex items-center gap-2 ms-4">
                   <span className="text-xl text-gray-400 line-through">
@@ -273,7 +280,7 @@ function ProductDetailModal({
           {/* Sizes Selection */}
           {displayProduct.sizes && displayProduct.sizes.length > 0 && (
             <div className="space-y-4 border-b border-gray-100 pb-4">
-              <h4 className="text-lg font-semibold text-gray-900">المقاسات المتاحة</h4>
+              <h4 className="text-lg font-semibold text-gray-900">{t('customer.availableSizes')}</h4>
               <div className="grid grid-cols-3 gap-2">
                 {displayProduct.sizes.map((sizeItem: any) => (
                   <button
@@ -295,7 +302,7 @@ function ProductDetailModal({
           {/* Colors Selection */}
           {displayProduct.colors && displayProduct.colors.length > 0 && (
             <div className="space-y-4 border-b border-gray-100 pb-4">
-              <h4 className="text-lg font-semibold text-gray-900">الألوان المتاحة</h4>
+              <h4 className="text-lg font-semibold text-gray-900">{t('customer.availableColors')}</h4>
               <div className="flex flex-wrap gap-3">
                 {displayProduct.colors.map((color: string) => (
                   <button
@@ -325,20 +332,20 @@ function ProductDetailModal({
               className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-lg rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95"
             >
               <ShoppingCart className="w-6 h-6" />
-              أضف إلى السلة
+              {t('customer.addToCart')}
             </button>
             <button
               onClick={() => window.open(`/customer/ratings/product/${displayProduct._id}`, '_blank')}
               className="w-full py-3 px-6 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
             >
               <Star className="w-5 h-5" />
-              عرض التقييمات
+              {t('customer.viewRatings')}
             </button>
             <button
               onClick={onClose}
               className="w-full py-3 px-6 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all"
             >
-              إغلاق
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -403,6 +410,7 @@ export default function CustomerApp() {
 }
 
 function StoresList() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const stores = useQuery(api.stores.getActiveStores);
   const allProducts = useQuery(api.products.getAllProductsWithImages, { availableOnly: true });
@@ -410,6 +418,8 @@ function StoresList() {
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showNearby, setShowNearby] = useState(false);
   const { getItemCount } = useCart();
+  
+  const isArabic = i18n.language === 'ar';
   
   const nearbyStores = useQuery(api.location.getNearbyStores, 
     userLocation ? { 
@@ -425,7 +435,7 @@ function StoresList() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">جاري التحميل...</p>
+          <p className="text-gray-600 font-medium">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -496,8 +506,8 @@ function StoresList() {
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 pb-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">مرحباً بك</h1>
-          <p className="text-orange-100">اطلب ما تريد من متاجرنا</p>
+          <h1 className="text-3xl font-bold mb-2">{t('auth.welcome')}</h1>
+          <p className="text-orange-100">{t('customer.orderFromStores')}</p>
         </div>
       </div>
 
@@ -520,7 +530,7 @@ function StoresList() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن متجر أو منتج..."
+            placeholder={t('customer.searchPlaceholder')}
             className="w-full pr-12 pl-4 py-4 bg-white rounded-xl shadow-lg border-2 border-transparent focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
           />
         </div>
@@ -530,7 +540,7 @@ function StoresList() {
           <div className="mt-4 bg-white rounded-xl shadow-lg p-4">
             {filteredStores.length > 0 && (
               <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-3">🏪 المتاجر المطابقة</h4>
+                <h4 className="font-semibold text-gray-900 mb-3">🏪 {t('customer.matchingStores')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredStores.slice(0, 6).map((store) => (
                     <button
@@ -538,8 +548,8 @@ function StoresList() {
                       onClick={() => navigate(`/customer/store/${store._id}`)}
                       className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
                     >
-                      <h5 className="font-semibold text-gray-900">{store.nameAr}</h5>
-                      <p className="text-sm text-gray-600">{store.location?.addressAr}</p>
+                      <h5 className="font-semibold text-gray-900">{isArabic ? store.nameAr : store.name}</h5>
+                      <p className="text-sm text-gray-600">{isArabic ? store.location?.addressAr : store.location?.address}</p>
                     </button>
                   ))}
                 </div>
@@ -548,7 +558,7 @@ function StoresList() {
 
             {filteredProducts.length > 0 && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">🔍 المنتجات المطابقة</h4>
+                <h4 className="font-semibold text-gray-900 mb-3">🔍 {t('customer.matchingProducts')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                   {filteredProducts.slice(0, 8).map((product) => (
                     <button
@@ -556,10 +566,10 @@ function StoresList() {
                       onClick={() => navigate(`/customer/store/${product.storeId}`)}
                       className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
                     >
-                      <h5 className="font-semibold text-gray-900 text-sm">{product.nameAr}</h5>
+                      <h5 className="font-semibold text-gray-900 text-sm">{isArabic ? product.nameAr : product.name}</h5>
                       <p className="text-xs text-gray-600 mb-2">{product.category}</p>
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-orange-600">{(product.price ?? 0).toFixed(2)} EGP</span>
+                        <span className="font-bold text-orange-600">{(product.price ?? 0).toFixed(2)} {t('common.currency')}</span>
                         {product.originalPrice && product.originalPrice > product.price && (
                           <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
                             -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
@@ -575,7 +585,7 @@ function StoresList() {
                       onClick={() => navigate(`/customer?search=${encodeURIComponent(searchQuery)}`)}
                       className="text-orange-600 hover:text-orange-700 font-semibold"
                     >
-                      عرض كل المنتجات ({filteredProducts.length})
+                      {t('customer.viewAllProducts')} ({filteredProducts.length})
                     </button>
                   </div>
                 )}
@@ -590,7 +600,7 @@ function StoresList() {
         <div className="max-w-7xl mx-auto px-4 mb-12">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1.5 h-8 bg-gradient-to-b from-red-500 to-orange-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-900">🎉 عروض اليوم</h2>
+            <h2 className="text-2xl font-bold text-gray-900">🎉 {t('customer.todaysDeals')}</h2>
             <span className="text-sm text-gray-500 font-medium">({todayDeals.length})</span>
           </div>
 
@@ -629,18 +639,18 @@ function StoresList() {
                   {/* Product Info */}
                   <div className="p-3">
                     <h4 className="font-bold text-gray-900 line-clamp-2 text-sm group-hover:text-orange-600 transition-colors mb-2">
-                      {product.nameAr}
+                      {isArabic ? product.nameAr : product.name}
                     </h4>
                     
                     {/* Prices */}
                     <div className="space-y-1">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-lg font-bold text-red-600">{(product.price ?? 0).toFixed(2)}</span>
-                        <span className="text-xs text-gray-600">EGP</span>
+                        <span className="text-xs text-gray-600">{t('common.currency')}</span>
                       </div>
                       {product.originalPrice && (
                         <div className="text-xs text-gray-400 line-through">
-                          {(product.originalPrice ?? 0).toFixed(2)} EGP
+                          {(product.originalPrice ?? 0).toFixed(2)} {t('common.currency')}
                         </div>
                       )}
                     </div>
@@ -658,8 +668,8 @@ function StoresList() {
         <div className="max-w-7xl mx-auto px-4 mb-12">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1.5 h-8 bg-gradient-to-b from-yellow-500 to-amber-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-900">⭐ أفضل المنتجات</h2>
-            <span className="text-sm text-gray-500 font-medium">استكشف أفضل المنتجات المتاحة</span>
+            <h2 className="text-2xl font-bold text-gray-900">⭐ {t('customer.topProducts')}</h2>
+            <span className="text-sm text-gray-500 font-medium">{t('customer.exploreTopProducts')}</span>
           </div>
 
           {!allProducts ? (
@@ -688,21 +698,21 @@ function StoresList() {
                     
                     {/* Badge */}
                     <div className="absolute top-3 left-3 bg-yellow-400 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                      ⭐ مختار
+                      ⭐ {t('customer.featured')}
                     </div>
                   </div>
 
                   {/* Product Info */}
                   <div className="p-3">
                     <h4 className="font-bold text-gray-900 line-clamp-2 text-sm group-hover:text-orange-600 transition-colors mb-2">
-                      {product.nameAr}
+                      {isArabic ? product.nameAr : product.name}
                     </h4>
                     
                     {/* Price */}
                     <div className="space-y-1">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-lg font-bold text-orange-600">{product.price}</span>
-                        <span className="text-xs text-gray-600">EGP</span>
+                        <span className="text-xs text-gray-600">{t('common.currency')}</span>
                       </div>
                     </div>
                   </div>
@@ -718,8 +728,8 @@ function StoresList() {
         <div className="max-w-7xl mx-auto px-4 mb-12">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1.5 h-8 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-900">🔥 الأكثر مبيعاً</h2>
-            <span className="text-sm text-gray-500 font-medium">منتجات اختارها الملايين</span>
+            <h2 className="text-2xl font-bold text-gray-900">🔥 {t('customer.bestSelling')}</h2>
+            <span className="text-sm text-gray-500 font-medium">{t('customer.chosenByMillions')}</span>
           </div>
 
           {!allProducts ? (
@@ -748,21 +758,21 @@ function StoresList() {
                     
                     {/* Sales Badge */}
                     <div className="absolute top-3 left-3 bg-green-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                      🔥 مشهور
+                      🔥 {t('customer.popular')}
                     </div>
                   </div>
 
                   {/* Product Info */}
                   <div className="p-3">
                     <h4 className="font-bold text-gray-900 line-clamp-2 text-sm group-hover:text-orange-600 transition-colors mb-2">
-                      {product.nameAr}
+                      {isArabic ? product.nameAr : product.name}
                     </h4>
                     
                     {/* Price */}
                     <div className="space-y-1">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-lg font-bold text-orange-600">{product.price}</span>
-                        <span className="text-xs text-gray-600">EGP</span>
+                        <span className="text-xs text-gray-600">{t('common.currency')}</span>
                       </div>
                     </div>
                   </div>
@@ -778,8 +788,8 @@ function StoresList() {
         <div className="max-w-7xl mx-auto px-4 mb-12">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1.5 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-900">✨ المنتجات الجديدة</h2>
-            <span className="text-sm text-gray-500 font-medium">احدث إضافات</span>
+            <h2 className="text-2xl font-bold text-gray-900">✨ {t('customer.newProducts')}</h2>
+            <span className="text-sm text-gray-500 font-medium">{t('customer.latestAdditions')}</span>
           </div>
 
           {!allProducts ? (
@@ -808,21 +818,21 @@ function StoresList() {
                     
                     {/* New Badge */}
                     <div className="absolute top-3 left-3 bg-blue-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                      جديد
+                      {t('customer.new')}
                     </div>
                   </div>
 
                   {/* Product Info */}
                   <div className="p-3">
                     <h4 className="font-bold text-gray-900 line-clamp-2 text-sm group-hover:text-orange-600 transition-colors mb-2">
-                      {product.nameAr}
+                      {isArabic ? product.nameAr : product.name}
                     </h4>
                     
                     {/* Price */}
                     <div className="space-y-1">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-lg font-bold text-orange-600">{product.price}</span>
-                        <span className="text-xs text-gray-600">EGP</span>
+                        <span className="text-xs text-gray-600">{t('common.currency')}</span>
                       </div>
                     </div>
                   </div>
@@ -839,8 +849,8 @@ function StoresList() {
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">📍 المتاجر القريبة</h2>
-              <p className="text-gray-600">اكتشف أفضل المتاجر بالقرب منك</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">📍 {t('customer.nearbyStores')}</h2>
+              <p className="text-gray-600">{t('customer.discoverNearbyStores')}</p>
             </div>
             <LocationButton 
               onLocationFound={handleLocationFound}
@@ -853,7 +863,7 @@ function StoresList() {
             <div className="mt-6">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
-                <h3 className="text-lg font-semibold text-gray-900">المتاجر القريبة منك</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('customer.storesNearYou')}</h3>
                 <span className="text-sm text-blue-600 font-medium">({nearbyStores.length})</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -916,24 +926,24 @@ function StoresList() {
                 <div className="relative h-48 bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center overflow-hidden">
                   <StoreImage
                     imageIdOrUrl={store.imageUrl}
-                    alt={store.nameAr}
+                    alt={isArabic ? store.nameAr : store.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
                 </div>
                 <div className="p-5">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">{store.nameAr}</h3>
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-10">{store.descriptionAr}</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">{isArabic ? store.nameAr : store.name}</h3>
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-10">{isArabic ? store.descriptionAr : store.description}</p>
                   
                   {/* Address with GPS and Distance */}
                   {store.location?.addressAr && (
                     <div className="flex items-start gap-2 mb-3 p-2 bg-blue-50 rounded-lg">
                       <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-700 line-clamp-2">{store.location.addressAr}</p>
+                        <p className="text-xs text-gray-700 line-clamp-2">{isArabic ? store.location.addressAr : store.location.address}</p>
                         {store.distance !== null && (
                           <p className="text-xs text-blue-600 font-medium mt-1">
-                            📍 {store.distance < 1 ? `${(store.distance * 1000).toFixed(0)} م` : `${store.distance.toFixed(1)} كم`}
+                            📍 {store.distance < 1 ? `${(store.distance * 1000).toFixed(0)} ${t('common.meters')}` : `${store.distance.toFixed(1)} ${t('common.km')}`}
                           </p>
                         )}
                       </div>
@@ -947,14 +957,14 @@ function StoresList() {
                     </div>
                     <div className="flex items-center gap-1 bg-blue-50 px-2.5 py-1.5 rounded-lg">
                       <Clock className="w-4 h-4 text-blue-600" />
-                      <span className="font-semibold">{store.estimatedDeliveryTime} دقيقة</span>
+                      <span className="font-semibold">{store.estimatedDeliveryTime} {t('common.minutes')}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500">التوصيل</span>
-                      <span className="text-lg font-bold text-orange-600">{(store.deliveryFee ?? 0).toFixed(2)} EGP</span>
+                      <span className="text-xs text-gray-500">{t('customer.delivery')}</span>
+                      <span className="text-lg font-bold text-orange-600">{(store.deliveryFee ?? 0).toFixed(2)} {t('common.currency')}</span>
                     </div>
                     <span className="px-3.5 py-1.5 bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 text-xs font-bold rounded-lg border border-orange-200">
                       {store.category}
@@ -967,7 +977,7 @@ function StoresList() {
         ) : (
           <div className="text-center py-16">
             <Store className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">لا توجد متاجر متاحة حالياً</p>
+            <p className="text-gray-600 text-lg">{t('customer.noStoresAvailable')}</p>
           </div>
         )}
       </div>
@@ -978,6 +988,7 @@ function StoresList() {
 }
 
 function StoreDetails() {
+  const { t, i18n } = useTranslation();
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -987,6 +998,8 @@ function StoreDetails() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [size, setSelectedSize] = useState<string | null>(null);
+  
+  const isArabic = i18n.language === 'ar';
 
   // Loading state
   if (store === undefined || products === undefined) {
@@ -994,7 +1007,7 @@ function StoreDetails() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">جاري تحميل المتجر...</p>
+          <p className="text-gray-600 font-medium">{t('customer.loadingStore')}</p>
         </div>
       </div>
     );
@@ -1035,7 +1048,7 @@ function StoreDetails() {
       }
     );
 
-    toast.success(`تمت إضافة ${product.nameAr} إلى السلة`);
+    toast.success(`${t('customer.addedToCart')} ${isArabic ? product.nameAr : product.name}`);
     setSelectedProduct(null);
     setSelectedSize(null);
   };
@@ -1066,7 +1079,7 @@ function StoreDetails() {
           <div className="relative h-72 bg-gradient-to-br from-orange-100 to-red-100 overflow-hidden">
             <StoreImage
               imageIdOrUrl={store.imageUrl}
-              alt={store.nameAr}
+              alt={isArabic ? store.nameAr : store.name}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
@@ -1080,36 +1093,36 @@ function StoreDetails() {
 
           <div className="max-w-7xl mx-auto px-4 -mt-12 relative z-10">
             <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">{store.nameAr}</h1>
-              <p className="text-gray-600 text-lg mb-6">{store.descriptionAr}</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">{isArabic ? store.nameAr : store.name}</h1>
+              <p className="text-gray-600 text-lg mb-6">{isArabic ? store.descriptionAr : store.description}</p>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-yellow-50 px-4 py-3 rounded-lg flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
                   <div>
-                    <div className="text-xs text-gray-600">التقييم</div>
+                    <div className="text-xs text-gray-600">{t('customer.rating')}</div>
                     <div className="font-bold text-yellow-700">{(store.rating ?? 0).toFixed(1)}</div>
                   </div>
                 </div>
                 <div className="bg-blue-50 px-4 py-3 rounded-lg flex items-center gap-2">
                   <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
                   <div>
-                    <div className="text-xs text-gray-600">الوقت</div>
-                    <div className="font-bold text-blue-700">{store.estimatedDeliveryTime} دق</div>
+                    <div className="text-xs text-gray-600">{t('customer.time')}</div>
+                    <div className="font-bold text-blue-700">{store.estimatedDeliveryTime} {t('common.mins')}</div>
                   </div>
                 </div>
                 <div className="bg-orange-50 px-4 py-3 rounded-lg flex items-center gap-2">
                   <Truck className="w-5 h-5 text-orange-600 flex-shrink-0" />
                   <div>
-                    <div className="text-xs text-gray-600">التوصيل</div>
-                    <div className="font-bold text-orange-700">{(store.deliveryFee ?? 0).toFixed(2)} EGP</div>
+                    <div className="text-xs text-gray-600">{t('customer.delivery')}</div>
+                    <div className="font-bold text-orange-700">{(store.deliveryFee ?? 0).toFixed(2)} {t('common.currency')}</div>
                   </div>
                 </div>
                 <div className="bg-green-50 px-4 py-3 rounded-lg flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5 text-green-600 flex-shrink-0" />
                   <div>
-                    <div className="text-xs text-gray-600">الحد الأدنى</div>
-                    <div className="font-bold text-green-700">{(store.minOrderAmount ?? 0).toFixed(2)} EGP</div>
+                    <div className="text-xs text-gray-600">{t('customer.minOrder')}</div>
+                    <div className="font-bold text-green-700">{(store.minOrderAmount ?? 0).toFixed(2)} {t('common.currency')}</div>
                   </div>
                 </div>
               </div>
@@ -1117,7 +1130,7 @@ function StoreDetails() {
               <div className="flex items-start gap-2 text-sm text-gray-600 pt-4 border-t border-gray-200">
                 <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-gray-900 font-medium">{store.location.addressAr}</p>
+                  <p className="text-gray-900 font-medium">{isArabic ? store.location.addressAr : store.location.address}</p>
                   <p className="text-xs text-blue-600 mt-1">
                     📍 {store.location.latitude.toFixed(4)}, {store.location.longitude.toFixed(4)}
                   </p>
@@ -1131,7 +1144,7 @@ function StoreDetails() {
                   className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 transform active:scale-95"
                 >
                   <Star className="w-5 h-5" />
-                  عرض التقييمات والمراجعات
+                  {t('customer.viewRatingsReviews')}
                 </button>
               </div>
             </div>
@@ -1149,7 +1162,7 @@ function StoreDetails() {
                       : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                   }`}
                 >
-                  الكل
+                  {t('customer.all')}
                 </button>
                 {categories.map((category) => (
                   <button
@@ -1258,12 +1271,12 @@ function StoreDetails() {
                             onClick={() => setSelectedProduct(product)}
                           >
                             <div className="flex items-start justify-between gap-2 mb-2">
-                              <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm">{product.nameAr}</h4>
+                              <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm">{isArabic ? product.nameAr : product.name}</h4>
                               {product.quantity !== undefined && product.quantity > 0 && (
-                                <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">متوفر</span>
+                                <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">{t('customer.available')}</span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-600 line-clamp-1 mb-4 flex-1">{product.descriptionAr}</p>
+                            <p className="text-xs text-gray-600 line-clamp-1 mb-4 flex-1">{isArabic ? product.descriptionAr : product.description}</p>
                             
                             {/* Price Section */}
                             <div className="space-y-2 pt-3 border-t border-gray-100">
@@ -1349,6 +1362,8 @@ function CartItemWithLivePrice({
   updateQuantity: (productId: Id<"products">, quantity: number) => void;
   removeFromCart: (productId: Id<"products">) => void;
 }) {
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   // جلب بيانات المنتج الحالية من DB للسعر المحدث
   const storedProduct = useQuery(api.products.getProductWithImage, { 
     productId: item.productId 
@@ -1367,7 +1382,7 @@ function CartItemWithLivePrice({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
-            <h4 className="font-bold text-gray-900 mb-1">{item.nameAr}</h4>
+            <h4 className="font-bold text-gray-900 mb-1">{isArabic ? item.nameAr : item.name}</h4>
             <div className="flex flex-wrap gap-1 mb-2">
               {item.color && (
                 <span className="text-xs font-medium bg-purple-100 text-purple-700 px-2 py-1 rounded">
@@ -1381,12 +1396,12 @@ function CartItemWithLivePrice({
               )}
               {storedProduct?.sizes && storedProduct.sizes.length > 0 && (
                 <span className="text-xs text-gray-500">
-                  مقاسات: {storedProduct.sizes.join(', ')}
+                  {t('customer.sizes')}: {storedProduct.sizes.join(', ')}
                 </span>
               )}
               {storedProduct?.colors && storedProduct.colors.length > 0 && (
                 <span className="text-xs text-gray-500">
-                  ألوان: {storedProduct.colors.join(', ')}
+                  {t('customer.colors')}: {storedProduct.colors.join(', ')}
                 </span>
               )}
             </div>
@@ -1395,11 +1410,11 @@ function CartItemWithLivePrice({
             <div className="space-y-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-orange-600">
-                  {(currentPrice ?? 0).toFixed(2)} EGP
+                  {(currentPrice ?? 0).toFixed(2)} {t('common.currency')}
                 </span>
                 {storedProduct?.originalPrice && storedProduct.originalPrice > (currentPrice ?? 0) && (
                   <span className="text-sm text-gray-400 line-through">
-                    {(storedProduct.originalPrice ?? 0).toFixed(2)} EGP
+                    {(storedProduct.originalPrice ?? 0).toFixed(2)} {t('common.currency')}
                   </span>
                 )}
                 {storedProduct?.originalPrice && storedProduct.originalPrice > (currentPrice ?? 0) && (
@@ -1411,13 +1426,13 @@ function CartItemWithLivePrice({
               
               {storedProduct?.category && (
                 <div className="text-xs text-gray-500">
-                  الفئة: {storedProduct.category}
+                  {t('customer.category')}: {storedProduct.category}
                 </div>
               )}
               
-              {storedProduct?.descriptionAr && (
+              {isArabic ? storedProduct?.descriptionAr : storedProduct?.description && (
                 <div className="text-xs text-gray-600 line-clamp-2">
-                  {storedProduct.descriptionAr}
+                  {isArabic ? storedProduct.descriptionAr : storedProduct.description}
                 </div>
               )}
               
@@ -1426,12 +1441,12 @@ function CartItemWithLivePrice({
                 {storedProduct?.quantity !== undefined && storedProduct.quantity > 0 ? (
                   <div className="flex items-center gap-1 text-green-600">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>متوفر ({storedProduct.quantity} قطعة)</span>
+                    <span>{t('customer.available')} ({storedProduct.quantity} {t('customer.pieces')})</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-red-600">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>غير متوفر</span>
+                    <span>{t('customer.notAvailable')}</span>
                   </div>
                 )}
               </div>
@@ -1439,7 +1454,7 @@ function CartItemWithLivePrice({
             
             {isPriceChanged && (
               <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded inline-block mt-2 font-semibold">
-                ⚠️ السعر تغير: {(item.price ?? 0).toFixed(2)} → {(currentPrice ?? 0).toFixed(2)} EGP
+                ⚠️ {t('customer.priceChanged')}: {(item.price ?? 0).toFixed(2)} → {(currentPrice ?? 0).toFixed(2)} {t('common.currency')}
               </div>
             )}
           </div>

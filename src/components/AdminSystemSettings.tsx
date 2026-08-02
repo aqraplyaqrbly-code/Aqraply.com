@@ -26,6 +26,7 @@ import { Loader2, Wallet } from "lucide-react";
 import { ALLOWED_SETTINGS_FIELDS } from "../lib/allowedSettingsFields";
 import { useSystemSettings } from "../contexts/SystemSettingsContext";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 interface SystemSettings {
   _id?: string;
@@ -87,6 +88,7 @@ interface SystemSettings {
 }
 
 export default function SystemSettings() {
+  const { t } = useTranslation();
   const { refreshSettings } = useSystemSettings();
   const { sessionToken, user, role } = useAuth();
   const [settings, setSettings] = useState<SystemSettings>({
@@ -188,7 +190,7 @@ export default function SystemSettings() {
 
     // Check if user is authenticated
     if (!sessionToken) {
-      toast.error("يجب تسجيل الدخول مرة أخرى");
+      toast.error(t('errors.mustLoginAgain'));
       return;
     }
 
@@ -221,16 +223,16 @@ export default function SystemSettings() {
       // تحديث الإعدادات فورًا في جميع أنحاء التطبيق
       refreshSettings();
       
-      toast.success("تم حفظ الإعدادات بنجاح");
+      toast.success(t('errors.settingsSaved'));
       
       // Show success feedback
       setTimeout(() => {
-        toast("تم تطبيق الإعدادات على الموقع بنجاح");
+        toast(t('errors.settingsApplied'));
       }, 1000);
       
     } catch (error) {
       console.error('Save settings error:', error);
-      toast.error(error instanceof Error ? error.message : "فشل حفظ الإعدادات");
+      toast.error(error instanceof Error ? error.message : t('errors.failedToSaveSettings'));
     } finally {
       setIsLoading(false);
     }
@@ -262,7 +264,7 @@ export default function SystemSettings() {
   };
 
   const handleResetSettings = async () => {
-    if (!confirm("هل أنت متأكد من إعادة تعيين جميع الإعدادات إلى القيم الافتراضية؟")) return;
+    if (!confirm(t('errors.confirmResetSettings'))) return;
     
     setIsLoading(true);
     try {
@@ -272,7 +274,7 @@ export default function SystemSettings() {
       setHasUnsavedChanges(false);
       setLastSaved(new Date());
       
-      toast.success("تم إعادة تعيين الإعدادات بنجاح");
+      toast.success(t('errors.settingsReset'));
       
       // Reload settings after reset
       setTimeout(() => {
@@ -281,27 +283,27 @@ export default function SystemSettings() {
       
     } catch (error) {
       console.error('Reset settings error:', error);
-      toast.error("فشل إعادة تعيين الإعدادات");
+      toast.error(t('errors.failedToResetSettings'));
     } finally {
       setIsLoading(false);
     }
   };
 
   const tabs = [
-    { id: "general", label: "عام", icon: <Globe className="w-4 h-4" /> },
-    { id: "notifications", label: "الإشعارات", icon: <Bell className="w-4 h-4" /> },
-    { id: "security", label: "الأمان", icon: <Shield className="w-4 h-4" /> },
-    { id: "payments", label: "المدفوعات", icon: <DollarSign className="w-4 h-4" /> },
-    { id: "orders", label: "الطلبات", icon: <Package className="w-4 h-4" /> },
-    { id: "users", label: "المستخدمون", icon: <Users className="w-4 h-4" /> },
-    { id: "social", label: "التواصل الاجتماعي", icon: <Store className="w-4 h-4" /> },
+    { id: "general", label: t('errors.general'), icon: <Globe className="w-4 h-4" /> },
+    { id: "notifications", label: t('errors.notificationsTab'), icon: <Bell className="w-4 h-4" /> },
+    { id: "security", label: t('errors.securityTab'), icon: <Shield className="w-4 h-4" /> },
+    { id: "payments", label: t('errors.paymentsTab'), icon: <DollarSign className="w-4 h-4" /> },
+    { id: "orders", label: t('errors.ordersTab'), icon: <Package className="w-4 h-4" /> },
+    { id: "users", label: t('errors.usersTab'), icon: <Users className="w-4 h-4" /> },
+    { id: "social", label: t('errors.socialTab'), icon: <Store className="w-4 h-4" /> },
   ];
 
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">إعدادات النظام</h1>
-        <p className="text-gray-500 mt-1">إدارة إعدادات وتكوينات النظام</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('errors.systemSettings')}</h1>
+        <p className="text-gray-500 mt-1">{t('errors.systemSettingsDesc')}</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
@@ -331,7 +333,7 @@ export default function SystemSettings() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">اسم الموقع (إنجليزي)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.siteNameEn')}</label>
                   <input
                     type="text"
                     value={settings.siteName}
@@ -340,7 +342,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">اسم الموقع (عربي)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.siteNameAr')}</label>
                   <input
                     type="text"
                     value={settings.siteNameAr}
@@ -349,7 +351,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">وصف الموقع (إنجليزي)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.siteDescEn')}</label>
                   <textarea
                     value={settings.siteDescription}
                     onChange={(e) => handleInputChange("siteDescription", e.target.value)}
@@ -357,7 +359,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">وصف الموقع (عربي)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.siteDescAr')}</label>
                   <textarea
                     value={settings.siteDescriptionAr}
                     onChange={(e) => handleInputChange("siteDescriptionAr", e.target.value)}
@@ -365,7 +367,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني للتواصل</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.contactEmail')}</label>
                   <input
                     type="email"
                     value={settings.contactEmail}
@@ -374,7 +376,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">هاتف التواصل</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.contactPhone')}</label>
                   <input
                     type="tel"
                     value={settings.contactPhone}
@@ -383,7 +385,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">العنوان (إنجليزي)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.addressEn')}</label>
                   <input
                     type="text"
                     value={settings.address}
@@ -392,7 +394,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">العنوان (عربي)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.addressAr')}</label>
                   <input
                     type="text"
                     value={settings.addressAr}
@@ -401,7 +403,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">العملة</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.currency')}</label>
                   <select
                     value={settings.currency}
                     onChange={(e) => handleInputChange("currency", e.target.value)}
@@ -413,7 +415,7 @@ export default function SystemSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رمز العملة</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.currencySymbol')}</label>
                   <input
                     type="text"
                     value={settings.currencySymbol}
@@ -422,7 +424,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">اللغة الافتراضية</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.defaultLanguage')}</label>
                   <select
                     value={settings.defaultLanguage}
                     onChange={(e) => handleInputChange("defaultLanguage", e.target.value)}
@@ -438,14 +440,14 @@ export default function SystemSettings() {
 
           {activeTab === "notifications" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">إعدادات الإشعارات</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.notificationSettings')}</h3>
               <div className="space-y-4">
                 <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">الإشعارات البريدية</p>
-                      <p className="text-sm text-gray-500">إرسال الإشعارات عبر البريد الإلكتروني</p>
+                      <p className="font-medium text-gray-900">{t('errors.emailNotifications')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.emailNotificationsDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -459,8 +461,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Bell className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">الإشعارات Push</p>
-                      <p className="text-sm text-gray-500">إرسال الإشعارات الفورية للتطبيق</p>
+                      <p className="font-medium text-gray-900">{t('errors.pushNotifications')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.pushNotificationsDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -474,8 +476,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">الإشعارات SMS</p>
-                      <p className="text-sm text-gray-500">إرسال الإشعارات عبر الرسائل النصية</p>
+                      <p className="font-medium text-gray-900">{t('errors.smsNotifications')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.smsNotificationsDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -491,14 +493,14 @@ export default function SystemSettings() {
 
           {activeTab === "security" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">إعدادات الأمان</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.securitySettings')}</h3>
               <div className="space-y-4">
                 <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-yellow-500" />
                     <div>
-                      <p className="font-medium text-gray-900">وضع الصيانة</p>
-                      <p className="text-sm text-gray-500">إيقاف الموقع مؤقتاً للصيانة</p>
+                      <p className="font-medium text-gray-900">{t('errors.maintenanceMode')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.maintenanceModeDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -512,8 +514,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Users className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">السماح بالتسجيل</p>
-                      <p className="text-sm text-gray-500">السماح للمستخدمين الجدد بالتسجيل</p>
+                      <p className="font-medium text-gray-900">{t('errors.allowRegistration')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.allowRegistrationDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -527,8 +529,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">التحقق من البريد الإلكتروني</p>
-                      <p className="text-sm text-gray-500">إجبار المستخدمين على التحقق من بريدهم</p>
+                      <p className="font-medium text-gray-900">{t('errors.emailVerification')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.emailVerificationDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -542,8 +544,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">التحقق من الهاتف</p>
-                      <p className="text-sm text-gray-500">إجبار المستخدمين على التحقق من هواتفهم</p>
+                      <p className="font-medium text-gray-900">{t('errors.phoneVerification')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.phoneVerificationDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -559,10 +561,10 @@ export default function SystemSettings() {
 
           {activeTab === "payments" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">إعدادات المدفوعات</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.paymentSettings')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">الحد الأدنى للطلب</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.minOrderAmount')}</label>
                   <input
                     type="number"
                     value={settings.minOrderAmount}
@@ -571,7 +573,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">الحد الأقصى للطلب</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.maxOrderAmount')}</label>
                   <input
                     type="number"
                     value={settings.maxOrderAmount}
@@ -580,7 +582,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رسوم التوصيل</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.deliveryFee')}</label>
                   <input
                     type="number"
                     value={settings.deliveryFee}
@@ -589,7 +591,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">حد التوصيل المجاني</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.freeDeliveryThreshold')}</label>
                   <input
                     type="number"
                     value={settings.freeDeliveryThreshold}
@@ -598,7 +600,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">نسبة الضريبة (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.taxRate')}</label>
                   <input
                     type="number"
                     value={settings.taxRate}
@@ -607,7 +609,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">نسبة العمولة (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.commissionRate')}</label>
                   <input
                     type="number"
                     value={settings.commissionRate}
@@ -616,7 +618,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">نسبة عمولة الكابتن (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.captainCommissionRate')}</label>
                   <input
                     type="number"
                     value={settings.captainCommissionRate}
@@ -628,10 +630,10 @@ export default function SystemSettings() {
 
               {/* Wallet Payment Settings */}
               <div className="border-t pt-6">
-                <h4 className="text-md font-semibold text-gray-900 mb-4">إعدادات المحفظة الإلكترونية</h4>
+                <h4 className="text-md font-semibold text-gray-900 mb-4">{t('errors.walletSettings')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">رقم المحفظة الإلكترونية</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.walletPhone')}</label>
                     <input
                       type="tel"
                       value={settings.walletPhone || ""}
@@ -639,14 +641,14 @@ export default function SystemSettings() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-400"
                       placeholder="01xxxxxxxxx"
                     />
-                    <p className="text-xs text-gray-500 mt-1">رقم المحفظة لاستقبال تحويلات العملاء</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('errors.walletPhoneDesc')}</p>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Wallet className="w-5 h-5 text-gray-600" />
                       <div>
-                        <p className="font-medium text-gray-900">تفعيل الدفع بالمحفظة</p>
-                        <p className="text-sm text-gray-500">السماح للعملاء بالدفع عبر المحفظة الإلكترونية</p>
+                        <p className="font-medium text-gray-900">{t('errors.enableWalletPayment')}</p>
+                        <p className="text-sm text-gray-500">{t('errors.enableWalletPaymentDesc')}</p>
                       </div>
                     </div>
                     <input
@@ -663,14 +665,14 @@ export default function SystemSettings() {
 
           {activeTab === "orders" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">إعدادات الطلبات</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.orderSettings')}</h3>
               <div className="space-y-4">
                 <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                   <div className="flex items-center gap-3">
                     <Store className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">الموافقة على المتاجر مطلوبة</p>
-                      <p className="text-sm text-gray-500">يتطلب موافقة المدير لتفعيل المتاجر الجديدة</p>
+                      <p className="font-medium text-gray-900">{t('errors.storeApprovalRequired')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.storeApprovalRequiredDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -684,8 +686,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Truck className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">الموافقة على الكباتن مطلوبة</p>
-                      <p className="text-sm text-gray-500">يتطلب موافقة المدير لتفعيل الكباتن الجدد</p>
+                      <p className="font-medium text-gray-900">{t('errors.captainApprovalRequired')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.captainApprovalRequiredDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -699,8 +701,8 @@ export default function SystemSettings() {
                   <div className="flex items-center gap-3">
                     <Package className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-medium text-gray-900">قبول الطلبات تلقائياً</p>
-                      <p className="text-sm text-gray-500">قبول الطلبات تلقائياً بدون موافقة يدوية</p>
+                      <p className="font-medium text-gray-900">{t('errors.autoAcceptOrders')}</p>
+                      <p className="text-sm text-gray-500">{t('errors.autoAcceptOrdersDesc')}</p>
                     </div>
                   </div>
                   <input
@@ -713,7 +715,7 @@ export default function SystemSettings() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">مهلة انتهاء الطلب (دقائق)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.orderTimeout')}</label>
                   <input
                     type="number"
                     value={settings.orderTimeoutMinutes}
@@ -722,7 +724,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">الحد الأقصى للمنتجات للمتجر</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.maxProductsPerStore')}</label>
                   <input
                     type="number"
                     value={settings.maxProductsPerStore}
@@ -731,7 +733,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">الحد الأقصى للمتاجر للتاجر</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.maxStoresPerMerchant')}</label>
                   <input
                     type="number"
                     value={settings.maxStoresPerMerchant}
@@ -745,10 +747,10 @@ export default function SystemSettings() {
 
           {activeTab === "users" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">إعدادات المستخدمين</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.userSettings')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">بريد الدعم الفني</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.supportEmail')}</label>
                   <input
                     type="email"
                     value={settings.supportEmail}
@@ -757,7 +759,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">هاتف الدعم الفني</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.supportPhone')}</label>
                   <input
                     type="tel"
                     value={settings.supportPhone}
@@ -771,10 +773,10 @@ export default function SystemSettings() {
 
           {activeTab === "social" && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">روابط التواصل الاجتماعي</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.socialLinks')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رابط سياسة الخصوصية</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.privacyPolicyUrl')}</label>
                   <input
                     type="url"
                     value={settings.privacyPolicyUrl}
@@ -783,7 +785,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رابط شروط الخدمة</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.termsOfServiceUrl')}</label>
                   <input
                     type="url"
                     value={settings.termsOfServiceUrl}
@@ -792,7 +794,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رابط Facebook</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.facebookLink')}</label>
                   <input
                     type="url"
                     value={settings.socialLinks?.facebook || ""}
@@ -801,7 +803,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رابط Twitter</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.twitterLink')}</label>
                   <input
                     type="url"
                     value={settings.socialLinks?.twitter || ""}
@@ -810,7 +812,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رابط Instagram</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.instagramLink')}</label>
                   <input
                     type="url"
                     value={settings.socialLinks?.instagram || ""}
@@ -819,7 +821,7 @@ export default function SystemSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">رابط LinkedIn</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.linkedinLink')}</label>
                   <input
                     type="url"
                     value={settings.socialLinks?.linkedin || ""}
@@ -840,21 +842,21 @@ export default function SystemSettings() {
                 className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <RefreshCw className="w-5 h-5" />
-                إعادة تعيين
+                {t('errors.reset')}
               </button>
               
               {/* Status indicators */}
               {hasUnsavedChanges && (
                 <div className="flex items-center gap-2 text-orange-600">
                   <div className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></div>
-                  <span className="text-sm">توجد تغييرات غير محفوظة</span>
+                  <span className="text-sm">{t('errors.unsavedChanges')}</span>
                 </div>
               )}
               
               {lastSaved && !hasUnsavedChanges && (
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm">تم الحفظ: {lastSaved.toLocaleTimeString('ar-EG')}</span>
+                  <span className="text-sm">{t('errors.savedAt')}: {lastSaved.toLocaleTimeString('ar-EG')}</span>
                 </div>
               )}
             </div>
@@ -871,12 +873,12 @@ export default function SystemSettings() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري الحفظ...
+                  {t('errors.saving')}
                 </>
               ) : (
                 <>
                   <Save className="w-5 h-5" />
-                  حفظ الإعدادات
+                  {t('errors.saveSettings')}
                 </>
               )}
             </button>

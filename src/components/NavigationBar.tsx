@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContextNew';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   LogOut,
@@ -13,18 +14,20 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import NotificationBell from './NotificationBell';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export function NavigationBar() {
   const { user, role, isAuthenticated, logout } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     try {
       await logout();
-      toast.success('تم تسجيل الخروج بنجاح');
+      toast.success(t('auth.logoutSuccess'));
       navigate('/');
     } catch (error) {
-      toast.error('حدث خطأ أثناء تسجيل الخروج');
+      toast.error(t('errors.somethingWentWrong'));
     }
   };
 
@@ -40,11 +43,11 @@ export function NavigationBar() {
 
   const getRoleName = (userRole: string) => {
     switch (userRole) {
-      case 'admin': return 'مدير';
-      case 'merchant': return 'تاجر';
-      case 'captain': return 'كابتن';
-      case 'customer': return 'عميل';
-      default: return 'مستخدم';
+      case 'admin': return t('admin.admin');
+      case 'merchant': return t('merchant.merchant');
+      case 'captain': return t('captain.captain');
+      case 'customer': return t('customer.customer');
+      default: return t('common.user');
     }
   };
 
@@ -73,12 +76,15 @@ export function NavigationBar() {
               className="flex items-center space-x-2 text-gray-900 hover:text-orange-600 transition-colors"
             >
               <Home className="w-6 h-6" />
-              <span className="font-bold text-lg">أقربلي</span>
+              <span className="font-bold text-lg">{t('common.siteName')}</span>
             </Link>
           </div>
 
           {/* معلومات المستخدم والإعدادات */}
           <div className="flex items-center space-x-4">
+            {/* تبديل اللغة */}
+            <LanguageSwitcher />
+
             {/* الإشعارات */}
             <NotificationBell />
 
@@ -89,7 +95,7 @@ export function NavigationBar() {
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-gray-900">
-                  {user.profile?.fullName || 'مستخدم'}
+                  {user.profile?.fullName || t('common.user')}
                 </p>
                 <p className="text-xs text-gray-500">
                   {getRoleName(role || '')}
@@ -104,7 +110,7 @@ export function NavigationBar() {
                   to="/customer"
                   className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
-                  المتاجر
+                  {t('customer.browseStores')}
                 </Link>
               )}
 
@@ -113,7 +119,7 @@ export function NavigationBar() {
                   to="/merchant"
                   className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
-                  لوحة التحكم
+                  {t('common.dashboard')}
                 </Link>
               )}
 
@@ -122,7 +128,7 @@ export function NavigationBar() {
                   to="/captain"
                   className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
-                  الطلبات
+                  {t('captain.myOrders')}
                 </Link>
               )}
 
@@ -131,7 +137,7 @@ export function NavigationBar() {
                   to="/admin"
                   className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
-                  لوحة الإدارة
+                  {t('admin.dashboard')}
                 </Link>
               )}
             </div>
@@ -147,7 +153,7 @@ export function NavigationBar() {
                 <div className="py-2">
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
-                      {user.profile?.fullName || 'مستخدم'}
+                      {user.profile?.fullName || t('common.user')}
                     </p>
                     <p className="text-xs text-gray-500">
                       {user.email}
@@ -159,7 +165,7 @@ export function NavigationBar() {
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>تسجيل الخروج</span>
+                    <span>{t('common.logout')}</span>
                   </button>
                 </div>
               </div>

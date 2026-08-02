@@ -8,6 +8,7 @@ import { StatusBadge } from "./StatisticsCards";
 import { useOrders } from "../../hooks/useOrders";
 import { useImageResolution } from "../../utils/imageUtils";
 import { Order } from "../../types/admin";
+import { useTranslation } from "react-i18next";
 
 function OrderRow({
   order,
@@ -18,6 +19,7 @@ function OrderRow({
   onCancelOrder,
   onSelectInvoice,
   resolveImageSrc,
+  t,
 }: {
   order: any;
   captains: any[] | null | undefined;
@@ -27,6 +29,7 @@ function OrderRow({
   onCancelOrder: (orderId: string) => void;
   onSelectInvoice: (order: any) => void;
   resolveImageSrc?: (value?: unknown) => string;
+  t: any;
 }) {
   const captainOptions = useMemo(
     () => captains?.filter((c) => c.isActive && c.isOnline) ?? [],
@@ -78,7 +81,7 @@ function OrderRow({
             >
               <img
                 src={resolveImageSrc ? resolveImageSrc(item.imageUrl) : item.imageUrl}
-                alt={item.nameAr || item.name || "منتج"}
+                alt={item.nameAr || item.name || t('admin.ordersTable.product')}
                 loading="lazy"
                 className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover bg-gray-100 flex-shrink-0"
                 onError={(e) => {
@@ -89,7 +92,7 @@ function OrderRow({
               />
               <div className="flex-1">
                 <span className="font-medium text-[10px] sm:text-xs">
-                  {item.nameAr || item.name || "منتج"} × {item.quantity}
+                  {item.nameAr || item.name || t('admin.ordersTable.product')} × {item.quantity}
                 </span>
                 {(item.color || item.selectedSize) && (
                   <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
@@ -102,7 +105,7 @@ function OrderRow({
             </div>
           ))}
           {order.items.length > 2 && (
-            <div className="text-[10px] sm:text-xs text-gray-400">+{order.items.length - 2} أخرى</div>
+            <div className="text-[10px] sm:text-xs text-gray-400">+{order.items.length - 2} {t('admin.ordersTable.other')}</div>
           )}
         </div>
       </td>
@@ -127,7 +130,7 @@ function OrderRow({
       <td className="px-3 sm:px-4 py-2 sm:py-3">
         {order.captainId ? (
           <span className="text-[10px] sm:text-xs text-green-600 font-medium flex items-center gap-1">
-            <UserCheck className="w-3 h-3" /> معين
+            <UserCheck className="w-3 h-3" /> {t('admin.ordersTable.assigned')}
           </span>
         ) : (
           <div className="relative">
@@ -139,7 +142,7 @@ function OrderRow({
                 }}
                 defaultValue=""
               >
-                <option value="">اختر كابتن</option>
+                <option value="">{t('admin.ordersTable.selectCaptain')}</option>
                 {captainOptions.map((c) => (
                   <option key={c._id} value={c.userId}>
                     {c.fullName}
@@ -151,7 +154,7 @@ function OrderRow({
                 onClick={() => onStartAssign(order._id)}
                 className="text-[10px] sm:text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-lg hover:bg-purple-200 transition-colors"
               >
-                تعيين كابتن
+                {t('admin.ordersTable.assignCaptain')}
               </button>
             )}
           </div>
@@ -166,7 +169,7 @@ function OrderRow({
             <button
               onClick={() => window.open(order.paymentReceiptImage, '_blank')}
               className="text-[10px] sm:text-xs bg-green-100 text-green-700 hover:bg-green-200 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1"
-              title="عرض إيصال الدفع"
+              title={t('admin.ordersTable.viewReceipt')}
             >
               <Eye className="w-3 h-3" />
             </button>
@@ -174,7 +177,7 @@ function OrderRow({
           <button
             onClick={() => onSelectInvoice(order)}
             className="text-[10px] sm:text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1"
-            title="طباعة الفاتورة"
+            title={t('admin.ordersTable.printInvoice')}
           >
             <Printer className="w-3 h-3" />
           </button>
@@ -183,7 +186,7 @@ function OrderRow({
               onClick={() => onCancelOrder(order._id)}
               className="text-[10px] sm:text-xs bg-red-100 text-red-700 hover:bg-red-200 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-semibold transition-colors"
             >
-              إلغاء
+              {t('admin.ordersTable.cancel')}
             </button>
           )}
         </div>
@@ -273,6 +276,7 @@ function areOrderRowPropsEqual(prevProps: any, nextProps: any) {
 const MemoizedOrderRow = React.memo(OrderRow, areOrderRowPropsEqual);
 
 export function OrdersTable() {
+  const { t } = useTranslation();
   const {
     orders,
     filteredOrders,
@@ -293,23 +297,23 @@ export function OrdersTable() {
   const resolveImageSrc = useImageResolution(filteredOrders || []);
 
   const statuses = [
-    { key: null, label: "الكل" },
-    { key: "pending", label: "قيد الانتظار" },
-    { key: "confirmed", label: "مؤكد" },
-    { key: "assigned", label: "تم التعيين" },
-    { key: "preparing", label: "قيد التحضير" },
-    { key: "ready", label: "جاهز" },
-    { key: "delivering", label: "قيد التوصيل" },
-    { key: "delivered", label: "تم التوصيل" },
-    { key: "cancelled", label: "ملغي" },
+    { key: null, label: t('admin.ordersTable.statuses.all') },
+    { key: "pending", label: t('admin.ordersTable.statuses.pending') },
+    { key: "confirmed", label: t('admin.ordersTable.statuses.confirmed') },
+    { key: "assigned", label: t('admin.ordersTable.statuses.assigned') },
+    { key: "preparing", label: t('admin.ordersTable.statuses.preparing') },
+    { key: "ready", label: t('admin.ordersTable.statuses.ready') },
+    { key: "delivering", label: t('admin.ordersTable.statuses.delivering') },
+    { key: "delivered", label: t('admin.ordersTable.statuses.delivered') },
+    { key: "cancelled", label: t('admin.ordersTable.statuses.cancelled') },
   ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">إدارة الطلبات</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('admin.ordersTable.title')}</h1>
         <p className="text-gray-500 mt-1 text-sm sm:text-base">
-          {orders ? `${orders.length} طلب إجمالاً` : "جاري التحميل..."}
+          {orders ? `${orders.length} ${t('admin.ordersTable.totalOrders')}` : t('admin.ordersTable.loading')}
         </p>
       </div>
 
@@ -320,7 +324,7 @@ export function OrdersTable() {
             <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="ابحث برقم الطلب أو اسم العميل..."
+              placeholder={t('admin.ordersTable.searchPlaceholder')}
               value={searchTerm}
               onChange={handleSearchTermChange}
               className="w-full pr-10 pl-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-purple-400"
@@ -350,16 +354,16 @@ export function OrdersTable() {
           <table className="table-fixed w-full min-w-[900px]">
             <thead className="bg-gradient-to-b from-gray-50 to-gray-100 border-b border-gray-200">
               <tr>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">رقم الطلب</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-40">العميل</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-56">بيانات المتجر</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-80">المنتجات</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">كود المنتج</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-24">المبلغ</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">الحالة</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">الكابتن</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">التاريخ</th>
-                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">إجراءات</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">{t('admin.ordersTable.orderNumber')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-40">{t('admin.ordersTable.customer')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-56">{t('admin.ordersTable.storeData')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-80">{t('admin.ordersTable.products')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">{t('admin.ordersTable.productCode')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-24">{t('admin.ordersTable.amount')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">{t('admin.ordersTable.status')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">{t('admin.ordersTable.captain')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">{t('admin.ordersTable.date')}</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-start text-[10px] sm:text-xs font-semibold text-gray-600 uppercase w-28">{t('admin.ordersTable.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -367,14 +371,14 @@ export function OrdersTable() {
                 <tr>
                   <td colSpan={10} className="px-4 sm:px-6 py-8 sm:py-12 text-center">
                     <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 animate-spin mx-auto mb-2" />
-                    <p className="text-gray-400 text-xs sm:text-sm">جاري التحميل...</p>
+                    <p className="text-gray-400 text-xs sm:text-sm">{t('admin.ordersTable.loading')}</p>
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4 sm:px-6 py-8 sm:py-12 text-center">
                     <Package className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-400 font-medium text-xs sm:text-sm">لا توجد طلبات</p>
+                    <p className="text-gray-400 font-medium text-xs sm:text-sm">{t('admin.ordersTable.noOrders')}</p>
                   </td>
                 </tr>
               ) : (
@@ -389,6 +393,7 @@ export function OrdersTable() {
                     onCancelOrder={handleCancelOrder}
                     onSelectInvoice={handleSelectInvoice}
                     resolveImageSrc={resolveImageSrc}
+                    t={t}
                   />
                 ))
               )}

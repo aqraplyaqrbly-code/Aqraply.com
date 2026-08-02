@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContextNew';
 import { toast } from 'sonner';
 import { validateEmail, validatePassword } from '../utils/validation';
+import { useTranslation } from 'react-i18next';
 
 export default function UnifiedLogin() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, user, isAuthenticated } = useAuth();
@@ -80,14 +82,14 @@ export default function UnifiedLogin() {
       // Sign in using custom auth
       await signIn(email.trim().toLowerCase(), password);
 
-      toast.success('تم تسجيل الدخول بنجاح');
+      toast.success(t('auth.loginSuccess'));
     } catch (error: any) {
       console.error('Login error:', error);
-      const message = error.message || 'فشل تسجيل الدخول. يرجى التحقق من بياناتك';
+      const message = error.message || t('errors.loginFailed');
       if (message.includes("Invalid credentials")) {
-        toast.error('كلمة المرور غير صحيحة');
+        toast.error(t('errors.wrongPassword'));
       } else if (message.includes("Account already exists")) {
-        toast.error('الحساب موجود بالفعل. يرجى تسجيل الدخول');
+        toast.error(t('errors.accountAlreadyExists'));
       } else {
         toast.error(message);
       }

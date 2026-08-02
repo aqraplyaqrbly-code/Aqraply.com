@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Bot, MessageCircle, Send, X, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -9,6 +10,7 @@ type ChatMessage = {
 };
 
 export default function AiAssistant() {
+  const { t } = useTranslation();
   const chat = useAction(api.assistant.chat);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -16,7 +18,7 @@ export default function AiAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "أهلاً! أنا مساعد Aqraply. اسألني عن المتاجر، الطلبات، أو التسجيل في المنصة.",
+      content: t('errors.aiWelcome'),
     },
   ]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -41,10 +43,10 @@ export default function AiAssistant() {
       const { reply } = await chat({ message: text, history });
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (error) {
-      const errMsg = error instanceof Error ? error.message : "حدث خطأ";
+      const errMsg = error instanceof Error ? error.message : t('errors.errorOccurred');
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `عذراً، لم أتمكن من الرد: ${errMsg}` },
+        { role: "assistant", content: t('errors.aiError', { error: errMsg }) },
       ]);
     } finally {
       setLoading(false);
@@ -57,10 +59,10 @@ export default function AiAssistant() {
         type="button"
         onClick={() => setOpen(true)}
         className="fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-red-600 px-5 py-3 text-white shadow-lg hover:shadow-xl transition-all"
-        aria-label="فتح المساعد الذكي"
+        aria-label={t('errors.openAiAssistant')}
       >
         <MessageCircle className="h-5 w-5" />
-        <span className="font-semibold text-sm">مساعد Aqraply</span>
+        <span className="font-semibold text-sm">{t('errors.aqraplyAssistant')}</span>
       </button>
     );
   }
@@ -73,13 +75,13 @@ export default function AiAssistant() {
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-2xl">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          <span className="font-bold">مساعد Aqraply</span>
+          <span className="font-bold">{t('errors.aqraplyAssistant')}</span>
         </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="rounded-full p-1 hover:bg-white/20"
-          aria-label="إغلاق"
+          aria-label={t('errors.close')}
         >
           <X className="h-5 w-5" />
         </button>

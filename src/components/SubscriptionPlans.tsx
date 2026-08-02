@@ -4,12 +4,14 @@ import { Check, Crown, Zap, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 interface SubscriptionPlansProps {
   storeId: Id<"stores">;
 }
 
 export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const plans = useQuery(api.subscriptions.getActivePlans);
   const currentSubscription = useQuery(api.subscriptions.getStoreSubscription, isAuthenticated && sessionToken ? { sessionToken, storeId } : "skip");
@@ -23,9 +25,9 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
         planId,
         autoRenew: true,
       });
-      toast.success("تم تفعيل الاشتراك بنجاح! 🎉");
+      toast.success(t('errors.subscriptionActivated'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "حدث خطأ";
+      const message = error instanceof Error ? error.message : t('errors.errorOccurred');
       toast.error(message);
     }
   };
@@ -33,7 +35,7 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
   if (!plans) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-pulse text-orange-600">جاري التحميل...</div>
+        <div className="animate-pulse text-orange-600">{t('errors.loading')}</div>
       </div>
     );
   }
@@ -43,10 +45,10 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          اختر الباقة المناسبة لمتجرك
+          {t('errors.choosePlan')}
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          باقات مرنة تناسب جميع أحجام المتاجر مع مميزات حصرية
+          {t('errors.flexiblePlans')}
         </p>
       </div>
 
@@ -59,10 +61,10 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                اشتراكك الحالي: {currentSubscription.plan?.nameAr}
+                {t('errors.currentSubscription')} {currentSubscription.plan?.nameAr}
               </h3>
               <p className="text-gray-600">
-                ينتهي في:{" "}
+                {t('errors.expiresIn')}{" "}
                 {new Date(currentSubscription.endDate).toLocaleDateString("ar-SA")}
               </p>
             </div>
@@ -95,7 +97,7 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
                 <div className="absolute -top-4 start-1/2 -translate-x-1/2">
                   <div className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-full shadow-lg flex items-center gap-2">
                     <Crown className="w-4 h-4" />
-                    الأكثر شعبية
+                    {t('errors.mostPopular')}
                   </div>
                 </div>
               )}
@@ -118,7 +120,7 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
                     {plan.price}
                   </span>
                   <span className="text-gray-600">EGP</span>
-                  <span className="text-gray-500">/ {plan.duration} يوم</span>
+                  <span className="text-gray-500">/ {plan.duration} {t('errors.day')}</span>
                 </div>
               </div>
 
@@ -146,7 +148,7 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
                     : `bg-gradient-to-r ${color.from} ${color.to} text-white hover:shadow-lg hover:scale-105`
                 }`}
               >
-                {isCurrentPlan ? "الباقة الحالية" : "اشترك الآن"}
+                {isCurrentPlan ? t('errors.currentPlan') : t('errors.subscribeNow')}
               </button>
             </div>
           );
@@ -156,34 +158,34 @@ export default function SubscriptionPlans({ storeId }: SubscriptionPlansProps) {
       {/* Benefits Section */}
       <div className="mt-16 p-8 bg-gradient-to-br from-gray-50 to-orange-50 rounded-2xl">
         <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-          لماذا الاشتراك المدفوع؟
+          {t('errors.whyPaidSubscription')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-orange-500 rounded-xl flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">زيادة المبيعات</h4>
+            <h4 className="font-bold text-gray-900 mb-2">{t('errors.increaseSales')}</h4>
             <p className="text-gray-600 text-sm">
-              ظهور أفضل في نتائج البحث يعني المزيد من الطلبات
+              {t('errors.betterVisibility')}
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-orange-500 rounded-xl flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">عمولة أقل</h4>
+            <h4 className="font-bold text-gray-900 mb-2">{t('errors.lowerCommission')}</h4>
             <p className="text-gray-600 text-sm">
-              نسبة عمولة مخفضة تعني أرباح أكثر لك
+              {t('errors.reducedCommission')}
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-orange-500 rounded-xl flex items-center justify-center">
               <Crown className="w-6 h-6 text-white" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">مميزات حصرية</h4>
+            <h4 className="font-bold text-gray-900 mb-2">{t('errors.exclusiveFeatures')}</h4>
             <p className="text-gray-600 text-sm">
-              أدوات تسويقية وتحليلات متقدمة لنمو متجرك
+              {t('errors.marketingTools')}
             </p>
           </div>
         </div>

@@ -125,9 +125,9 @@ export default function CustomerRegister() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('errors.somethingWentWrong');
       if (message.includes("Account already exists")) {
-        toast.error("الحساب موجود بالفعل. يرجى تسجيل الدخول.");
+        toast.error(t('errors.accountAlreadyExists'));
       } else if (message.includes("Invalid credentials") || message.includes("Password")) {
-        toast.error("كلمة المرور غير صحيحة.");
+        toast.error(t('errors.wrongPassword'));
       } else {
         toast.error(message);
       }

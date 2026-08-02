@@ -86,7 +86,7 @@ export default function MerchantAuth() {
 
   const handleBusinessNameArChange = (value: string) => {
     setBusinessNameAr(value);
-    const result = validateRequired(value, 'اسم المتجر بالعربية');
+    const result = validateRequired(value, t('errors.storeNameArRequired'));
     setBusinessNameArError(result.error);
   };
 
@@ -94,7 +94,7 @@ export default function MerchantAuth() {
     const fullNameValid = validateFullName(fullName).isValid;
     const phoneValid = validatePhone(phone).isValid;
     const businessNameValid = validateBusinessName(businessName).isValid;
-    const businessNameArValid = validateRequired(businessNameAr, 'اسم المتجر بالعربية').isValid;
+    const businessNameArValid = validateRequired(businessNameAr, t('errors.storeNameArRequired')).isValid;
     return fullNameValid && phoneValid && businessNameValid && businessNameArValid;
   };
 
@@ -176,7 +176,7 @@ export default function MerchantAuth() {
       if (message.includes("Account already exists")) {
         toast.error(t('merchant.accountNotFound'));
       } else if (message.includes("Invalid credentials")) {
-        toast.error("كلمة المرور غير صحيحة");
+        toast.error(t('errors.wrongPassword'));
       } else if (error instanceof Error && (error.message.includes("Invalid password") || error.message.includes("8"))) {
         toast.error(t('merchant.passwordMin8'));
       } else {

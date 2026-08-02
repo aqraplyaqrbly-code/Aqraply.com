@@ -2,17 +2,19 @@ import React from 'react';
 import { AlertTriangle, LogOut, Mail, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContextNew';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function SuspendedUserPage() {
+  const { t } = useTranslation();
   const { logout } = useAuth();
 
   const handleSignOut = async () => {
     try {
       await logout();
-      toast.success('تم تسجيل الخروج');
+      toast.success(t('errors.logoutSuccess'));
       window.location.href = '/';
     } catch (error) {
-      toast.error('فشل تسجيل الخروج');
+      toast.error(t('errors.logoutFailed'));
     }
   };
 
@@ -27,38 +29,38 @@ export default function SuspendedUserPage() {
 
           {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-3">
-            حسابك موقوف
+            {t('errors.accountSuspended')}
           </h1>
 
           {/* Message */}
           <p className="text-gray-600 text-center mb-6">
-            تم إيقاف حسابك مؤقتاً من قبل الإدارة. لا يمكنك الوصول إلى التطبيق في الوقت الحالي.
+            {t('errors.accountSuspendedDesc')}
           </p>
 
           {/* Reasons */}
           <div className="bg-red-50 rounded-xl p-4 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-2 text-sm">أسباب الإيقاف المحتملة:</h3>
+            <h3 className="font-semibold text-gray-900 mb-2 text-sm">{t('errors.suspensionReasons')}</h3>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• انتهاك شروط الخدمة</li>
-              <li>• تقارير من المستخدمين الآخرين</li>
-              <li>• نشاط مشبوه</li>
-              <li>• طلب من فريق الدعم</li>
+              <li>• {t('errors.reasonTermsViolation')}</li>
+              <li>• {t('errors.reasonUserReports')}</li>
+              <li>• {t('errors.reasonSuspiciousActivity')}</li>
+              <li>• {t('errors.reasonSupportRequest')}</li>
             </ul>
           </div>
 
           {/* Next Steps */}
           <div className="bg-blue-50 rounded-xl p-4 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-2 text-sm">الخطوات التالية:</h3>
+            <h3 className="font-semibold text-gray-900 mb-2 text-sm">{t('errors.nextSteps')}</h3>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• تواصل مع فريق الدعم</li>
-              <li>• قدم طلب استئناف</li>
-              <li>• انتظر مراجعة الحالة</li>
+              <li>• {t('errors.stepContactSupport')}</li>
+              <li>• {t('errors.stepSubmitAppeal')}</li>
+              <li>• {t('errors.stepWaitReview')}</li>
             </ul>
           </div>
 
           {/* Contact Info */}
           <div className="border-t border-gray-200 pt-4 mb-6">
-            <p className="text-sm text-gray-500 mb-3 text-center">للتواصل مع الدعم الفني:</p>
+            <p className="text-sm text-gray-500 mb-3 text-center">{t('errors.contactTechnicalSupport')}</p>
             <div className="space-y-2">
               <a 
                 href="mailto:support@aqraply.com" 
@@ -83,7 +85,7 @@ export default function SuspendedUserPage() {
             className="w-full bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2"
           >
             <LogOut className="w-5 h-5" />
-            تسجيل الخروج
+            {t('errors.signOut')}
           </button>
 
           {/* Appeal Button */}
@@ -91,14 +93,14 @@ export default function SuspendedUserPage() {
             onClick={() => window.location.href = 'mailto:support@aqraply.com?subject=طلب استئناف إيقاف الحساب'}
             className="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all"
           >
-            طلب استئناف الحساب
+            {t('errors.requestAppeal')}
           </button>
         </div>
 
         {/* Additional Info */}
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            إذا كنت تعتقد أن هناك خطأ، يرجى التواصل معنا فوراً
+            {t('errors.ifErrorContactUs')}
           </p>
         </div>
       </div>

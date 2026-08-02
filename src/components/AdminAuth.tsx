@@ -6,8 +6,10 @@ import { LayoutDashboard, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-rea
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContextNew";
 import { validateEmail, validatePassword } from "../utils/validation";
+import { useTranslation } from "react-i18next";
 
 export default function AdminAuth() {
+  const { t } = useTranslation();
   const { signIn, sessionToken } = useAuth();
   const ensureAdminRole = useMutation(api.profiles.ensureAdminRole);
   const { user, isAuthenticated } = useAuth();
@@ -64,13 +66,13 @@ export default function AdminAuth() {
     try {
       const result = await ensureAdminRole({ sessionToken: sessionToken || undefined });
       if (result.ok) {
-        toast.success("تم إعداد ملف المدير بنجاح!");
+        toast.success(t('errors.adminProfileCreated'));
         // FIXED: Use navigate instead of window.location.reload()
         navigate("/admin", { replace: true });
       }
     } catch (error) {
       console.error("Error creating admin profile:", error);
-      toast.error("فشل إعداد ملف المدير");
+      toast.error(t('errors.adminProfileFailed'));
     } finally {
       setLoading(false);
     }

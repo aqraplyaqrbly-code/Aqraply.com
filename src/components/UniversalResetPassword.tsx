@@ -4,8 +4,10 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowRight, Store, Truck, Crown, ShoppingBag } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function UniversalResetPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
@@ -48,12 +50,12 @@ export default function UniversalResetPassword() {
     e.preventDefault();
     
     if (!email) {
-      toast.error("البريد الإلكتروني مفقود");
+      toast.error(t('errors.emailMissing'));
       return;
     }
 
     if (!otp || otp.length !== 6) {
-      toast.error("الرجاء إدخال كود التحقق المكون من 6 أرقام");
+      toast.error(t('errors.enter6DigitCode'));
       return;
     }
 
@@ -62,10 +64,10 @@ export default function UniversalResetPassword() {
       const result = await verifyResetOTP({ email, otp });
       if (result.success) {
         setIsOtpVerified(true);
-        toast.success("تم التحقق من الكود بنجاح");
+        toast.success(t('errors.codeVerified'));
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل التحقق من الكود");
+      toast.error(error instanceof Error ? error.message : t('errors.codeVerificationFailed'));
     } finally {
       setLoading(false);
     }
@@ -75,17 +77,17 @@ export default function UniversalResetPassword() {
     e.preventDefault();
     
     if (!email) {
-      toast.error("البريد الإلكتروني مفقود");
+      toast.error(t('errors.emailMissing'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error("كلمات المرور غير متطابقة");
+      toast.error(t('errors.passwordsMismatch'));
       return;
     }
 
     if (!Object.values(passwordStrength).every(Boolean)) {
-      toast.error("كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل مع حروف كبيرة وصغيرة وأرقام ورموز");
+      toast.error(t('errors.passwordStrengthError'));
       return;
     }
 
@@ -93,9 +95,9 @@ export default function UniversalResetPassword() {
     try {
       await resetPassword({ email, otp, newPassword });
       setIsSuccess(true);
-      toast.success("تم إعادة تعيين كلمة المرور بنجاح");
+      toast.success(t('errors.passwordResetSuccess'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل إعادة تعيين كلمة المرور");
+      toast.error(error instanceof Error ? error.message : t('errors.passwordResetFailed'));
     } finally {
       setLoading(false);
     }

@@ -6,8 +6,10 @@ import { StatCard } from "./StatisticsCards";
 import { useDashboardStats } from "../../hooks/useDashboardStats";
 import { StatusBadge } from "./StatisticsCards";
 import { useAuth } from "../../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 export function DashboardHeader() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const stats = useDashboardStats();
   const orders = useQuery(api.orders.getAllOrders, isAuthenticated && sessionToken ? { sessionToken } : "skip");
@@ -56,41 +58,41 @@ export function DashboardHeader() {
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">مرحباً بك 👋</h1>
-        <p className="text-gray-500 mt-1 text-sm sm:text-base">إليك نظرة عامة على أداء المنصة اليوم</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('errors.welcomeBack')}</h1>
+        <p className="text-gray-500 mt-1 text-sm sm:text-base">{t('errors.platformOverview')}</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
           icon={<Package className="w-5 h-5 sm:w-6 sm:h-6" />}
-          title="إجمالي الطلبات"
+          title={t('errors.totalOrders')}
           value={stats?.totalOrders ?? "—"}
-          sub={`${stats?.pendingOrders ?? 0} قيد الانتظار`}
+          sub={t('errors.pendingOrdersCount', { count: stats?.pendingOrders ?? 0 })}
           color="purple"
           trend="up"
         />
         <StatCard
           icon={<span className="text-xs sm:text-sm font-bold text-green-700 bg-green-100 px-2 py-1 rounded">EGP</span>}
-          title="إجمالي الإيرادات"
+          title={t('errors.totalRevenue')}
           value={stats ? `${stats.totalRevenue.toLocaleString()} EGP` : "—"}
-          sub={`عمولة: ${stats?.totalCommission?.toLocaleString() ?? 0} EGP`}
+          sub={`${t('errors.commission')}: ${stats?.totalCommission?.toLocaleString() ?? 0} EGP`}
           color="green"
           trend="up"
         />
         <StatCard
           icon={<Store className="w-5 h-5 sm:w-6 sm:h-6" />}
-          title="المتاجر"
+          title={t('errors.stores')}
           value={stats?.totalStores ?? "—"}
-          sub={`${stats?.activeStores ?? 0} نشط`}
+          sub={t('errors.activeStoresCount', { count: stats?.activeStores ?? 0 })}
           color="blue"
           trend="up"
         />
         <StatCard
           icon={<Truck className="w-5 h-5 sm:w-6 sm:h-6" />}
-          title="الكباتن"
+          title={t('errors.captains')}
           value={stats?.totalCaptains ?? "—"}
-          sub={`${stats?.onlineCaptains ?? 0} متصل الآن`}
+          sub={t('errors.onlineCaptainsCount', { count: stats?.onlineCaptains ?? 0 })}
           color="orange"
           trend="up"
         />
@@ -100,21 +102,21 @@ export function DashboardHeader() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <span className="text-xs sm:text-sm font-medium text-gray-500">العملاء المسجلون</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">{t('errors.registeredCustomers')}</span>
             <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.totalCustomers ?? "—"}</p>
         </div>
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <span className="text-xs sm:text-sm font-medium text-gray-500">طلبات آخر 7 أيام</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">{t('errors.last7DaysOrders')}</span>
             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.recentOrders ?? "—"}</p>
         </div>
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <span className="text-xs sm:text-sm font-medium text-gray-500">إيرادات آخر 7 أيام</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">{t('errors.last7DaysRevenue')}</span>
             <span className="text-base sm:text-lg font-bold text-gray-500">EGP</span>
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-gray-900">
@@ -126,7 +128,7 @@ export function DashboardHeader() {
       {/* Order Status Distribution */}
       {stats?.statusCounts && (
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm mb-6 sm:mb-8">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">توزيع الطلبات حسب الحالة</h3>
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t('errors.orderStatusDistribution')}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {[
               { key: "pending", label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-700" },
@@ -150,31 +152,31 @@ export function DashboardHeader() {
       {/* Recent Orders */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900">آخر الطلبات</h3>
+          <h3 className="text-base sm:text-lg font-bold text-gray-900">{t('errors.recentOrders')}</h3>
           <button
             onClick={() => window.location.href = "/admin/orders"}
             className="text-xs sm:text-sm text-purple-600 hover:text-purple-700 font-medium"
           >
-            عرض الكل
+            {t('errors.viewAll')}
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-28">رقم الطلب</th>
-                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-32">العميل</th>
-                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-80">بيانات المتجر</th>
-                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-24">المبلغ</th>
-                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-28">الحالة</th>
-                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-28">التاريخ</th>
+                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-28">{t('errors.orderNumber')}</th>
+                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-32">{t('errors.customer')}</th>
+                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-80">{t('errors.storeData')}</th>
+                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-24">{t('errors.amount')}</th>
+                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-28">{t('errors.status')}</th>
+                <th className="px-4 py-3 text-start text-xs font-semibold text-gray-600 w-28">{t('errors.date')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {recentOrders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm">
-                    لا توجد طلبات بعد
+                    {t('errors.noOrdersYet')}
                   </td>
                 </tr>
               ) : (
@@ -209,7 +211,7 @@ export function DashboardHeader() {
                               <div key={idx} className="flex items-start gap-2 text-xs">
                                 <img
                                   src={resolveImageSrc(item.imageUrl)}
-                                  alt={item.nameAr || item.name || "منتج"}
+                                  alt={item.nameAr || item.name || t('errors.product')}
                                   loading="lazy"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = placeholderImg;
@@ -218,7 +220,7 @@ export function DashboardHeader() {
                                 />
                                 <div className="flex-1">
                                   <span className="font-medium text-[10px] sm:text-xs">
-                                    {item.nameAr || item.name || "منتج"} × {item.quantity}
+                                    {item.nameAr || item.name || t('errors.product')} × {item.quantity}
                                   </span>
                                   {(item.color || item.size) && (
                                     <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
@@ -231,7 +233,7 @@ export function DashboardHeader() {
                             </div>
                           ))}
                           {order.items.length > 2 && (
-                            <div className="text-[10px] sm:text-xs text-gray-400">+{order.items.length - 2} أخرى</div>
+                            <div className="text-[10px] sm:text-xs text-gray-400">+{order.items.length - 2} {t('errors.other')}</div>
                           )}
                         </div>
                       </div>

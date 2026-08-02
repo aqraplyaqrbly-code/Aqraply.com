@@ -83,9 +83,9 @@ export default function CustomerLogin() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('errors.somethingWentWrong');
       if (message.includes("Invalid credentials")) {
-        toast.error("كلمة المرور غير صحيحة.");
+        toast.error(t('errors.wrongPassword'));
       } else if (message.includes("Account already exists")) {
-        toast.error("الحساب موجود بالفعل. يرجى تسجيل الدخول.");
+        toast.error(t('errors.accountAlreadyExists'));
       } else {
         toast.error(message);
       }

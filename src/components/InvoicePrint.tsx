@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Printer, Package, Truck, CreditCard, DollarSign, MapPin, Phone, User, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface InvoicePrintProps {
   order: any;
@@ -8,6 +9,7 @@ interface InvoicePrintProps {
 }
 
 export default function InvoicePrint({ order, onClose }: InvoicePrintProps) {
+  const { t } = useTranslation();
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
@@ -28,15 +30,15 @@ export default function InvoicePrint({ order, onClose }: InvoicePrintProps) {
         <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-4 sm:p-6 rounded-t-2xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold">فاتورة الطلب</h2>
-              <p className="text-orange-100 text-xs sm:text-sm mt-1">رقم الطلب: {order.orderNumber}</p>
+              <h2 className="text-xl sm:text-2xl font-bold">{t('errors.invoice')}</h2>
+              <p className="text-orange-100 text-xs sm:text-sm mt-1">{t('errors.orderNumber')}: {order.orderNumber}</p>
             </div>
             <button
               onClick={handlePrint}
               className="bg-white text-orange-600 px-3 sm:px-4 py-2 rounded-xl font-semibold hover:bg-orange-50 transition-colors flex items-center gap-2 text-sm sm:text-base"
             >
               <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
-              طباعة
+              {t('errors.print')}
             </button>
           </div>
         </div>
@@ -47,22 +49,22 @@ export default function InvoicePrint({ order, onClose }: InvoicePrintProps) {
           <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
             <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
               <Package className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
-              بيانات المتجر
+              {t('errors.storeData')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
-                <p className="text-gray-500">اسم المتجر</p>
+                <p className="text-gray-500">{t('errors.storeName')}</p>
                 <p className="font-semibold text-gray-900">{order.storeInfo?.name || '—'}</p>
               </div>
               <div>
-                <p className="text-gray-500">رقم الهاتف</p>
+                <p className="text-gray-500">{t('errors.phoneNumber')}</p>
                 <p className="font-semibold text-gray-900 flex items-center gap-1">
                   <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
                   {order.storeInfo?.phone || '—'}
                 </p>
               </div>
               <div className="col-span-1 sm:col-span-2">
-                <p className="text-gray-500">العنوان</p>
+                <p className="text-gray-500">{t('errors.address')}</p>
                 <p className="font-semibold text-gray-900 flex items-center gap-1">
                   <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
                   {order.storeInfo?.address || '—'}
@@ -75,11 +77,11 @@ export default function InvoicePrint({ order, onClose }: InvoicePrintProps) {
           <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
             <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
               <User className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
-              بيانات العميل
+              {t('errors.customerData')}
             </h3>
             <div className="text-xs sm:text-sm">
               <div>
-                <p className="text-gray-500">الاسم</p>
+                <p className="text-gray-500">{t('errors.name')}</p>
                 <p className="font-semibold text-gray-900">{order.customerInfo?.fullName || '—'}</p>
               </div>
             </div>
@@ -90,7 +92,7 @@ export default function InvoicePrint({ order, onClose }: InvoicePrintProps) {
             <div className="flex items-center gap-2 text-xs sm:text-sm">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               <div>
-                <p className="text-gray-500">تاريخ الطلب</p>
+                <p className="text-gray-500">{t('errors.orderDate')}</p>
                 <p className="font-semibold text-gray-900">
                   {new Date(order._creationTime).toLocaleString('ar-EG')}
                 </p>

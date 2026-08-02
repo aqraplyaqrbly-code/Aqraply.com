@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '../contexts/AuthContextNew';
+import { useTranslation } from 'react-i18next';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export function ProtectedRoute({
   allowedRoles,
   fallbackPath = '/login'
 }: ProtectedRouteProps) {
+  const { t } = useTranslation();
   const { isAuthenticated, role, isLoading } = useAuth();
   const location = useLocation();
 
@@ -23,7 +25,7 @@ export function ProtectedRoute({
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري التحقق من الصلاحيات...</p>
+          <p className="text-gray-600">{t('errors.verifyingPermissions')}</p>
         </div>
       </div>
     );
@@ -48,6 +50,7 @@ export function ProtectedRoute({
 }
 
 function AccessDenied() {
+  const { t } = useTranslation();
   const { role } = useAuth();
 
   return (
@@ -58,15 +61,15 @@ function AccessDenied() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">غير مصرح لك بالوصول</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('errors.accessDenied')}</h2>
         <p className="text-gray-600 mb-6">
-          ليس لديك صلاحية للوصول إلى هذه الصفحة. دورك الحالي: <strong>{getRoleName(role)}</strong>
+          {t('errors.noAccessPermission', { role: getRoleName(role) })}
         </p>
         <button
           onClick={() => window.history.back()}
           className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 transition-colors"
         >
-          العودة للخلف
+          {t('errors.goBack')}
         </button>
       </div>
     </div>
@@ -85,6 +88,7 @@ function getRoleName(role: string | null): string {
 
 // مكون للتوجيه التلقائي حسب الدور
 export function RoleBasedRedirect() {
+  const { t } = useTranslation();
   const { role, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -92,7 +96,7 @@ export function RoleBasedRedirect() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحويلك...</p>
+          <p className="text-gray-600">{t('errors.redirecting')}</p>
         </div>
       </div>
     );

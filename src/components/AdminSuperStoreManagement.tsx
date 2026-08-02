@@ -3,6 +3,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContextNew';
+import { useTranslation } from 'react-i18next';
 import {
   Store,
   Package,
@@ -60,6 +61,7 @@ interface StoreWithDetails {
 }
 
 export default function AdminSuperStoreManagement() {
+  const { t } = useTranslation();
   const [selectedStore, setSelectedStore] = useState<StoreWithDetails | null>(null);
   const [editingStore, setEditingStore] = useState<StoreWithDetails | null>(null);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -122,7 +124,7 @@ export default function AdminSuperStoreManagement() {
       // جلب منتجات المتجر
       // سيتم إضافة هذه الدالة لاحقاً
     } catch (error) {
-      toast.error('فشل في جلب بيانات المتجر');
+      toast.error(t('errors.failedToFetchStoreData'));
     } finally {
       setIsLoading(false);
     }
@@ -132,50 +134,50 @@ export default function AdminSuperStoreManagement() {
     try {
       console.log('Updating store:', { storeId, updates });
       await updateStore({ sessionToken, storeId, updates });
-      toast.success('تم تحديث المتجر بنجاح');
+      toast.success(t('errors.storeUpdatedSuper'));
       setEditingStore(null);
     } catch (error) {
       console.error('Store update error:', error);
-      toast.error(error instanceof Error ? error.message : 'فشل في تحديث المتجر');
+      toast.error(error instanceof Error ? error.message : t('errors.failedToUpdateStoreSuper'));
     }
   };
 
   const handleProductUpdate = async (productId: string, updates: any) => {
     try {
       await updateProduct({ productId, updates });
-      toast.success('تم تحديث المنتج بنجاح');
+      toast.success(t('errors.productUpdatedSuper'));
       setEditingProduct(null);
     } catch (error) {
-      toast.error('فشل في تحديث المنتج');
+      toast.error(t('errors.failedToUpdateProductSuper'));
     }
   };
 
   const handleProductDelete = async (productId: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+    if (!confirm(t('errors.deleteProductConfirm'))) return;
     
     try {
       await deleteProduct({ sessionToken, productId });
-      toast.success('تم حذف المنتج بنجاح');
+      toast.success(t('errors.productDeletedSuper'));
     } catch (error) {
-      toast.error('فشل في حذف المنتج');
+      toast.error(t('errors.failedToDeleteProductSuper'));
     }
   };
 
   const handleToggleProductVisibility = async (productId: string, isVisible: boolean) => {
     try {
       await toggleProductVisibility({ sessionToken, productId, isVisible });
-      toast.success(`تم ${isVisible ? 'إظهار' : 'إخفاء'} المنتج`);
+      toast.success(t('errors.productShownSuper'));
     } catch (error) {
-      toast.error('فشل في تحديث حالة المنتج');
+      toast.error(t('errors.failedToUpdateProductStatusSuper'));
     }
   };
 
   const handleToggleStoreStatus = async (storeId: string, isActive: boolean) => {
     try {
       await toggleStoreStatus({ sessionToken, storeId, isActive });
-      toast.success(`تم ${isActive ? 'تفعيل' : 'إلغاء تفعيل'} المتجر`);
+      toast.success(t('errors.storeActivatedSuper'));
     } catch (error) {
-      toast.error('فشل في تحديث حالة المتجر');
+      toast.error(t('errors.failedToUpdateStoreStatusSuper'));
     }
   };
 
@@ -186,19 +188,19 @@ export default function AdminSuperStoreManagement() {
 
   const executePasswordReset = async () => {
     if (!selectedMerchantId || !newPassword) {
-      toast.error('يرجى إدخال كلمة مرور جديدة');
+      toast.error(t('errors.enterNewPasswordSuper'));
       return;
     }
 
     try {
       // سنحتاج إلى إنشاء mutation خاص لتغيير الباسورد
       console.log('Password reset for:', selectedMerchantId);
-      toast.success('تم تغيير كلمة المرور بنجاح');
+      toast.success(t('errors.passwordChangedSuper'));
       setShowPasswordReset(false);
       setNewPassword('');
       setSelectedMerchantId(null);
     } catch (error) {
-      toast.error('فشل في تغيير كلمة المرور');
+      toast.error(t('errors.failedToChangePasswordSuper'));
     }
   };
 
@@ -217,8 +219,8 @@ export default function AdminSuperStoreManagement() {
             <div className="flex items-center gap-3">
               <Store className="w-8 h-8 text-purple-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">الإدارة الشاملة للمتاجر</h1>
-                <p className="text-gray-600">صلاحيات كاملة على جميع المتاجر والمنتجات</p>
+                <h1 className="text-2xl font-bold text-gray-900">{t('errors.superStoreManagement')}</h1>
+                <p className="text-gray-600">{t('errors.fullPermissions')}</p>
               </div>
             </div>
             <button
@@ -226,7 +228,7 @@ export default function AdminSuperStoreManagement() {
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
-              تحديث
+              {t('errors.refreshSuper')}
             </button>
           </div>
 
@@ -236,7 +238,7 @@ export default function AdminSuperStoreManagement() {
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="البحث عن متجر..."
+                placeholder={t('errors.searchStore')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -251,7 +253,7 @@ export default function AdminSuperStoreManagement() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                الكل
+                {t('errors.allSuper')}
               </button>
               <button
                 onClick={() => setFilterStatus('active')}
@@ -261,7 +263,7 @@ export default function AdminSuperStoreManagement() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                نشط
+                {t('errors.activeSuper')}
               </button>
               <button
                 onClick={() => setFilterStatus('inactive')}
@@ -271,7 +273,7 @@ export default function AdminSuperStoreManagement() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                معطل
+                {t('errors.inactiveSuper')}
               </button>
             </div>
           </div>
@@ -282,7 +284,7 @@ export default function AdminSuperStoreManagement() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm">
               <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">المتاجر ({filteredStores.length})</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('errors.storesCount', { count: filteredStores.length })}</h2>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {currentStores.map((store) => (
@@ -308,7 +310,7 @@ export default function AdminSuperStoreManagement() {
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-red-100 text-red-700'
                           }`}>
-                            {store.isActive ? 'نشط' : 'معطل'}
+                            {store.isActive ? t('errors.activeSuper') : t('errors.inactiveSuper')}
                           </span>
                         </div>
                       </div>
@@ -333,14 +335,14 @@ export default function AdminSuperStoreManagement() {
                 {/* Store Info */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">معلومات المتجر</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{t('errors.storeInfoSuper')}</h2>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setEditingStore(selectedStore)}
                         className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <Edit className="w-4 h-4" />
-                        تعديل
+                        {t('errors.editProduct')}
                       </button>
                       <button
                         onClick={() => handleToggleStoreStatus(selectedStore._id, !selectedStore.isActive)}
@@ -351,7 +353,7 @@ export default function AdminSuperStoreManagement() {
                         } text-white`}
                       >
                         <Power className="w-4 h-4" />
-                        {selectedStore.isActive ? 'تعطيل' : 'تفعيل'}
+                        {selectedStore.isActive ? t('errors.disableSuper') : t('errors.activateSuper')}
                       </button>
                     </div>
                   </div>
@@ -373,10 +375,10 @@ export default function AdminSuperStoreManagement() {
                 {/* Products */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">المنتجات</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{t('errors.productsList')}</h2>
                     <button className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                       <Plus className="w-4 h-4" />
-                      إضافة منتج
+                      {t('errors.addProduct')}
                     </button>
                   </div>
 
@@ -396,7 +398,7 @@ export default function AdminSuperStoreManagement() {
                   ) : (
                     <div className="text-center py-8">
                       <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">لا توجد منتجات في هذا المتجر</p>
+                      <p className="text-gray-500">{t('errors.noProductsInStore')}</p>
                     </div>
                   )}
                 </div>
@@ -404,8 +406,8 @@ export default function AdminSuperStoreManagement() {
             ) : (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                 <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">اختر متجراً</h3>
-                <p className="text-gray-600">اختر متجراً من القائمة لعرض التفاصيل وإدارة المحتوى</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errors.selectStoreSuper')}</h3>
+                <p className="text-gray-600">{t('errors.selectStoreFromList')}</p>
               </div>
             )}
           </div>
@@ -444,37 +446,38 @@ function StoreInfoDisplay({ store, onPasswordReset }: {
   store: StoreWithDetails; 
   onPasswordReset: (merchantId: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium text-gray-500">الاسم (عربي)</label>
+          <label className="text-sm font-medium text-gray-500">{t('errors.nameArabicSuper')}</label>
           <p className="text-gray-900">{store.nameAr}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">الاسم (إنجليزي)</label>
+          <label className="text-sm font-medium text-gray-500">{t('errors.nameEnglishSuper')}</label>
           <p className="text-gray-900">{store.nameEn}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">العنوان</label>
+          <label className="text-sm font-medium text-gray-500">{t('errors.addressSuper')}</label>
           <p className="text-gray-900">{store.address}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">الهاتف</label>
+          <label className="text-sm font-medium text-gray-500">{t('errors.phoneSuper')}</label>
           <p className="text-gray-900">{store.phone}</p>
         </div>
         {store.owner?.email && (
           <div>
-            <label className="text-sm font-medium text-gray-500">البريد الإلكتروني</label>
+            <label className="text-sm font-medium text-gray-500">{t('errors.emailSuper')}</label>
             <p className="text-gray-900">{store.owner.email}</p>
           </div>
         )}
         <div>
-          <label className="text-sm font-medium text-gray-500">وقت التوصيل</label>
-          <p className="text-gray-900">{store.estimatedDeliveryTime} دقيقة</p>
+          <label className="text-sm font-medium text-gray-500">{t('errors.deliveryTime')}</label>
+          <p className="text-gray-900">{store.estimatedDeliveryTime} {t('errors.minuteSuper')}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">عمولة التاجر</label>
+          <label className="text-sm font-medium text-gray-500">{t('errors.merchantCommission')}</label>
           <p className="text-gray-900">{store.commissionRate}%</p>
         </div>
       </div>
@@ -487,19 +490,19 @@ function StoreInfoDisplay({ store, onPasswordReset }: {
             className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             <Key className="w-4 h-4" />
-            تغيير كلمة المرور
+            {t('errors.changePasswordSuper')}
           </button>
         </div>
       )}
       
       <div>
-        <label className="text-sm font-medium text-gray-500">الوصف (عربي)</label>
+        <label className="text-sm font-medium text-gray-500">{t('errors.descriptionArabicSuper')}</label>
         <p className="text-gray-900">{store.descriptionAr}</p>
       </div>
       
       {store.imageUrl && (
         <div>
-          <label className="text-sm font-medium text-gray-500">صورة المتجر</label>
+          <label className="text-sm font-medium text-gray-500">{t('errors.storeImage')}</label>
           <img
             src={store.imageUrl}
             alt={store.nameAr}
@@ -517,6 +520,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
   onSave: (id: string, data: any) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     nameAr: store.nameAr,
     nameEn: store.nameEn,
@@ -537,7 +541,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">الاسم (عربي)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.nameArabicSuper')}</label>
           <input
             type="text"
             value={formData.nameAr}
@@ -547,7 +551,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">الاسم (إنجليزي)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.nameEnglishSuper')}</label>
           <input
             type="text"
             value={formData.nameEn}
@@ -557,7 +561,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.addressSuper')}</label>
           <input
             type="text"
             value={formData.address}
@@ -567,7 +571,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.phoneSuper')}</label>
           <input
             type="tel"
             value={formData.phone}
@@ -577,7 +581,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">وقت التوصيل (دقيقة)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.deliveryTimeMinutes')}</label>
           <input
             type="number"
             value={formData.estimatedDeliveryTime}
@@ -587,7 +591,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">عمولة التاجر (%)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.merchantCommissionPercent')}</label>
           <input
             type="number"
             step="0.1"
@@ -600,7 +604,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (عربي)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.descriptionArabicSuper')}</label>
         <textarea
           value={formData.descriptionAr}
           onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
@@ -611,7 +615,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (إنجليزي)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('errors.descriptionEnglishSuper')}</label>
         <textarea
           value={formData.descriptionEn}
           onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
@@ -627,7 +631,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Save className="w-4 h-4" />
-          حفظ
+          {t('errors.saveSuper')}
         </button>
         <button
           type="button"
@@ -635,7 +639,7 @@ function StoreEditForm({ store, onSave, onCancel }: {
           className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
         >
           <X className="w-4 h-4" />
-          إلغاء
+          {t('errors.cancel')}
         </button>
       </div>
     </form>
@@ -650,6 +654,7 @@ function ProductCard({ product, onEdit, onDelete, onToggleVisibility, onUpdate }
   onToggleVisibility: (id: string, visible: boolean) => void;
   onUpdate: (id: string, data: any) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="border border-gray-200 rounded-lg p-4">
       <div className="flex items-start justify-between">
@@ -671,10 +676,10 @@ function ProductCard({ product, onEdit, onDelete, onToggleVisibility, onUpdate }
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'
                 }`}>
-                  {product.isActive && product.isAvailable ? 'متاح' : 'غير متاح'}
+                  {product.isActive && product.isAvailable ? t('errors.availableSuper') : t('errors.unavailableSuper')}
                 </span>
                 <span className="text-xs text-gray-500">
-                  الكمية: {product.quantity}
+                  {t('errors.quantitySuper')}: {product.quantity}
                 </span>
               </div>
             </div>
@@ -689,21 +694,21 @@ function ProductCard({ product, onEdit, onDelete, onToggleVisibility, onUpdate }
                 ? 'bg-green-100 text-green-700 hover:bg-green-200'
                 : 'bg-red-100 text-red-700 hover:bg-red-200'
             }`}
-            title={product.isActive && product.isAvailable ? 'إخفاء' : 'إظهار'}
+            title={product.isActive && product.isAvailable ? t('errors.hideSuper') : t('errors.showSuper')}
           >
             {product.isActive && product.isAvailable ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           </button>
           <button
             onClick={() => onEdit(product)}
             className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-            title="تعديل"
+            title={t('errors.editProduct')}
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(product._id)}
             className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-            title="حذف"
+            title={t('errors.deleteSuper')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -727,23 +732,24 @@ function PasswordResetModal({
   newPassword: string;
   setNewPassword: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-96">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">تغيير كلمة المرور</h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('errors.changePasswordSuper')}</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              كلمة المرور الجديدة
+              {t('errors.newPasswordSuper')}
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="أدخل كلمة المرور الجديدة"
+              placeholder={t('errors.enterNewPasswordPlaceholder')}
             />
           </div>
         </div>
@@ -752,13 +758,13 @@ function PasswordResetModal({
             onClick={onReset}
             className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
-            تغيير
+            {t('errors.changeSuper')}
           </button>
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
           >
-            إلغاء
+            {t('errors.cancel')}
           </button>
         </div>
       </div>
@@ -772,6 +778,7 @@ function PaginationControls({ currentPage, totalPages, onPageChange }: {
   totalPages: number;
   onPageChange: (page: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between py-4">
       <div className="flex items-center gap-2">
@@ -782,7 +789,7 @@ function PaginationControls({ currentPage, totalPages, onPageChange }: {
             currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
           }`}
         >
-          السابق
+          {t('errors.previous')}
         </button>
         <button
           onClick={() => onPageChange(currentPage + 1)}
@@ -791,11 +798,11 @@ function PaginationControls({ currentPage, totalPages, onPageChange }: {
             currentPage === totalPages ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
           }`}
         >
-          التالي
+          {t('errors.next')}
         </button>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500">الصفحة {currentPage} من {totalPages}</span>
+        <span className="text-sm text-gray-500">{t('errors.pageSuper')} {currentPage} {t('errors.fromTotalStores', { total: totalPages })}</span>
       </div>
     </div>
   );

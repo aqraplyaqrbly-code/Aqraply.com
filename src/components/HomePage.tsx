@@ -21,12 +21,15 @@ import {
   ShoppingCart,
   Zap,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 
 export default function HomePage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const isArabic = i18n.language === 'ar';
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("عروض اليوم");
+  const [selectedCategory, setSelectedCategory] = useState(t('errors.todaysOffers'));
   const [scrollPosition, setScrollPosition] = useState(0);
   const [searchLocation, setSearchLocation] = useState("");
   const [filteredStores, setFilteredStores] = useState<any[]>([]);
@@ -34,7 +37,7 @@ export default function HomePage() {
     stores: 0,
     orders: 0,
   });
-  const [availableCategories, setAvailableCategories] = useState<string[]>(["عروض اليوم"]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([t('errors.todaysOffers')]);
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -72,7 +75,7 @@ export default function HomePage() {
   // Extract unique categories from products
   useEffect(() => {
     if (!allProducts || allProducts.length === 0) {
-      setAvailableCategories(["عروض اليوم"]);
+      setAvailableCategories([t('errors.todaysOffers')]);
       return;
     }
 
@@ -80,11 +83,11 @@ export default function HomePage() {
       new Set(allProducts.map(p => p.category).filter(Boolean))
     ).sort() as string[];
 
-    setAvailableCategories(["عروض اليوم", ...uniqueCategories]);
+    setAvailableCategories([t('errors.todaysOffers'), ...uniqueCategories]);
 
     // Reset selected category if it no longer exists
-    if (selectedCategory !== "عروض اليوم" && !uniqueCategories.includes(selectedCategory)) {
-      setSelectedCategory("عروض اليوم");
+    if (selectedCategory !== t('errors.todaysOffers') && !uniqueCategories.includes(selectedCategory)) {
+      setSelectedCategory(t('errors.todaysOffers'));
     }
   }, [allProducts?.length]);
 
@@ -129,7 +132,7 @@ export default function HomePage() {
   }, [selectedCategory]);
 
   // Filter products by category
-  const filteredProducts = selectedCategory === "عروض اليوم"
+  const filteredProducts = selectedCategory === t('errors.todaysOffers')
     ? allProducts.filter(p => p.originalPrice && p.originalPrice > p.price)
     : allProducts.filter(p => p.category === selectedCategory);
 
@@ -221,19 +224,19 @@ export default function HomePage() {
                 onClick={() => navigate("/customer")}
                 className="text-gray-700 hover:text-orange-600 transition-colors font-medium"
               >
-                المتاجر
+                {t('errors.stores')}
               </button>
               <button
                 onClick={() => navigate("/merchant")}
                 className="text-gray-700 hover:text-orange-600 transition-colors font-medium"
               >
-                لوحة التاجر
+                {t('errors.merchantDashboardHome')}
               </button>
               <button
                 onClick={() => navigate("/captain")}
                 className="text-gray-700 hover:text-orange-600 transition-colors font-medium"
               >
-                واجهة الكابتن
+                {t('errors.captainInterface')}
               </button>
               {/* رابط الإدارة مخفي - يمكن الوصول له عبر /admin-login */}
               {/* <button
@@ -250,13 +253,13 @@ export default function HomePage() {
                 onClick={() => navigate("/login")}
                 className="px-3 py-2 text-gray-700 hover:text-orange-600 transition-colors font-medium hidden md:block text-sm"
               >
-                تسجيل الدخول
+                {t('errors.login')}
               </button>
               <button
                 onClick={() => navigate("/customer")}
                 className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all text-sm"
               >
-                ابدأ الآن
+                {t('errors.startNow')}
               </button>
               <button
                 className="md:hidden p-2 hover:bg-orange-50 rounded-lg transition-colors"
@@ -279,19 +282,19 @@ export default function HomePage() {
                 onClick={() => navigate("/customer")}
                 className="px-4 py-2 text-gray-700 hover:bg-orange-50 rounded-lg transition-colors text-start"
               >
-                المتاجر
+                {t('errors.stores')}
               </button>
               <button
                 onClick={() => navigate("/merchant")}
                 className="px-4 py-2 text-gray-700 hover:bg-orange-50 rounded-lg transition-colors text-start"
               >
-                لوحة التاجر
+                {t('errors.merchantDashboardHome')}
               </button>
               <button
                 onClick={() => navigate("/captain")}
                 className="px-4 py-2 text-gray-700 hover:bg-orange-50 rounded-lg transition-colors text-start"
               >
-                واجهة الكابتن
+                {t('errors.captainInterface')}
               </button>
               {/* رابط الإدارة مخفي - يمكن الوصول له عبر /admin-login */}
               {/* <button
@@ -378,18 +381,18 @@ export default function HomePage() {
             <div className="max-w-2xl w-full">
               {/* Main heading - Always Visible */}
               <h1 className="text-2xl md:text-4xl font-black text-white mb-3 leading-tight drop-shadow-2xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
-                اكتشف المتاجر <br />
+                {t('errors.discoverNearbyStores')} <br />
                 <span className="bg-gradient-to-r from-yellow-200 via-yellow-100 to-orange-200 bg-clip-text text-transparent drop-shadow-2xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
-                  القريبة منك
+                  {t('errors.nearbyStores')}
                 </span>
               </h1>
 
               {/* Description - Always Visible */}
               <p className="text-xs md:text-sm text-white mb-4 leading-relaxed font-semibold drop-shadow-lg" style={{textShadow: '0 3px 15px rgba(0,0,0,0.7)'}}>
-                منصة ذكية تربط المتاجر المحلية بالعملاء
+                {t('errors.smartPlatform')}
               </p>
               <p className="text-xs md:text-xs text-white mb-6 font-semibold drop-shadow-lg" style={{textShadow: '0 3px 15px rgba(0,0,0,0.7)'}}>
-                اطلب الآن واستلم في دقائق!
+                {t('errors.orderNow')}
               </p>
 
               {/* Search Bar - Always Visible */}
@@ -398,7 +401,7 @@ export default function HomePage() {
                   <MapPin className="w-5 h-5 text-orange-600 ms-3 flex-shrink-0 font-bold" />
                   <input
                     type="text"
-                    placeholder="أدخل موقعك..."
+                    placeholder={t('errors.enterLocation')}
                     className="flex-1 px-3 py-2.5 outline-none text-gray-700 text-sm font-semibold placeholder-gray-500"
                     value={searchLocation}
                     onChange={handleLocationSearch}
@@ -439,7 +442,7 @@ export default function HomePage() {
 
                 {searchLocation && filteredStores.length === 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
-                    <p className="text-gray-600">لم نجد متاجر تطابق البحث</p>
+                    <p className="text-gray-600">{t('errors.noStoresFound')}</p>
                   </div>
                 )}
 
@@ -447,7 +450,7 @@ export default function HomePage() {
                 {searchLocation && filteredProducts.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-96 overflow-y-auto z-40">
                     <div className="p-4 border-b border-gray-100">
-                      <h4 className="font-semibold text-gray-900 mb-2">🔍 نتائج البحث عن المنتجات</h4>
+                      <h4 className="font-semibold text-gray-900 mb-2">{t('errors.searchResults')}</h4>
                     </div>
                     {filteredProducts.slice(0, 5).map((product) => (
                       <button
@@ -477,7 +480,7 @@ export default function HomePage() {
                           onClick={() => navigate(`/customer?search=${encodeURIComponent(searchLocation)}`)}
                           className="text-orange-600 hover:text-orange-700 font-semibold"
                         >
-                          عرض كل النتائج ({filteredProducts.length})
+                          {t('errors.showAllResults')} ({filteredProducts.length})
                         </button>
                       </div>
                     )}
@@ -486,7 +489,7 @@ export default function HomePage() {
 
                 {searchLocation && filteredStores.length === 0 && filteredProducts.length === 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
-                    <p className="text-gray-600">لم نجد متاجر أو منتجات تطابق البحث</p>
+                    <p className="text-gray-600">{t('errors.noStoresOrProductsFound')}</p>
                   </div>
                 )}
               </div>
@@ -504,7 +507,7 @@ export default function HomePage() {
                         </span>
                         <span className="text-2xl text-yellow-300 font-black drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>+</span>
                       </div>
-                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>متجر</div>
+                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('customer.home.stores')}</div>
                     </div>
                   </div>
                 </div>
@@ -520,7 +523,7 @@ export default function HomePage() {
                         </span>
                         <span className="text-xl text-yellow-300 font-black drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>K</span>
                       </div>
-                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>طلب</div>
+                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('customer.home.orders')}</div>
                     </div>
                   </div>
                 </div>
@@ -534,7 +537,7 @@ export default function HomePage() {
                         <Clock className="w-5 h-5 text-yellow-300 drop-shadow-lg" style={{filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}} />
                         <span className="text-3xl md:text-4xl font-black text-white drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>15</span>
                       </div>
-                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>دقيقة</div>
+                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('errors.minute')}</div>
                     </div>
                   </div>
                 </div>
@@ -550,8 +553,8 @@ export default function HomePage() {
             {allProducts.filter(p => p.originalPrice && p.originalPrice > p.price).length > 0 && (
               <div className="mb-16">
                 <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">🎉 عروض اليوم</h2>
-                  <p className="text-gray-600">استمتع بأفضل الخصومات على منتجات مختارة</p>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">🎉 {t('errors.todaysOffers')}</h2>
+                  <p className="text-gray-600">{t('errors.enjoyBestDiscounts')}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {allProducts.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 8).map((product) => (
@@ -570,7 +573,7 @@ export default function HomePage() {
                       </div>
                       <div className="flex-1 p-4 flex flex-col">
                         <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
-                          {product.nameAr}
+                          {isArabic ? product.nameAr : product.name}
                         </h4>
                         <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
                           <div className="flex items-baseline gap-1.5">
@@ -592,8 +595,8 @@ export default function HomePage() {
             {allProducts.filter(p => p.price < 500).length > 0 && (
               <div className="mb-16">
                 <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">⭐ أفضل المنتجات</h2>
-                  <p className="text-gray-600">منتجات موثوقة واختيارات العملاء المفضلة</p>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">⭐ {t('errors.bestProducts')}</h2>
+                  <p className="text-gray-600">{t('errors.trustedProducts')}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {allProducts.filter(p => p.price < 500).slice(0, 8).map((product) => (
@@ -605,12 +608,12 @@ export default function HomePage() {
                       <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                         <div className="absolute top-3 right-3 bg-yellow-400 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                          ⭐ مختار
+                          ⭐ {t('errors.selected')}
                         </div>
                       </div>
                       <div className="flex-1 p-4 flex flex-col">
                         <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
-                          {product.nameAr}
+                          {isArabic ? product.nameAr : product.name}
                         </h4>
                         <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
                           <div className="flex items-baseline gap-1.5">
@@ -629,8 +632,8 @@ export default function HomePage() {
             {allProducts.filter(p => p.images && p.images.length > 1).length > 0 && (
               <div className="mb-16">
                 <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">🔥 الأكثر مبيعاً</h2>
-                  <p className="text-gray-600">منتجات اختارها الملايين</p>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">🔥 {t('errors.bestSelling')}</h2>
+                  <p className="text-gray-600">{t('errors.millionsChose')}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {allProducts.filter(p => p.images && p.images.length > 1).slice(0, 8).map((product) => (
@@ -642,12 +645,12 @@ export default function HomePage() {
                       <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                         <div className="absolute top-3 right-3 bg-green-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                          🔥 مشهور
+                          🔥 {t('errors.famous')}
                         </div>
                       </div>
                       <div className="flex-1 p-4 flex flex-col">
                         <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
-                          {product.nameAr}
+                          {isArabic ? product.nameAr : product.name}
                         </h4>
                         <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
                           <div className="flex items-baseline gap-1.5">
@@ -666,8 +669,8 @@ export default function HomePage() {
             {allProducts.length > 0 && (
               <div className="mb-16">
                 <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">✨ المنتجات الجديدة</h2>
-                  <p className="text-gray-600">أحدث الإضافات في متاجرنا</p>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">✨ {t('errors.newProducts')}</h2>
+                  <p className="text-gray-600">{t('errors.latestAdditions')}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {allProducts.sort((a, b) => (b._creationTime || 0) - (a._creationTime || 0)).slice(0, 8).map((product) => (
@@ -679,12 +682,12 @@ export default function HomePage() {
                       <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                         <div className="absolute top-3 right-3 bg-blue-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                          ✨ جديد
+                          {t('errors.new')}
                         </div>
                       </div>
                       <div className="flex-1 p-4 flex flex-col">
                         <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
-                          {product.nameAr}
+                          {isArabic ? product.nameAr : product.name}
                         </h4>
                         <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
                           <div className="flex items-baseline gap-1.5">
@@ -709,7 +712,7 @@ export default function HomePage() {
                 {selectedCategory}
               </h2>
               <p className="text-gray-600">
-                استكشف أفضل المنتجات المتاحة في هذا الفئة
+                {t('errors.exploreBestProducts')}
               </p>
             </div>
 
@@ -717,7 +720,7 @@ export default function HomePage() {
               <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
                 <Package className="w-20 h-20 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 text-lg font-semibold">
-                  لا توجد منتجات في هذه الفئة حالياً
+                  {t('errors.noProductsInCategory')}
                 </p>
               </div>
             ) : (
@@ -743,7 +746,7 @@ export default function HomePage() {
                       {/* Image Counter */}
                       {product.images && product.images.length > 1 && (
                         <div className="absolute top-3 left-3 bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-semibold">
-                          {product.images.length} صور
+                          {product.images.length} {t('errors.images')}
                         </div>
                       )}
                     </div>
@@ -789,10 +792,10 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                اكتشف المتاجر القريبة منك
+                {t('errors.discoverNearbyStoresSection')}
               </h2>
               <p className="text-lg text-gray-600">
-                أفضل المتاجر المحلية بأسعار تنافسية وتوصيل سريع
+                {t('errors.bestLocalStores')}
               </p>
             </div>
 
@@ -800,7 +803,7 @@ export default function HomePage() {
               <div className="text-center py-20 bg-gray-50 rounded-2xl">
                 <Store className="w-20 h-20 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 text-lg font-semibold">
-                  لا توجد متاجر متاحة حالياً
+                  {t('errors.noStoresAvailable')}
                 </p>
               </div>
             ) : (
@@ -840,14 +843,14 @@ export default function HomePage() {
                         <div className="flex items-center gap-1 bg-blue-50 px-2.5 py-1.5 rounded-lg">
                           <Clock className="w-4 h-4 text-blue-600" />
                           <span className="font-semibold">
-                            {store.estimatedDeliveryTime} دقيقة
+                            {store.estimatedDeliveryTime} {t('errors.minute')}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                          <span className="text-xs text-gray-500">التوصيل</span>
+                          <span className="text-xs text-gray-500">{t('errors.delivery')}</span>
                           <span className="text-lg font-bold text-orange-600">
                             {store.deliveryFee} EGP
                           </span>
@@ -869,10 +872,10 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                منصة رباعية الواجهات
+                {t('errors.fourInterfacePlatform')}
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                نظام متكامل يخدم جميع أطراف عملية التوصيل
+                {t('errors.servesAllParties')}
               </p>
             </div>
 
@@ -885,13 +888,13 @@ export default function HomePage() {
                   <Package className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  واجهة العميل
+                  {t('errors.customerInterface')}
                 </h3>
                 <p className="text-gray-600 leading-relaxed mb-4">
-                  تصفح المتاجر، اطلب منتجاتك، وتتبع التوصيل لحظياً
+                  {t('errors.browseStores')}
                 </p>
                 <div className="text-blue-600 font-semibold flex items-center gap-2">
-                  ابدأ التسوق
+                  {t('errors.startShopping')}
                   <TrendingUp className="w-4 h-4" />
                 </div>
               </button>
@@ -904,13 +907,13 @@ export default function HomePage() {
                   <Store className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  لوحة التاجر
+                  {t('errors.merchantDashboardHome')}
                 </h3>
                 <p className="text-gray-600 leading-relaxed mb-4">
-                  إدارة المنتجات، الطلبات، والماليات بسهولة
+                  {t('errors.manageStoreProducts')}
                 </p>
                 <div className="text-orange-600 font-semibold flex items-center gap-2">
-                  إدارة متجرك
+                  {t('errors.manageStore')}
                   <TrendingUp className="w-4 h-4" />
                 </div>
               </button>
@@ -923,13 +926,13 @@ export default function HomePage() {
                   <MapPin className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  واجهة الكابتن
+                  {t('errors.captainInterface')}
                 </h3>
                 <p className="text-gray-600 leading-relaxed mb-4">
-                  استلم الطلبات، تتبع المسار، واربح دخل مرن
+                  {t('errors.receiveOrders')}
                 </p>
                 <div className="text-green-600 font-semibold flex items-center gap-2">
-                  ابدأ التوصيل
+                  {t('errors.startDelivery')}
                   <TrendingUp className="w-4 h-4" />
                 </div>
               </button>
@@ -962,10 +965,10 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                🔄 تتبع الموقع الجغرافي
+                {t('errors.locationTracking')}
               </h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
-                حدد موقعك الحالي بدقة للحصول على أفضل تجربة تسوق واكتشاف المتاجر القريبة منك
+                {t('errors.locationTrackingDesc')}
               </p>
             </div>
             
@@ -990,13 +993,13 @@ export default function HomePage() {
             {userLocation && (
               <div className="mt-8 text-center">
                 <p className="text-green-600 font-medium">
-                  ✅ تم تحديد موقعك بنجاح! يمكنك الآن استكشاف المتاجر القريبة
+                  {t('errors.locationSetSuccess')}
                 </p>
                 <button
                   onClick={() => navigate("/customer")}
                   className="mt-4 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
                 >
-                  استكشف المتاجر القريبة
+                  {t('errors.exploreNearbyStores')}
                 </button>
               </div>
             )}
@@ -1018,19 +1021,19 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="text-gray-400 text-sm">
-                  منصة ذكية تربط المتاجر المحلية بالعملاء
+                  {t('errors.smartPlatform')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold mb-4 text-start">روابط سريعة</h4>
+                <h4 className="font-bold mb-4 text-start">{t('errors.quickLinks')}</h4>
                 <ul className="space-y-2 text-start">
                   <li>
                     <button
                       onClick={() => navigate("/customer")}
                       className="text-gray-400 hover:text-orange-500 transition-colors"
                     >
-                      المتاجر
+                      {t('errors.stores')}
                     </button>
                   </li>
                   <li>
@@ -1038,21 +1041,21 @@ export default function HomePage() {
                       onClick={() => navigate("/merchant")}
                       className="text-gray-400 hover:text-orange-500 transition-colors"
                     >
-                      لوحة التاجر
+                      {t('errors.merchantDashboardHome')}
                     </button>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-bold mb-4 text-start">المزيد</h4>
+                <h4 className="font-bold mb-4 text-start">{t('errors.more')}</h4>
                 <ul className="space-y-2 text-start">
                   <li>
                     <button
                       onClick={() => navigate("/captain")}
                       className="text-gray-400 hover:text-orange-500 transition-colors"
                     >
-                      واجهة الكابتن
+                      {t('errors.captainInterface')}
                     </button>
                   </li>
                   {/* رابط الإدارة مخفي - يمكن الوصول له عبر /admin-login */}
@@ -1068,19 +1071,19 @@ export default function HomePage() {
               </div>
 
               <div>
-                <h4 className="font-bold mb-4 text-start">التواصل</h4>
+                <h4 className="font-bold mb-4 text-start">{t('errors.contact')}</h4>
                 <p className="text-gray-400 text-sm">
-                  البريد: info@aqraply.com
+                  {t('errors.emailLabel')}: info@aqraply.com
                 </p>
                 <p className="text-gray-400 text-sm mt-2">
-                  الهاتف: +20 100 123 4567
+                  {t('errors.phoneLabel')}: +20 100 123 4567
                 </p>
               </div>
             </div>
 
             <div className="border-t border-gray-800 pt-8 text-center">
               <p className="text-gray-400 text-sm">
-                © 2024 Aqraply. جميع الحقوق محفوظة.
+                {t('errors.allRightsReserved')}
               </p>
             </div>
           </div>

@@ -31,6 +31,7 @@ import ProductsManager from "./ProductsManager";
 import StoreSettings from "./StoreSettings";
 import InvoicePrint from "./InvoicePrint";
 import { Id } from "../../convex/_generated/dataModel";
+import { useTranslation } from "react-i18next";
 
 interface MerchantDashboardContentProps {
   profile: any;
@@ -52,17 +53,18 @@ export default function MerchantDashboardContent({ profile }: MerchantDashboardC
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 function MerchantLayout({ profile, children }: { profile: any; children: React.ReactNode }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const navItems = [
-    { path: "/merchant", label: "الرئيسية", icon: BarChart3 },
-    { path: "/merchant/products", label: "المنتجات", icon: Package },
-    { path: "/merchant/orders", label: "الطلبات", icon: ShoppingBag },
-    { path: "/merchant/analytics", label: "التقارير", icon: TrendingUp },
-    { path: "/merchant/settings", label: "الإعدادات", icon: Settings },
+    { path: "/merchant", label: t('errors.home'), icon: BarChart3 },
+    { path: "/merchant/products", label: t('errors.products'), icon: Package },
+    { path: "/merchant/orders", label: t('errors.orders'), icon: ShoppingBag },
+    { path: "/merchant/analytics", label: t('errors.reports'), icon: TrendingUp },
+    { path: "/merchant/settings", label: t('errors.settings'), icon: Settings },
   ];
 
   const isActive = (path: string) => {
@@ -75,7 +77,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
       await logout();
       window.location.href = "/";
     } catch {
-      toast.error("فشل تسجيل الخروج");
+      toast.error(t('errors.logoutFailed'));
     }
   };
 
@@ -89,7 +91,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
               <Store className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">لوحة التاجر</h1>
+              <h1 className="text-xl font-bold">{t('errors.merchantDashboard')}</h1>
               <p className="text-xs text-orange-200 truncate max-w-[160px]">
                 {profile.businessNameAr || profile.businessName || profile.fullName}
               </p>

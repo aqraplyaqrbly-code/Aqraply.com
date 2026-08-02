@@ -12,8 +12,10 @@ import {
   validateVehicleInfo,
   validateRequired,
 } from '../utils/validation';
+import { useTranslation } from 'react-i18next';
 
 export default function UnifiedRegister() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { role: roleParam } = useParams<{ role?: string }>();
   const { signIn, signUp, createProfile, sessionToken } = useAuth();
@@ -121,28 +123,28 @@ export default function UnifiedRegister() {
       // Sign up using custom auth
       const result = await signUp(email.trim().toLowerCase(), password);
 
-      toast.success('تم إنشاء الحساب بنجاح');
+      toast.success(t('errors.accountCreated'));
       setStep('profile');
     } catch (error: any) {
       console.error('Auth error:', error);
-      const message = error.message || 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى';
+      const message = error.message || t('errors.accountCreationFailed');
       if (message.includes("Account already exists")) {
         // If account exists, try to sign in instead
         try {
           const signInResult = await signIn(email.trim().toLowerCase(), password);
-          toast.success('تم تسجيل الدخول بنجاح');
+          toast.success(t('auth.loginSuccess'));
           setStep('profile');
         } catch (signInError: any) {
-          toast.error('هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول أو استخدام بريد آخر', {
+          toast.error(t('errors.emailAlreadyRegistered'), {
             duration: 5000,
             action: {
-              label: 'تسجيل الدخول',
+              label: t('errors.login'),
               onClick: () => navigate('/login'),
             },
           });
         }
       } else if (message.includes("Password must be at least 8 characters")) {
-        toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+        toast.error(t('errors.passwordMin8'));
       } else {
         toast.error(message);
       }
@@ -172,25 +174,25 @@ export default function UnifiedRegister() {
 
   const handleStoreAddressChange = (value: string) => {
     setStoreAddress(value);
-    const result = validateRequired(value, 'عنوان المتجر');
+    const result = validateRequired(value, t('errors.storeAddressRequired'));
     setStoreAddressError(result.error);
   };
 
   const handleNationalIdChange = (value: string) => {
     setNationalId(value);
-    const result = validateRequired(value, 'الرقم القومي');
+    const result = validateRequired(value, t('errors.nationalIdRequired'));
     setNationalIdError(result.error);
   };
 
   const handleVehicleTypeChange = (value: string) => {
     setVehicleType(value);
-    const result = validateRequired(value, 'نوع المركبة');
+    const result = validateRequired(value, t('errors.vehicleTypeRequired'));
     setVehicleTypeError(result.error);
   };
 
   const handleVehicleNumberChange = (value: string) => {
     setVehicleNumber(value);
-    const result = validateRequired(value, 'رقم المركبة');
+    const result = validateRequired(value, t('errors.vehicleNumberRequired'));
     setVehicleNumberError(result.error);
   };
 

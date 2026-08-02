@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Navigation, Crosshair, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 interface Location {
   latitude: number;
@@ -20,6 +21,7 @@ export function LocationTracker({
   initialLocation, 
   className = '' 
 }: LocationTrackerProps) {
+  const { t } = useTranslation();
   const [currentLocation, setCurrentLocation] = useState<Location | null>(
     initialLocation || null
   );
@@ -30,7 +32,7 @@ export function LocationTracker({
   // الحصول على الموقع الحالي
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      const errorMsg = 'المتصفح لا يدعم تحديد الموقع';
+      const errorMsg = t('errors.browserNotSupportGeolocation');
       setError(errorMsg);
       toast.error(errorMsg);
       return;
@@ -50,21 +52,21 @@ export function LocationTracker({
         setCurrentLocation(location);
         onLocationUpdate(location);
         setIsTracking(false);
-        toast.success('تم تحديد موقعك الحالي بنجاح');
+        toast.success(t('errors.locationDetermined'));
       },
       (error) => {
         setIsTracking(false);
-        let errorMsg = 'فشل تحديد الموقع';
+        let errorMsg = t('errors.locationDeterminationFailed');
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMsg = 'تم رفض إذن الوصول إلى الموقع. يرجى تفعيل خدمة الموقع';
+            errorMsg = t('errors.permissionDenied');
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMsg = 'معلومات الموقع غير متاحة';
+            errorMsg = t('errors.positionUnavailable');
             break;
           case error.TIMEOUT:
-            errorMsg = 'انتهت مهلة تحديد الموقع';
+            errorMsg = t('errors.timeout');
             break;
         }
 
@@ -82,7 +84,7 @@ export function LocationTracker({
   // بدء تتبع الموقع المستمر
   const startTracking = () => {
     if (!navigator.geolocation) {
-      const errorMsg = 'المتصفح لا يدعم تحديد الموقع';
+      const errorMsg = t('errors.browserNotSupportGeolocation');
       setError(errorMsg);
       toast.error(errorMsg);
       return;
@@ -103,17 +105,17 @@ export function LocationTracker({
         onLocationUpdate(location);
       },
       (error) => {
-        let errorMsg = 'فشل تتبع الموقع';
+        let errorMsg = t('errors.locationTrackingFailed');
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMsg = 'تم رفض إذن الوصول إلى الموقع';
+            errorMsg = t('errors.permissionDenied');
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMsg = 'معلومات الموقع غير متاحة';
+            errorMsg = t('errors.positionUnavailable');
             break;
           case error.TIMEOUT:
-            errorMsg = 'انتهت مهلة تحديد الموقع';
+            errorMsg = t('errors.timeout');
             break;
         }
 
@@ -128,7 +130,7 @@ export function LocationTracker({
     );
 
     setWatchId(id);
-    toast.success('بدأ تتبع الموقع المستمر');
+    toast.success(t('errors.trackingStarted'));
   };
 
   // إيقاف التتبع
@@ -137,7 +139,7 @@ export function LocationTracker({
       navigator.geolocation.clearWatch(watchId);
       setWatchId(null);
       setIsTracking(false);
-      toast.success('تم إيقاف تتبع الموقع');
+      toast.success(t('errors.trackingStopped'));
     }
   };
 
@@ -151,7 +153,7 @@ export function LocationTracker({
       
       if (response.ok) {
         const data = await response.json();
-        const address = data.display_name || 'عنوان غير متاح';
+        const address = data.display_name || t('errors.addressNotAvailable');
         
         setCurrentLocation(prev => prev ? { ...prev, address } : null);
         onLocationUpdate({ latitude: lat, longitude: lng, address });
@@ -182,11 +184,11 @@ export function LocationTracker({
 
   // التحقق من دقة الموقع
   const getAccuracyLevel = (accuracy?: number): { level: string; color: string } => {
-    if (!accuracy) return { level: 'غير محدد', color: 'text-gray-500' };
+    if (!accuracy) return { level: t('errors.undefined'), color: 'text-gray-500' };
     
-    if (accuracy < 10) return { level: 'عالي', color: 'text-green-600' };
-    if (accuracy < 50) return { level: 'متوسط', color: 'text-yellow-600' };
-    return { level: 'منخفض', color: 'text-red-600' };
+    if (accuracy < 10) return { level: t('errors.high'), color: 'text-green-600' };
+    if (accuracy < 50) return { level: t('errors.medium'), color: 'text-yellow-600' };
+    return { level: t('errors.low'), color: 'text-red-600' };
   };
 
   // تنظيف التتبع عند تفريغ المكون
@@ -205,11 +207,11 @@ export function LocationTracker({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-blue-600" />
-          تتبع الموقع الجغرافي
+          {t('errors.locationTracking')}
         </h3>
         {currentLocation && (
           <span className={`text-xs font-medium ${accuracyLevel.color}`}>
-            دقة: {accuracyLevel.level}
+            {t('errors.accuracy')}: {accuracyLevel.level}
           </span>
         )}
       </div>
@@ -219,20 +221,20 @@ export function LocationTracker({
         <div className="bg-blue-50 rounded-lg p-3 mb-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <div>
-              <span className="text-gray-600">خط العرض:</span>
+              <span className="text-gray-600">{t('errors.latitude')}:</span>
               <span className="font-mono text-gray-900 mr-1">
                 {currentLocation.latitude.toFixed(6)}
               </span>
             </div>
             <div>
-              <span className="text-gray-600">خط الطول:</span>
+              <span className="text-gray-600">{t('errors.longitude')}:</span>
               <span className="font-mono text-gray-900 mr-1">
                 {currentLocation.longitude.toFixed(6)}
               </span>
             </div>
             {currentLocation.accuracy && (
               <div>
-                <span className="text-gray-600">الدقة:</span>
+                <span className="text-gray-600">{t('errors.accuracy')}:</span>
                 <span className="text-gray-900 mr-1">
                   ±{currentLocation.accuracy.toFixed(0)}م
                 </span>
@@ -240,7 +242,7 @@ export function LocationTracker({
             )}
             {currentLocation.address && (
               <div className="md:col-span-2">
-                <span className="text-gray-600">العنوان:</span>
+                <span className="text-gray-600">{t('errors.address')}:</span>
                 <span className="text-gray-900 mr-1">{currentLocation.address}</span>
               </div>
             )}
@@ -267,7 +269,7 @@ export function LocationTracker({
           ) : (
             <Crosshair className="w-4 h-4" />
           )}
-          {isTracking ? 'جاري التحديد...' : 'تحديد الموقع'}
+          {isTracking ? t('errors.determining') : t('errors.determineLocation')}
         </button>
 
         {!watchId ? (
@@ -276,7 +278,7 @@ export function LocationTracker({
             className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Navigation className="w-4 h-4" />
-            بدء التتبع
+            {t('errors.startTracking')}
           </button>
         ) : (
           <button
@@ -284,7 +286,7 @@ export function LocationTracker({
             className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <Navigation className="w-4 h-4" />
-            إيقاف التتبع
+            {t('errors.stopTracking')}
           </button>
         )}
 
@@ -294,7 +296,7 @@ export function LocationTracker({
             className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <MapPin className="w-4 h-4" />
-            الحصول على العنوان
+            {t('errors.getAddress')}
           </button>
         )}
       </div>
@@ -303,7 +305,7 @@ export function LocationTracker({
       {watchId !== null && (
         <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
           <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
-          التتبع نشط - يتم تحديث الموقع تلقائياً
+          {t('errors.trackingActive')}
         </div>
       )}
     </div>

@@ -1,10 +1,12 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Settings } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  t?: (key: string) => string;
 }
 
 interface State {
@@ -28,7 +30,8 @@ export class AdminErrorBoundary extends Component<Props, State> {
     this.setState({ error, errorInfo });
     
     // Show toast notification for admin errors
-    toast.error('حدث خطأ في لوحة الإدارة', {
+    const errorMessage = this.props.t ? this.props.t('errors.adminDashboardError') : 'حدث خطأ في لوحة الإدارة';
+    toast.error(errorMessage, {
       duration: 5000,
     });
   }
@@ -42,6 +45,8 @@ export class AdminErrorBoundary extends Component<Props, State> {
   };
 
   render() {
+    const t = this.props.t || ((key: string) => key);
+
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -54,9 +59,9 @@ export class AdminErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-10 h-10 text-red-600" />
             </div>
             
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">خطأ في لوحة الإدارة</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">{t('errors.adminDashboardError')}</h1>
             <p className="text-gray-600 mb-8">
-              عذراً، حدث خطأ غير متوقع أثناء تحميل لوحة الإدارة. يرجى المحاولة مرة أخرى.
+              {t('errors.adminDashboardErrorDesc')}
             </p>
             
             <div className="space-y-3">
@@ -65,7 +70,7 @@ export class AdminErrorBoundary extends Component<Props, State> {
                 className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-5 h-5" />
-                إعادة تحميل الصفحة
+                {t('errors.reloadPage')}
               </button>
               
               <button
@@ -73,7 +78,7 @@ export class AdminErrorBoundary extends Component<Props, State> {
                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <Home className="w-5 h-5" />
-                العودة للصفحة الرئيسية
+                {t('errors.goToHomePage')}
               </button>
             </div>
 
@@ -90,20 +95,20 @@ export class AdminErrorBoundary extends Component<Props, State> {
                   className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center justify-center gap-2"
                 >
                   <Settings className="w-4 h-4" />
-                  عرض تفاصيل الخطأ
+                  {t('errors.showErrorDetails')}
                 </button>
                 
                 <div id="error-details" className="hidden mt-3">
                   <details className="text-right">
-                    <summary className="text-sm text-gray-500 cursor-pointer">تفاصيل الخطأ التقنية</summary>
+                    <summary className="text-sm text-gray-500 cursor-pointer">{t('errors.technicalErrorDetails')}</summary>
                     <div className="mt-2 space-y-2">
                       <div className="text-xs text-red-600 bg-red-50 p-3 rounded overflow-auto">
-                        <strong>الخطأ:</strong>
+                        <strong>{t('errors.error')}:</strong>
                         <pre className="whitespace-pre-wrap">{this.state.error.message}</pre>
                       </div>
                       {this.state.errorInfo && (
                         <div className="text-xs text-orange-600 bg-orange-50 p-3 rounded overflow-auto">
-                          <strong>معلومات إضافية:</strong>
+                          <strong>{t('errors.additionalInfo')}:</strong>
                           <pre className="whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
                         </div>
                       )}
@@ -116,7 +121,7 @@ export class AdminErrorBoundary extends Component<Props, State> {
             {/* Contact support */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-sm text-gray-500">
-                إذا استمرت المشكلة، يرجى التواصل مع فريق الدعم الفني
+                {t('errors.contactSupport')}
               </p>
               <div className="mt-2 flex justify-center gap-4 text-sm">
                 <a href="mailto:support@aqraply.com" className="text-purple-600 hover:text-purple-700">
@@ -135,4 +140,10 @@ export class AdminErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+}
+
+// Functional wrapper component
+export function AdminErrorBoundaryWrapper({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
+  const { t } = useTranslation();
+  return <AdminErrorBoundary t={t} fallback={fallback}>{children}</AdminErrorBoundary>;
 }

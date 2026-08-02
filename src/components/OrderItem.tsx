@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useTranslation } from "react-i18next";
 
 interface OrderItemProps {
   item: {
@@ -17,6 +18,7 @@ interface OrderItemProps {
 }
 
 export default function OrderItem({ item }: OrderItemProps) {
+  const { t } = useTranslation();
   const generatePlaceholderUrl = (name: string) => {
     const seed = name.replace(/\s+/g, '').toLowerCase();
     return `https://picsum.photos/seed/${seed}/100/100.jpg`;
@@ -58,20 +60,20 @@ export default function OrderItem({ item }: OrderItemProps) {
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-gray-600 text-xs">الكمية: {item.quantity}</span>
+          <span className="text-gray-600 text-xs">{t('errors.quantity')}: {item.quantity}</span>
           {item.size && (
-            <span className="text-gray-600 text-xs">• المقاس: {item.size}</span>
+            <span className="text-gray-600 text-xs">• {t('errors.size')}: {item.size}</span>
           )}
           {item.color && (
-            <span className="text-gray-600 text-xs">• اللون: {item.color}</span>
+            <span className="text-gray-600 text-xs">• {t('errors.color')}: {item.color}</span>
           )}
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-orange-600 font-bold text-sm">
-            {item.price} ج.م × {item.quantity}
+            {item.price} {t('errors.egp')} × {item.quantity}
           </span>
           <span className="text-gray-900 font-bold text-sm">
-            {(item.price * item.quantity).toFixed(2)} ج.م
+            {(item.price * item.quantity).toFixed(2)} {t('errors.egp')}
           </span>
         </div>
       </div>

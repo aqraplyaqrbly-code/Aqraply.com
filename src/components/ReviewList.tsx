@@ -3,6 +3,7 @@ import { Star, ThumbsUp, User, Calendar, CheckCircle } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 interface Review {
   _id: string;
@@ -31,6 +32,7 @@ export default function ReviewList({
   onLoadMore,
   isLoading = false,
 }: ReviewListProps) {
+  const { t } = useTranslation();
   const markReviewHelpful = useMutation(api.reviews.markReviewHelpful);
   const [likedReviews, setLikedReviews] = useState<Set<string>>(new Set());
 
@@ -43,13 +45,13 @@ export default function ReviewList({
 
       if (result.liked) {
         setLikedReviews(new Set([...likedReviews, reviewId]));
-        toast.success('شكراً لتقييمك!');
+        toast.success(t('errors.thanksForRating'));
       } else {
         setLikedReviews(new Set([...likedReviews].filter(id => id !== reviewId)));
-        toast.success('تم إزالة التقييم');
+        toast.success(t('errors.ratingRemoved'));
       }
     } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('errors.errorOccurred'));
     }
   };
 
@@ -84,7 +86,7 @@ export default function ReviewList({
       {/* العنوان والإحصائيات */}
       <div>
         <h3 className="text-lg font-bold text-gray-900 mb-4">
-          {title || `تقييمات ${reviewType === 'store' ? 'المتجر' : 'المنتج'}`}
+          {title || `${reviewType === 'store' ? t('errors.storeRatings') : t('errors.productRatings')}`}
         </h3>
         
         {reviews.length > 0 && (
@@ -108,7 +110,7 @@ export default function ReviewList({
                     ))}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {reviews.length} تقييم
+                    {reviews.length} {t('errors.rating')}
                   </div>
                 </div>
                 
@@ -140,10 +142,10 @@ export default function ReviewList({
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              لا توجد تقييمات بعد
+              {t('errors.noRatingsYet')}
             </h3>
             <p className="text-gray-600">
-              كن أول من يقيم {reviewType === 'store' ? 'هذا المتجر' : 'هذا المنتج'}
+              {reviewType === 'store' ? t('errors.beFirstToRateStore') : t('errors.beFirstToRateProduct')}
             </p>
           </div>
         ) : (
@@ -168,7 +170,7 @@ export default function ReviewList({
                       {review.isVerified && (
                         <div className="flex items-center gap-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
-                          <span className="text-xs">تم التحقق</span>
+                          <span className="text-xs">{t('errors.verified')}</span>
                         </div>
                       )}
                     </div>
@@ -211,11 +213,11 @@ export default function ReviewList({
                       likedReviews.has(review._id) ? 'fill-orange-600' : ''
                     }`}
                   />
-                  مفيد ({review.helpfulCount})
+                  {t('errors.helpful')} ({review.helpfulCount})
                 </button>
 
                 <div className="text-xs text-gray-400">
-                  {reviewType === 'store' ? 'تقييم متجر' : 'تقييم منتج'}
+                  {reviewType === 'store' ? t('errors.storeReview') : t('errors.productReview')}
                 </div>
               </div>
             </div>
@@ -231,7 +233,7 @@ export default function ReviewList({
             disabled={isLoading}
             className="bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? 'جاري التحميل...' : 'عرض المزيد'}
+            {isLoading ? t('errors.loadingMore') : t('errors.loadMore')}
           </button>
         </div>
       )}

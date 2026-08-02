@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Phone, Copy, CheckCircle, ArrowLeft, Wallet, Smartphone, Upload, FileImage } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface WalletPaymentProps {
   onBack: () => void;
@@ -11,6 +12,7 @@ interface WalletPaymentProps {
 }
 
 export default function WalletPayment({ onBack, amount, onPaymentComplete }: WalletPaymentProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -29,13 +31,13 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
     if (file) {
       // التحقق من نوع الملف
       if (!file.type.startsWith('image/')) {
-        toast.error('يرجى رفع صورة فقط');
+        toast.error(t('errors.pleaseUploadImageOnly'));
         return;
       }
       
       // التحقق من حجم الملف (أقصى 5 ميجابايت)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('حجم الصورة كبير جداً. أقصى حجم 5 ميجابايت');
+        toast.error(t('errors.imageSizeTooLarge'));
         return;
       }
       
@@ -48,7 +50,7 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
       };
       reader.readAsDataURL(file);
       
-      toast.success('تم رفع صورة الإيصال بنجاح');
+      toast.success(t('errors.receiptUploaded'));
     }
   };
 
@@ -56,23 +58,23 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
   const removeReceipt = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
-    toast.success('تم حذف صورة الإيصال');
+    toast.success(t('errors.receiptDeleted'));
   };
 
   const copyPhoneNumber = () => {
     if (walletPhone) {
       navigator.clipboard.writeText(walletPhone);
       setCopied(true);
-      toast.success("تم نسخ رقم المحفظة!");
+      toast.success(t('errors.walletNumberCopied'));
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast.error("رقم المحفظة غير متوفر");
+      toast.error(t('errors.walletNumberNotAvailable'));
     }
   };
 
   const handlePaymentConfirmation = async () => {
     if (!receiptFile) {
-      toast.error("يرجى رفع صورة إيصال الدفع أولاً");
+      toast.error(t('errors.pleaseUploadReceiptFirst'));
       return;
     }
     
@@ -90,13 +92,13 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
       });
 
       if (!result.ok) {
-        throw new Error("فشل رفع صورة الإيصال");
+        throw new Error(t('errors.receiptUploadFailed'));
       }
 
       const { storageId } = await result.json();
       
       setIsUploading(false);
-      toast.success("تم تأكيد الدفع بنجاح!");
+      toast.success(t('errors.paymentConfirmed'));
       
       // Pass the storage ID to the parent component
       setTimeout(() => {
@@ -104,7 +106,7 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
       }, 500);
     } catch (error) {
       setIsUploading(false);
-      toast.error("حدث خطأ أثناء رفع الإيصال");
+      toast.error(t('errors.errorUploadingReceipt'));
       console.error("Upload error:", error);
     }
   };
@@ -119,7 +121,7 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
-        <h2 className="text-xl font-bold text-gray-900">الدفع بالمحفظة الإلكترونية</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('errors.walletPayment')}</h2>
         <div className="w-9"></div>
       </div>
 
@@ -128,13 +130,13 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
           {/* Amount Display */}
           <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 mb-6 border border-green-200">
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-2">المبلغ المطلوب</p>
+              <p className="text-sm text-gray-600 mb-2">{t('errors.amountRequired')}</p>
               <p className="text-4xl font-bold text-gray-900">
                 {(amount ?? 0).toFixed(2)} <span className="text-2xl text-gray-700">ج.م</span>
               </p>
               {amount && amount > 0 && (
                 <p className="text-xs text-gray-500 mt-2">
-                  مع رسوم التوصيل والضريبة
+                  {t('errors.withDeliveryAndTax')}
                 </p>
               )}
             </div>
@@ -147,23 +149,23 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
                 <Smartphone className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900">خطوات الدفع</h3>
-                <p className="text-sm text-gray-600">اتبع الخطوات التالية لإتمام الدفع</p>
+                <h3 className="font-bold text-gray-900">{t('errors.paymentSteps')}</h3>
+                <p className="text-sm text-gray-600">{t('errors.followStepsToComplete')}</p>
               </div>
             </div>
             
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
-                <p className="text-sm text-gray-700">افتح تطبيق المحفظة الإلكترونية (فودافون كاش، أورانج موني، إلخ)</p>
+                <p className="text-sm text-gray-700">{t('errors.openWalletApp')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
-                <p className="text-sm text-gray-700">اختر "تحويل أموال" أو "Send Money"</p>
+                <p className="text-sm text-gray-700">{t('errors.chooseTransferMoney')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
-                <p className="text-sm text-gray-700">أدخل رقم المحفظة التالي:</p>
+                <p className="text-sm text-gray-700">{t('errors.enterWalletNumber')}</p>
               </div>
             </div>
           </div>
@@ -176,8 +178,8 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
                   <Phone className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">رقم المحفظة</p>
-                  <p className="text-xl font-bold text-gray-900">{walletPhone || "جاري التحميل..."}</p>
+                  <p className="text-sm text-gray-600">{t('errors.walletNumber')}</p>
+                  <p className="text-xl font-bold text-gray-900">{walletPhone || t('errors.loading')}</p>
                 </div>
               </div>
               <button
@@ -191,12 +193,12 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
                 {copied ? (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    تم النسخ
+                    {t('errors.copied')}
                   </>
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    نسخ
+                    {t('errors.copy')}
                   </>
                 )}
               </button>
@@ -208,9 +210,9 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
             <div className="mb-4">
               <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
                 <FileImage className="w-5 h-5 text-blue-600" />
-                رفع صورة إيصال الدفع
+                {t('errors.uploadReceiptImage')}
               </h3>
-              <p className="text-sm text-gray-600">يرجى رفع صورة واضحة لإيصال التحويل لإتمام عملية الدفع</p>
+              <p className="text-sm text-gray-600">{t('errors.uploadClearReceipt')}</p>
             </div>
 
             {!receiptPreview ? (
@@ -223,8 +225,8 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
                 />
                 <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-100 transition-all">
                   <Upload className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-gray-700 mb-1">اضغط لرفع صورة الإيصال</p>
-                  <p className="text-xs text-gray-500">PNG, JPG, JPEG (أقصى 5 ميجابايت)</p>
+                  <p className="text-sm font-medium text-gray-700 mb-1">{t('errors.clickToUploadReceipt')}</p>
+                  <p className="text-xs text-gray-500">{t('errors.maxSize5MB')}</p>
                 </div>
               </label>
             ) : (
@@ -232,7 +234,7 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
                 <div className="relative rounded-lg overflow-hidden border-2 border-blue-200">
                   <img 
                     src={receiptPreview} 
-                    alt="إيصال الدفع" 
+                    alt={t('errors.paymentReceipt')} 
                     className="w-full h-48 object-cover"
                   />
                   <button
@@ -244,7 +246,7 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
                 </div>
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle className="w-4 h-4" />
-                  <span>تم رفع الصورة بنجاح</span>
+                  <span>{t('errors.imageUploaded')}</span>
                 </div>
               </div>
             )}
@@ -255,11 +257,11 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
             <div className="flex items-start gap-3">
               <Wallet className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-yellow-800 mb-1">ملاحظات هامة:</p>
+                <p className="text-sm font-medium text-yellow-800 mb-1">{t('errors.importantNotes')}</p>
                 <ul className="text-xs text-yellow-700 space-y-1">
-                  <li>• تأكد من إدخال المبلغ الصحيح: {(amount ?? 0).toFixed(2)} ج.م</li>
-                  <li>• احتفظ بإيصال التحويل كدليل</li>
-                  <li>• قد يستغرق التحويل بضع دقائق</li>
+                  <li>• {t('errors.enterCorrectAmount')} {(amount ?? 0).toFixed(2)} ج.م</li>
+                  <li>• {t('errors.keepReceipt')}</li>
+                  <li>• {t('errors.transferMayTakeMinutes')}</li>
                 </ul>
               </div>
             </div>
@@ -279,12 +281,12 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
               {isUploading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  جاري تأكيد الدفع...
+                  {t('errors.confirmingPayment')}
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  {receiptFile ? "لقد قمت بالتحويل ورفعت الإيصال" : "يرجى رفع صورة الإيصال أولاً"}
+                  {receiptFile ? t('errors.transferredAndUploaded') : t('errors.pleaseUploadReceipt')}
                 </>
               )}
             </button>
@@ -293,7 +295,7 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
               onClick={onBack}
               className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
             >
-              العودة لطرق الدفع الأخرى
+              {t('errors.backToPaymentMethods')}
             </button>
           </div>
         </>
@@ -303,13 +305,13 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">تم استلام الدفع!</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{t('errors.paymentReceived')}</h3>
           <p className="text-gray-600 mb-6">
-            شكراً لك! تم استلام دفعتك بنجاح وجاري معالجة طلبك.
+            {t('errors.paymentReceivedMessage')}
           </p>
           <div className="bg-green-50 rounded-xl p-4 mb-6">
             <p className="text-sm text-green-800">
-              سيتم تأكيد الطلب قريباً وإرسال تفاصيل التوصيل
+              {t('errors.orderWillBeConfirmed')}
             </p>
           </div>
         </div>

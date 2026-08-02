@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 import OrderActionButtons from "./OrderActionButtons";
 import OrderProgressTimeline from "./OrderProgressTimeline";
 import {
@@ -71,6 +72,7 @@ interface CaptainNotification {
 }
 
 export default function CaptainDashboard() {
+  const { t } = useTranslation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [connectionDuration, setConnectionDuration] = useState<string>("");
@@ -179,12 +181,12 @@ export default function CaptainDashboard() {
     try {
       await updateStatus({ sessionToken, isOnline: !isOnline });
       const message = !isOnline 
-        ? "✓ تم الاتصال بنجاح - أنت الآن متصل وجاهز لاستقبال الطلبات"
-        : "✗ تم قطع الاتصال - لن تتلقى طلبات جديدة";
+        ? t('captain.onlineSuccess')
+        : t('captain.offlineSuccess');
       toast.success(message);
     } catch (error: any) {
       console.error("Error toggling online status:", error);
-      toast.error("فشل تحديث حالة الاتصال");
+      toast.error(t('errors.somethingWentWrong'));
     }
   };
 
@@ -200,11 +202,11 @@ export default function CaptainDashboard() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("حجم الصورة يجب أن يكون أقل من 5MB");
+        toast.error(t('validation.imageSizeMax'));
         return;
       }
       if (!file.type.startsWith('image/')) {
-        toast.error("يرجى اختيار صورة صالحة");
+        toast.error(t('validation.invalidImage'));
         return;
       }
       setImageFile(file);
@@ -218,22 +220,22 @@ export default function CaptainDashboard() {
     try {
       // التحقق من البيانات قبل الإرسال
       if (!editFormData.fullName.trim()) {
-        toast.error("الاسم الكامل مطلوب");
+        toast.error(t('validation.fullNameRequired'));
         return;
       }
       
       if (!editFormData.phone.trim()) {
-        toast.error("رقم الهاتف مطلوب");
+        toast.error(t('validation.phoneRequired'));
         return;
       }
       
       if (!editFormData.vehicleType.trim()) {
-        toast.error("نوع المركبة مطلوب");
+        toast.error(t('validation.vehicleTypeRequired'));
         return;
       }
 
       if (!editFormData.vehicleNumber.trim()) {
-        toast.error("رقم المركبة مطلوب");
+        toast.error(t('captain.vehicleNumberRequired'));
         return;
       }
 
@@ -244,7 +246,7 @@ export default function CaptainDashboard() {
         vehicleNumber: editFormData.vehicleNumber.trim(),
       });
 
-      toast.success("تم تحديث البيانات بنجاح");
+      toast.success(t('success.updatedSuccessfully'));
       setShowEditProfile(false);
       setImageFile(null);
     } catch (error: any) {
@@ -252,21 +254,21 @@ export default function CaptainDashboard() {
       
       // عرض رسالة خطأ مفصلة
       if (error.message?.includes("رقم الهاتف مستخدم بالفعل")) {
-        toast.error("رقم الهاتف مستخدم بالفعل");
+        toast.error(t('errors.phoneAlreadyExists'));
       } else if (error.message?.includes("رقم الهاتف غير صحيح")) {
-        toast.error("رقم الهاتف غير صحيح");
+        toast.error(t('errors.invalidPhone'));
       } else if (error.message?.includes("البريد الإلكتروني غير صحيح")) {
-        toast.error("البريد الإلكتروني غير صحيح");
+        toast.error(t('errors.invalidEmail'));
       } else if (error.message?.includes("الاسم الكامل يجب أن يحتوي على 3 أحرف على الأقل")) {
-        toast.error("الاسم الكامل يجب أن يحتوي على 3 أحرف على الأقل");
+        toast.error(t('merchant.fullNameMin3'));
       } else if (error.message?.includes("رقم المركبة يجب أن يحتوي على حرفين على الأقل")) {
-        toast.error("رقم المركبة يجب أن يحتوي على حرفين على الأقل");
+        toast.error(t('captain.vehicleNumberMin2'));
       } else if (error.message?.includes("نوع المركبة غير صحيح")) {
-        toast.error("نوع المركبة غير صحيح");
+        toast.error(t('captain.vehicleTypeRequired'));
       } else if (error.message?.includes("فشل رفع الصورة")) {
-        toast.error("فشل رفع الصورة، يرجى المحاولة مرة أخرى");
+        toast.error(t('errors.uploadFailed'));
       } else {
-        toast.error("فشل تحديث البيانات، يرجى المحاولة مرة أخرى");
+        toast.error(t('errors.somethingWentWrong'));
       }
     }
   };
@@ -274,15 +276,15 @@ export default function CaptainDashboard() {
   const handleAcceptOrder = async (orderId: Id<"orders">) => {
     try {
       await acceptOrder({ sessionToken, orderId });
-      toast.success("✓ تم قبول الطلب بنجاح");
+      toast.success(t('captain.orderAccepted'));
     } catch (error: any) {
       console.error(error);
       if (error.message?.includes("لا يمكن قبول")) {
-        toast.error("هذا الطلب تم قبوله أو رفضه بالفعل");
+        toast.error(t('captain.orderAlreadyActioned'));
       } else if (error.message?.includes("جاهزاً")) {
-        toast.error("يجب أن يكون الطلب جاهزاً للاستلام فقط");
+        toast.error(t('captain.orderMustBeReady'));
       } else {
-        toast.error("فشل قبول الطلب");
+        toast.error(t('captain.acceptOrderFailed'));
       }
     }
   };
@@ -290,15 +292,15 @@ export default function CaptainDashboard() {
   const handleRejectOrder = async (orderId: Id<"orders">) => {
     try {
       await rejectOrder({ sessionToken, orderId });
-      toast.success("✗ تم رفض الطلب - الطلب أصبح مغلق");
+      toast.success(t('captain.orderRejected'));
     } catch (error: any) {
       console.error(error);
       if (error.message?.includes("لا يمكن رفض")) {
-        toast.error("هذا الطلب تم قبوله أو رفضه بالفعل");
+        toast.error(t('captain.orderAlreadyActioned'));
       } else if (error.message?.includes("جاهزاً")) {
-        toast.error("يجب أن يكون الطلب جاهزاً للاستلام فقط");
+        toast.error(t('captain.orderMustBeReady'));
       } else {
-        toast.error("فشل رفض الطلب");
+        toast.error(t('captain.rejectOrderFailed'));
       }
     }
   };
@@ -306,13 +308,13 @@ export default function CaptainDashboard() {
   const handlePickUp = async (orderId: Id<"orders">) => {
     try {
       await updateOrderStatusByCaptain({ sessionToken, orderId, status: "picked_up" });
-      toast.success("✓ تم استلام الطلب من المتجر بنجاح");
+      toast.success(t('captain.orderPickedUp'));
     } catch (error: any) {
       console.error("Pick up error:", error);
       if (error.message?.includes("لا يمكن استلام")) {
-        toast.error("يجب أن يكون الطلب معيناً (مقبول) أولاً");
+        toast.error(t('captain.orderMustBeAccepted'));
       } else {
-        toast.error(`فشل استلام الطلب: ${error.message || "خطأ غير معروف"}`);
+        toast.error(`${t('captain.pickUpFailed')}: ${error.message || t('errors.unknownError')}`);
       }
     }
   };
@@ -322,15 +324,15 @@ export default function CaptainDashboard() {
     console.log("sessionToken:", sessionToken ? "exists" : "missing");
     try {
       await updateOrderStatusByCaptain({ sessionToken, orderId, status: "delivering" });
-      toast.success("✓ تم بدء التوصيل بنجاح");
+      toast.success(t('captain.deliveryStarted'));
     } catch (error: any) {
       console.error("Start delivery error:", error);
       if (error.message?.includes("لا يمكن بدء")) {
-        toast.error("يجب أن تكون قد قبلت الطلب أولاً");
+        toast.error(t('captain.mustAcceptFirst'));
       } else if (error.message?.includes("معيناً")) {
-        toast.error("يجب أن يكون الطلب معيناً (مقبول) أولاً");
+        toast.error(t('captain.orderMustBeAccepted'));
       } else {
-        toast.error(`فشل بدء التوصيل: ${error.message || "خطأ غير معروف"}`);
+        toast.error(`${t('captain.startDeliveryFailed')}: ${error.message || t('errors.unknownError')}`);
       }
     }
   };
@@ -340,10 +342,10 @@ export default function CaptainDashboard() {
     console.log("sessionToken:", sessionToken ? "exists" : "missing");
     try {
       await completeOrder({ sessionToken, orderId });
-      toast.success("✓ تم التوصيل بنجاح - شكراً لك!");
+      toast.success(t('captain.orderDelivered'));
     } catch (error: any) {
       console.error("Complete order error:", error);
-      toast.error(`فشل التوصيل: ${error.message || "خطأ غير معروف"}`);
+      toast.error(`${t('captain.completeOrderFailed')}: ${error.message || t('errors.unknownError')}`);
     }
   };
 
@@ -354,10 +356,10 @@ export default function CaptainDashboard() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 1) return "الآن";
-    if (minutes < 60) return `منذ ${minutes} دقيقة`;
-    if (hours < 24) return `منذ ${hours} ساعة`;
-    return `منذ ${days} يوم`;
+    if (minutes < 1) return t('common.now');
+    if (minutes < 60) return t('common.minutesAgo', { count: minutes });
+    if (hours < 24) return t('common.hoursAgo', { count: hours });
+    return t('common.daysAgo', { count: days });
   };
 
   return (

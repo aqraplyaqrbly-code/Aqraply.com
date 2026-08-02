@@ -4,8 +4,10 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Mail, ArrowRight, CheckCircle, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ForgotPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     
     if (!email) {
-      toast.error("الرجاء إدخال البريد الإلكتروني");
+      toast.error(t('errors.enterEmail'));
       return;
     }
 
@@ -26,11 +28,11 @@ export default function ForgotPassword() {
       // Always show success message to prevent user enumeration
       await requestPasswordReset({ email });
       setIsSuccess(true);
-      toast.success("تم إرسال كود التحقق إلى بريدك الإلكتروني");
+      toast.success(t('errors.verificationCodeSent'));
     } catch (error) {
       // Still show success message even if email doesn't exist
       setIsSuccess(true);
-      toast.success("تم إرسال كود التحقق إلى بريدك الإلكتروني");
+      toast.success(t('errors.verificationCodeSent'));
     } finally {
       setLoading(false);
     }
@@ -45,18 +47,18 @@ export default function ForgotPassword() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">تم الإرسال بنجاح!</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('errors.sentSuccessfully')}</h2>
               <p className="text-gray-600 mb-6">
-                تم إرسال كود التحقق إلى بريدك الإلكتروني
+                {t('errors.verificationCodeSent')}
               </p>
               <p className="text-sm text-gray-500 mb-8">
-                لم تستلم الكود؟ تحقق في مجلد الرسائل غير المرغوب فيها
+                {t('errors.checkSpamFolder')}
               </p>
               <button
                 onClick={() => navigate(`/reset-password?email=${encodeURIComponent(email)}`)}
                 className="w-full py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
-                إدخال كود التحقق
+                {t('errors.enterVerificationCode')}
                 <ArrowRight className="w-5 h-5 rotate-180" />
               </button>
             </div>
@@ -76,8 +78,8 @@ export default function ForgotPassword() {
               <User className="w-9 h-9 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">نسيت كلمة المرور؟</h1>
-          <p className="text-gray-600">لا تقلق، سنرسل لك كود التحقق على بريدك الإلكتروني</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('errors.forgotPassword')}</h1>
+          <p className="text-gray-600">{t('errors.forgotPasswordDesc')}</p>
         </div>
 
         {/* Forgot Password Form */}
@@ -86,7 +88,7 @@ export default function ForgotPassword() {
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                البريد الإلكتروني
+                {t('errors.email')}
               </label>
               <div className="relative">
                 <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -95,7 +97,7 @@ export default function ForgotPassword() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pe-10 ps-4 py-3 border-2 border-gray-200 rounded-xl focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
-                  placeholder="أدخل بريدك الإلكتروني"
+                  placeholder={t('errors.enterYourEmail')}
                   required
                 />
               </div>

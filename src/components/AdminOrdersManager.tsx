@@ -5,10 +5,12 @@ import { Package, User, MapPin, Phone, Mail, Clock, DollarSign, Store, Star, Tre
 import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 const currency = "EGP";
 
 export default function AdminOrdersManager() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const orders = useQuery(api.orders.getAllOrders, isAuthenticated && sessionToken ? { sessionToken } : "skip") || [];
   const captains = useQuery(api.captains.getAvailableCaptains, isAuthenticated && sessionToken ? { sessionToken } : "skip") || [];
@@ -52,30 +54,30 @@ export default function AdminOrdersManager() {
 
   const handleAssignCaptain = useCallback(async () => {
     if (!selectedOrder || !selectedCaptain) {
-      toast.error("يرجى اختيار الطلب والكابتن");
+      toast.error(t('errors.selectOrderAndCaptain'));
       return;
     }
 
     try {
       await assignCaptain({ sessionToken, orderId: selectedOrder, captainId: selectedCaptain });
-      toast.success("تم تعيين الكابتن بنجاح");
+      toast.success(t('errors.captainAssigned'));
       setSelectedOrder(null);
       setSelectedCaptain(null);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "حدث خطأ";
+      const message = error instanceof Error ? error.message : t('errors.errorOccurred');
       toast.error(message);
     }
-  }, [selectedOrder, selectedCaptain, assignCaptain, sessionToken]);
+  }, [selectedOrder, selectedCaptain, assignCaptain, sessionToken, t]);
 
   const handleUpdateStatus = useCallback(async (orderId: Id<"orders">, status: string) => {
     try {
       await updateStatus({ sessionToken, orderId, status });
-      toast.success("تم تحديث حالة الطلب");
+      toast.success(t('errors.orderStatusUpdated'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "حدث خطأ";
+      const message = error instanceof Error ? error.message : t('errors.errorOccurred');
       toast.error(message);
     }
-  }, [updateStatus, sessionToken]);
+  }, [updateStatus, sessionToken, t]);
 
   const getStatusColor = useCallback((status: string) => {
     const colors: Record<string, string> = {
@@ -92,29 +94,29 @@ export default function AdminOrdersManager() {
 
   const getStatusArabic = useCallback((status: string) => {
     const statusMap: Record<string, string> = {
-      pending: "قيد الانتظار",
-      confirmed: "تم التأكيد",
-      assigned: "تم التعيين",
-      preparing: "قيد التحضير",
-      delivering: "قيد التوصيل",
-      delivered: "تم التوصيل",
-      cancelled: "ملغي",
+      pending: t('errors.statusPending'),
+      confirmed: t('errors.statusConfirmed'),
+      assigned: t('errors.statusAssigned'),
+      preparing: t('errors.statusPreparing'),
+      delivering: t('errors.statusDelivering'),
+      delivered: t('errors.statusDelivered'),
+      cancelled: t('errors.statusCancelled'),
     };
     return statusMap[status] || status;
-  }, []);
+  }, [t]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">إدارة الطلبات</h1>
-          <p className="text-gray-600">عرض وإدارة جميع الطلبات وتعيين الكباتن</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('errors.ordersManagement')}</h1>
+          <p className="text-gray-600">{t('errors.viewManageOrders')}</p>
         </div>
 
         {/* إحصائيات المتاجر */}
         {Object.keys(storeStats).length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">إحصائيات المتاجر</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{t('errors.storeStatistics')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(storeStats).map(([storeName, stats]) => (
                 <div key={storeName} className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
@@ -132,19 +134,19 @@ export default function AdminOrdersManager() {
                   
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-600">إجمالي الطلبات</p>
+                      <p className="text-gray-600">{t('errors.totalOrders')}</p>
                       <p className="font-bold text-lg text-blue-600">{stats.totalOrders}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">الإيرادات</p>
+                      <p className="text-gray-600">{t('errors.revenue')}</p>
                       <p className="font-bold text-lg text-green-600">{stats.totalRevenue.toFixed(2)} {currency}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">مكتمل</p>
+                      <p className="text-gray-600">{t('errors.completed')}</p>
                       <p className="font-bold text-green-600">{stats.deliveredOrders}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">معلق</p>
+                      <p className="text-gray-600">{t('errors.pendingOrders')}</p>
                       <p className="font-bold text-orange-600">{stats.pendingOrders}</p>
                     </div>
                   </div>
@@ -173,16 +175,16 @@ export default function AdminOrdersManager() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم الطلب</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المنتجات والأكواد</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عنوان المتجر</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المتجر</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الكابتن</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.orderNumber')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.customer')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.productsAndCodes')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.storeAddress')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.amount')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.status')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.store')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.captain')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.date')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -233,7 +235,7 @@ export default function AdminOrdersManager() {
                         ))}
                         {order.items.length > 3 && (
                           <div className="text-xs text-gray-400 font-medium pt-1 text-center">
-                            +{order.items.length - 3} منتجات أخرى
+                            {t('errors.otherProducts', { count: order.items.length - 3 })}
                           </div>
                         )}
                       </div>
@@ -266,10 +268,10 @@ export default function AdminOrdersManager() {
                             <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                               <User className="w-3 h-3 text-green-600" />
                             </div>
-                            <span className="text-xs text-gray-600">معين</span>
+                            <span className="text-xs text-gray-600">{t('errors.assigned')}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">غير معين</span>
+                          <span className="text-xs text-gray-400">{t('errors.notAssigned')}</span>
                         )}
                       </div>
                     </td>
@@ -281,7 +283,7 @@ export default function AdminOrdersManager() {
                         onClick={() => setSelectedOrder(order._id)}
                         className="text-purple-600 hover:text-purple-900 font-medium text-sm"
                       >
-                        عرض
+                        {t('errors.view')}
                       </button>
                     </td>
                   </tr>
@@ -309,7 +311,7 @@ export default function AdminOrdersManager() {
                 </div>
                 <div className="text-left">
                   <p className="text-2xl font-bold text-purple-600">{order.total.toFixed(2)} {currency}</p>
-                  <p className="text-xs text-gray-500">الإجمالي</p>
+                  <p className="text-xs text-gray-500">{t('errors.total')}</p>
                 </div>
               </div>
 
@@ -318,7 +320,7 @@ export default function AdminOrdersManager() {
                 <div className="bg-purple-50 rounded-xl p-4 mb-4">
                   <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <Store className="w-4 h-4 text-purple-600" />
-                    معلومات المتجر
+                    {t('errors.storeInfo')}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="flex items-center gap-2 text-sm">
@@ -350,12 +352,12 @@ export default function AdminOrdersManager() {
               <div className="bg-gray-50 rounded-xl p-4 mb-4">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  بيانات العميل والبائع
+                  {t('errors.customerAndMerchantData')}
                 </h4>
                 
                 {/* بيانات العميل */}
                 <div className="mb-4 pb-4 border-b border-gray-200">
-                  <h5 className="text-xs font-medium text-gray-500 mb-2">معلومات العميل</h5>
+                  <h5 className="text-xs font-medium text-gray-500 mb-2">{t('errors.customerInfo')}</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-gray-400" />
@@ -383,7 +385,7 @@ export default function AdminOrdersManager() {
                 {/* بيانات البائع/التاجر */}
                 {order.storeInfo && (
                   <div>
-                    <h5 className="text-xs font-medium text-gray-500 mb-2">معلومات البائع</h5>
+                    <h5 className="text-xs font-medium text-gray-500 mb-2">{t('errors.merchantInfo')}</h5>
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="text-sm">
                         <div className="font-medium text-gray-900 mb-1">📍 {order.storeInfo.nameAr || order.storeInfo.name || '—'}</div>
@@ -402,7 +404,7 @@ export default function AdminOrdersManager() {
               <div className="bg-blue-50 rounded-xl p-4 mb-4">
                 <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  عنوان التوصيل
+                  {t('errors.deliveryAddress')}
                 </h4>
                 <p className="text-sm text-gray-700">
                   {order.customerLocation?.addressAr ??
@@ -423,7 +425,7 @@ export default function AdminOrdersManager() {
                   <div className="bg-red-50 rounded-xl p-4 border border-red-200">
                     <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Store className="w-4 h-4 text-red-600" />
-                      بيانات المتجر التفصيلية
+                      {t('errors.storeDetailedInfo')}
                     </h4>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm">
@@ -453,11 +455,11 @@ export default function AdminOrdersManager() {
                         <div className="grid grid-cols-2 gap-3 text-xs">
                           <div className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3 text-green-500" />
-                            <span className="text-gray-600">نشط</span>
+                            <span className="text-gray-600">{t('errors.active')}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Star className="w-3 h-3 text-yellow-500" />
-                            <span className="text-gray-600">مقيّم</span>
+                            <span className="text-gray-600">{t('errors.rated')}</span>
                           </div>
                         </div>
                       </div>
@@ -467,7 +469,7 @@ export default function AdminOrdersManager() {
 
                 {/* تفاصيل المنتجات */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">تفاصيل المنتجات</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">{t('errors.productDetails')}</h4>
                   <div className="space-y-3">
                     {order.items.map((item, idx) => (
                       <div key={`detail-${order._id}-${item.productId}-${idx}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -486,7 +488,7 @@ export default function AdminOrdersManager() {
                           <div className="flex-1">
                             <h5 className="font-semibold text-gray-900">{item.nameAr}</h5>
                             <p className="text-xs text-gray-500 mt-1">{item.name}</p>
-                            {item.code && <p className="text-xs text-blue-600 font-medium">كود: {item.code}</p>}
+                            {item.code && <p className="text-xs text-blue-600 font-medium">{t('errors.code')}: {item.code}</p>}
                           </div>
                           <div className="text-left">
                             <span className="font-bold text-lg text-orange-600">{(item.price * item.quantity).toFixed(2)} {currency}</span>
@@ -496,17 +498,17 @@ export default function AdminOrdersManager() {
                         
                         <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-600">الكمية:</span>
-                            <span className="font-medium text-gray-900 bg-white px-2 py-1 rounded">{item.quantity} قطعة</span>
+                            <span className="text-gray-600">{t('errors.quantity')}:</span>
+                            <span className="font-medium text-gray-900 bg-white px-2 py-1 rounded">{item.quantity} {t('errors.piece')}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-600">السعر الواحد:</span>
+                            <span className="text-gray-600">{t('errors.unitPrice')}:</span>
                             <span className="font-medium text-gray-900">{item.price.toFixed(2)} {currency}</span>
                           </div>
                           
                           {item.color && (
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-600">اللون:</span>
+                              <span className="text-gray-600">{t('errors.color')}:</span>
                               <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 rounded border border-gray-300" style={{backgroundColor: item.color}}></div>
                                 <span className="font-medium text-gray-900">{item.color}</span>
@@ -516,7 +518,7 @@ export default function AdminOrdersManager() {
                           
                           {item.selectedSize && (
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-600">المقاس:</span>
+                              <span className="text-gray-600">{t('errors.size')}:</span>
                               <span className="font-medium text-gray-900 bg-blue-100 text-blue-700 px-2 py-1 rounded">{item.selectedSize}</span>
                             </div>
                           )}
@@ -530,15 +532,15 @@ export default function AdminOrdersManager() {
               {/* تفاصيل السعر */}
               <div className="border-t pt-4 mb-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">المجموع الفرعي</span>
+                  <span className="text-gray-600">{t('errors.subtotal')}</span>
                   <span className="font-medium">{order.subtotal.toFixed(2)} {currency}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">رسوم التوصيل</span>
+                  <span className="text-gray-600">{t('errors.deliveryFee')}</span>
                   <span className="font-medium">{order.deliveryFee.toFixed(2)} {currency}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">العمولة</span>
+                  <span className="text-gray-600">{t('errors.commission')}</span>
                   <span className="font-medium text-purple-600">{order.commission.toFixed(2)} {currency}</span>
                 </div>
               </div>
@@ -546,7 +548,7 @@ export default function AdminOrdersManager() {
               {/* تعيين الكابتن */}
               {order.status === "confirmed" && (
                 <div className="bg-purple-50 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">تعيين كابتن للتوصيل</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">{t('errors.assignCaptain')}</h4>
                   <div className="flex gap-3">
                     <select
                       value={selectedOrder === order._id ? selectedCaptain || "" : ""}
@@ -556,7 +558,7 @@ export default function AdminOrdersManager() {
                       }}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
-                      <option value="">اختر كابتن</option>
+                      <option value="">{t('errors.selectCaptain')}</option>
                       {captains.map((captain) => (
                         <option key={captain._id} value={captain.userId}>
                           {captain.fullName} - {captain.vehicleType}
@@ -568,7 +570,7 @@ export default function AdminOrdersManager() {
                       disabled={selectedOrder !== order._id || !selectedCaptain}
                       className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      تعيين
+                      {t('errors.assign')}
                     </button>
                   </div>
                 </div>
@@ -577,22 +579,22 @@ export default function AdminOrdersManager() {
               {/* معلومات الكابتن المعين */}
               {order.captainId && (
                 <div className="bg-green-50 rounded-xl p-4 mt-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">الكابتن المعين</h4>
-                  <p className="text-sm text-gray-700">تم تعيين كابتن لهذا الطلب</p>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('errors.assignedCaptain')}</h4>
+                  <p className="text-sm text-gray-700">{t('errors.captainAssignedToOrder')}</p>
                 </div>
               )}
 
               {/* إجراءات سريعة للمتجر */}
               {order.storeInfo && (
                 <div className="bg-blue-50 rounded-xl p-4 mt-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">إجراءات سريعة</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">{t('errors.quickActions')}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <button
                       onClick={() => window.open(`tel:${order.storeInfo.phone}`)}
                       className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-blue-100 transition-colors text-sm"
                     >
                       <Phone className="w-3 h-3 text-blue-600" />
-                      <span>اتصل بالمتجر</span>
+                      <span>{t('errors.callStore')}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -603,17 +605,17 @@ export default function AdminOrdersManager() {
                       className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-blue-100 transition-colors text-sm"
                     >
                       <MapPin className="w-3 h-3 text-blue-600" />
-                      <span>عرض الخريطة</span>
+                      <span>{t('errors.viewMap')}</span>
                     </button>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(order.storeInfo.phone);
-                        toast.success("تم نسخ رقم الهاتف");
+                        toast.success(t('errors.phoneCopied'));
                       }}
                       className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-blue-100 transition-colors text-sm"
                     >
                       <Store className="w-3 h-3 text-blue-600" />
-                      <span>نسخ البيانات</span>
+                      <span>{t('errors.copyData')}</span>
                     </button>
                   </div>
                 </div>
@@ -624,8 +626,8 @@ export default function AdminOrdersManager() {
           {orders.length === 0 && (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد طلبات</h3>
-              <p className="text-gray-600">لم يتم إنشاء أي طلبات بعد</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('errors.noOrders')}</h3>
+              <p className="text-gray-600">{t('errors.noOrdersCreated')}</p>
             </div>
           )}
         </div>

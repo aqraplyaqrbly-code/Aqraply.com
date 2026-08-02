@@ -20,8 +20,10 @@ import {
   Phone
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 export default function StoreSettings() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { sessionToken, isAuthenticated } = useAuth();
   const myStores = useQuery(api.stores.getMyStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
@@ -45,8 +47,8 @@ export default function StoreSettings() {
                 <ArrowLeft className="w-6 h-6 text-gray-600" />
               </button>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">إعدادات المتجر</h1>
-                <p className="text-xs text-gray-500">إدارة معلومات متجرك</p>
+                <h1 className="text-lg font-bold text-gray-900">{t('errors.storeSettings')}</h1>
+                <p className="text-xs text-gray-500">{t('errors.manageStoreInfo')}</p>
               </div>
             </div>
 
@@ -71,7 +73,7 @@ export default function StoreSettings() {
                   className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
-                  متجر جديد
+                  {t('errors.newStore')}
                 </button>
               </div>
             )}

@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContextNew';
+import { useTranslation } from 'react-i18next';
 import {
   Download,
   FileText,
@@ -60,6 +61,7 @@ interface AllData {
 }
 
 export default function AdminDataExport() {
+  const { t } = useTranslation();
   const [exportingType, setExportingType] = useState<string | null>(null);
   const [exportHistory, setExportHistory] = useState<Array<{type: string, timestamp: number, count: number}>>([]);
 
@@ -78,56 +80,56 @@ export default function AdminDataExport() {
   const exportTypes = [
     {
       id: 'users',
-      name: 'المستخدمين',
-      description: 'جميع المستخدمين والملفات الشخصية',
+      name: t('errors.users'),
+      description: t('errors.allUsers'),
       icon: Users,
       color: 'blue',
       query: usersData
     },
     {
       id: 'stores',
-      name: 'المتاجر',
-      description: 'جميع المتاجر ومعلومات التاجر',
+      name: t('errors.stores'),
+      description: t('errors.allStores'),
       icon: Store,
       color: 'purple',
       query: storesData
     },
     {
       id: 'products',
-      name: 'المنتجات',
-      description: 'جميع المنتجات والتفاصيل',
+      name: t('errors.products'),
+      description: t('errors.allProducts'),
       icon: Package,
       color: 'green',
       query: productsData
     },
     {
       id: 'orders',
-      name: 'الطلبات',
-      description: 'جميع الطلبات والتفاصيل',
+      name: t('errors.orders'),
+      description: t('errors.allOrders'),
       icon: ShoppingCart,
       color: 'orange',
       query: ordersData
     },
     {
       id: 'captains',
-      name: 'الكباتن',
-      description: 'جميع الكباتن ومعلوماتهم',
+      name: t('errors.captains'),
+      description: t('errors.allCaptains'),
       icon: Truck,
       color: 'red',
       query: captainsData
     },
         {
       id: 'reviews',
-      name: 'المراجعات',
-      description: 'جميع التقييمات والمراجعات',
+      name: t('errors.reviews'),
+      description: t('errors.allReviews'),
       icon: Star,
       color: 'indigo',
       query: reviewsData
     },
     {
       id: 'wallets',
-      name: 'المحافظ',
-      description: 'المحافظ والمعاملات المالية',
+      name: t('errors.wallets'),
+      description: t('errors.allWallets'),
       icon: Wallet,
       color: 'pink',
       query: walletsData
@@ -215,7 +217,7 @@ export default function AdminDataExport() {
           filename = `all_data_export_${new Date().toISOString().split('T')[0]}`;
           break;
         default:
-          throw new Error('نوع تصدير غير صالح');
+          throw new Error(t('errors.invalidExportType'));
       }
 
       if (format === 'json') {
@@ -248,9 +250,9 @@ export default function AdminDataExport() {
                (data as ExportData).count
       }]);
 
-      toast.success(`تم تصدير ${type === 'all' ? 'جميع البيانات' : exportTypes.find(t => t.id === type)?.name} بنجاح`);
+      toast.success(`${t('errors.exportSuccess')} ${type === 'all' ? t('errors.exportAllData') : exportTypes.find(t => t.id === type)?.name}`);
     } catch (error) {
-      toast.error('فشل في تصدير البيانات');
+      toast.error(t('errors.exportFailed'));
       console.error('Export error:', error);
     } finally {
       setExportingType(null);
@@ -280,8 +282,8 @@ export default function AdminDataExport() {
             <div className="flex items-center gap-3">
               <Database className="w-8 h-8 text-purple-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">تصدير البيانات</h1>
-                <p className="text-gray-600">تصدير جميع بيانات النظام بصيغ مختلفة</p>
+                <h1 className="text-2xl font-bold text-gray-900">{t('errors.dataExport')}</h1>
+                <p className="text-gray-600">{t('errors.exportSystemData')}</p>
               </div>
             </div>
           </div>
@@ -291,28 +293,28 @@ export default function AdminDataExport() {
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">المستخدمين</span>
+                <span className="text-sm font-medium text-blue-900">{t('errors.users')}</span>
               </div>
               <p className="text-2xl font-bold text-blue-900 mt-1">{getRecordCount('users')}</p>
             </div>
             <div className="bg-purple-50 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <Store className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-purple-900">المتاجر</span>
+                <span className="text-sm font-medium text-purple-900">{t('errors.stores')}</span>
               </div>
               <p className="text-2xl font-bold text-purple-900 mt-1">{getRecordCount('stores')}</p>
             </div>
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <Package className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-green-900">المنتجات</span>
+                <span className="text-sm font-medium text-green-900">{t('errors.products')}</span>
               </div>
               <p className="text-2xl font-bold text-green-900 mt-1">{getRecordCount('products')}</p>
             </div>
             <div className="bg-orange-50 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5 text-orange-600" />
-                <span className="text-sm font-medium text-orange-900">الطلبات</span>
+                <span className="text-sm font-medium text-orange-900">{t('errors.orders')}</span>
               </div>
               <p className="text-2xl font-bold text-orange-900 mt-1">{getRecordCount('orders')}</p>
             </div>
@@ -341,19 +343,19 @@ export default function AdminDataExport() {
                   </div>
                   <div className="text-left">
                     <span className="text-2xl font-bold text-gray-900">{count}</span>
-                    <p className="text-xs text-gray-500">سجل</p>
+                    <p className="text-xs text-gray-500">{t('errors.record')}</p>
                   </div>
                 </div>
 
                 {queryData === undefined ? (
                   <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 rounded-lg p-3">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">جاري التحميل...</span>
+                    <span className="text-sm">{t('errors.loadingData')}</span>
                   </div>
                 ) : queryData === null ? (
                   <div className="flex items-center gap-2 text-red-600 bg-red-50 rounded-lg p-3">
                     <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm">خطأ في تحميل البيانات</span>
+                    <span className="text-sm">{t('errors.errorLoadingData')}</span>
                   </div>
                 ) : (
                   <div className="flex gap-2">
@@ -400,10 +402,10 @@ export default function AdminDataExport() {
         <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-sm p-6 text-white mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold mb-2">تصدير جميع البيانات</h2>
-              <p className="text-purple-100">تصدير جميع بيانات النظام في ملف واحد</p>
+              <h2 className="text-xl font-bold mb-2">{t('errors.exportAllData')}</h2>
+              <p className="text-purple-100">{t('errors.exportAllDataInOneFile')}</p>
               <p className="text-sm text-purple-200 mt-1">
-                إجمالي السجلات: {getRecordCount('all')}
+                {t('errors.totalRecords')}: {getRecordCount('all')}
               </p>
             </div>
             <div className="flex gap-3">
@@ -419,7 +421,7 @@ export default function AdminDataExport() {
                 ) : (
                   <Download className="w-5 h-5" />
                 )}
-                تصدير JSON
+                {t('errors.exportJSON')}
               </button>
               <button
                 onClick={() => handleExport('all', 'csv')}
@@ -433,7 +435,7 @@ export default function AdminDataExport() {
                 ) : (
                   <FileText className="w-5 h-5" />
                 )}
-                تصدير CSV
+                {t('errors.exportCSV')}
               </button>
             </div>
           </div>
@@ -442,7 +444,7 @@ export default function AdminDataExport() {
         {/* Export History */}
         {exportHistory.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">سجل التصدير</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('errors.exportHistory')}</h2>
             <div className="space-y-2">
               {exportHistory.slice(-5).reverse().map((exportItem, index) => {
                 const typeInfo = exportTypes.find(t => t.id === exportItem.type);
@@ -463,7 +465,7 @@ export default function AdminDataExport() {
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-600">{exportItem.count} سجل</span>
+                      <span className="text-sm text-gray-600">{exportItem.count} {t('errors.record')}</span>
                     </div>
                   </div>
                 );

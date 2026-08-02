@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import { ProductImage } from "./ProductImage";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 export default function ProductsManager() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { sessionToken, isAuthenticated } = useAuth();
   const myStores = useQuery(api.stores.getMyStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
@@ -46,7 +48,7 @@ export default function ProductsManager() {
   const handleToggleAvailability = async (productId: string, currentStatus: boolean) => {
     try {
       await updateAvailability({ sessionToken, productId: productId as any, isAvailable: !currentStatus });
-      toast.success(currentStatus ? "تم إخفاء المنتج" : "تم إظهار المنتج");
+      toast.success(currentStatus ? t('errors.productHidden') : t('errors.productShown'));
     } catch (error) {
       const message = error instanceof Error ? error.message : "حدث خطأ";
       toast.error(message);
@@ -54,11 +56,11 @@ export default function ProductsManager() {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    if (!confirm(t('errors.deleteProductConfirm'))) return;
     
     try {
       await deleteProduct({ sessionToken, productId: productId as any });
-      toast.success("تم حذف المنتج بنجاح");
+      toast.success(t('errors.productDeleted'));
     } catch (error) {
       const message = error instanceof Error ? error.message : "حدث خطأ";
       toast.error(message);
@@ -76,8 +78,8 @@ export default function ProductsManager() {
                 <ArrowLeft className="w-6 h-6 text-gray-600" />
               </button>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">إدارة المنتجات</h1>
-                <p className="text-xs text-gray-500">أضف وعدل منتجاتك</p>
+                <h1 className="text-lg font-bold text-gray-900">{t('errors.productsManagement')}</h1>
+                <p className="text-xs text-gray-500">{t('errors.addEditProducts')}</p>
               </div>
             </div>
 
@@ -87,7 +89,7 @@ export default function ProductsManager() {
                 onChange={(e) => setSelectedStore(e.target.value || null)}
                 className="px-4 py-2 bg-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <option value="">كل المتاجر</option>
+                <option value="">{t('errors.allStores')}</option>
                 {myStores.map((store) => (
                   <option key={store._id} value={store._id}>
                     {store.nameAr}
@@ -103,10 +105,10 @@ export default function ProductsManager() {
         {/* Add Product Button */}
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">المنتجات</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('errors.productsList')}</h2>
             <p className="text-gray-600 text-sm">
-              إجمالي: {products?.length || 0} منتج
-              {selectedStore && " (من المتجر المحدد)"}
+              {t('errors.totalProducts', { count: products?.length || 0 })}
+              {selectedStore && ` ${t('errors.fromSelectedStore')}`}
             </p>
           </div>
           {myStores && myStores.length > 0 ? (
@@ -118,15 +120,15 @@ export default function ProductsManager() {
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              إضافة منتج
+              {t('errors.addProduct')}
             </button>
           ) : (
             <button
-              onClick={() => toast.error("يجب إنشاء متجر أولاً")}
+              onClick={() => toast.error(t('errors.createStoreFirst'))}
               className="px-6 py-3 bg-gray-300 text-gray-600 font-semibold rounded-xl cursor-not-allowed flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              إضافة منتج
+              {t('errors.addProduct')}
             </button>
           )}
         </div>
@@ -147,14 +149,14 @@ export default function ProductsManager() {
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-orange-100 flex items-center justify-center">
               <Package className="w-12 h-12 text-orange-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">لا توجد منتجات بعد</h3>
-            <p className="text-gray-600 mb-6">ابدأ بإضافة منتجاتك الأولى!</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('errors.noProductsYet')}</h3>
+            <p className="text-gray-600 mb-6">{t('errors.startAddingProducts')}</p>
             <button
               onClick={() => setShowAddProduct(true)}
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
             >
               <Plus className="w-5 h-5 inline-block me-2" />
-              إضافة منتج
+              {t('errors.addProduct')}
             </button>
           </div>
         ) : (
@@ -213,11 +215,11 @@ export default function ProductsManager() {
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      <span>{product.preparationTime} دقيقة</span>
+                      <span>{product.preparationTime} {t('errors.minutePrep')}</span>
                     </div>
                     <div className={`flex items-center gap-1 font-semibold ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       <ShoppingBag className="w-4 h-4" />
-                      <span>{product.quantity} قطعة</span>
+                      <span>{product.quantity} {t('errors.piece')}</span>
                     </div>
                   </div>
 
@@ -230,7 +232,7 @@ export default function ProductsManager() {
                       className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-semibold flex items-center justify-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      تعديل
+                      {t('errors.editProduct')}
                     </button>
                     <button
                       onClick={() => handleDeleteProduct(product._id)}
@@ -265,7 +267,7 @@ export default function ProductsManager() {
 function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: any[]; product?: any; onClose: () => void; sessionToken?: string | null }) {
   // التحقق من وجود متاجر
   if (stores.length === 0) {
-    toast.error("يجب إنشاء متجر أولاً قبل إضافة المنتجات");
+    toast.error(t('errors.createStoreFirstBeforeAddingProducts'));
     onClose();
     return null;
   }
@@ -281,10 +283,10 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     category: product?.category || "",
     weight: product?.weight?.toString() || "",
     preparationTime: product?.preparationTime?.toString() || "",
-    quantity: product?.quantity?.toString() || "", // كمية المخزون
-    code: product?.code || "", // كود المنتج
-    colors: product?.colors || [], // الألوان المتاحة
-    sizes: product?.sizes || [], // إضافة المقاسات
+    quantity: product?.quantity?.toString() || "", // {t('errors.stockQuantity')}
+    code: product?.code || "", // {t('errors.productCode')}
+    colors: product?.colors || [], // {t('errors.availableColors')}
+    sizes: product?.sizes || [], // {t('errors.availableSizes')}
   });
 
   const [imageUrls, setImageUrls] = useState<string[]>(product?.images || []);
@@ -345,13 +347,13 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     for (let i = 0; i < files.length; i++) {
       if (!validTypes.includes(files[i].type)) {
-        toast.error("يرجى رفع صور بصيغة JPG أو PNG فقط");
+        toast.error(t('merchant.productsManager.invalidImageType'));
         return;
       }
     }
 
     if (imageUrls.length + files.length > 10) {
-      toast.error("الحد الأقصى 10 صور للمنتج");
+      toast.error(t('merchant.productsManager.maxImages'));
       return;
     }
 
@@ -370,7 +372,7 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
         });
 
         if (!result.ok) {
-          throw new Error("فشل رفع الصورة");
+          throw new Error(t('merchant.productsManager.uploadFailed'));
         }
 
         const { storageId } = await result.json();
@@ -378,9 +380,9 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
       }
 
       setImageUrls([...imageUrls, ...uploadedUrls]);
-      toast.success(`تم رفع ${uploadedUrls.length} صورة`);
+      toast.success(t('merchant.productsManager.uploadSuccess', { count: uploadedUrls.length }));
     } catch (error) {
-      toast.error("حدث خطأ أثناء رفع الصور");
+      toast.error(t('merchant.productsManager.uploadError'));
     } finally {
       setUploading(false);
     }

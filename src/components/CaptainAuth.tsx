@@ -80,13 +80,13 @@ export default function CaptainAuth() {
 
   const handleVehicleTypeChange = (value: string) => {
     setVehicleType(value);
-    const result = validateRequired(value, 'نوع المركبة');
+    const result = validateRequired(value, t('errors.vehicleTypeRequired'));
     setVehicleTypeError(result.error);
   };
 
   const handleVehicleNumberChange = (value: string) => {
     setVehicleNumber(value);
-    const result = validateRequired(value, 'رقم المركبة');
+    const result = validateRequired(value, t('errors.vehicleNumberRequired'));
     setVehicleNumberError(result.error);
   };
 

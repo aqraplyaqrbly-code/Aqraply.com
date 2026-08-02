@@ -7,8 +7,10 @@ import ReviewList from './ReviewList';
 import { ArrowLeft, Package, Store } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContextNew';
+import { useTranslation } from 'react-i18next';
 
 export default function CustomerReviewPage() {
+  const { t } = useTranslation();
   const { orderId, reviewType } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -43,15 +45,15 @@ export default function CustomerReviewPage() {
             <button onClick={() => navigate('/customer/orders')} className="p-2 hover:bg-gray-100 rounded-lg">
               <ArrowLeft className="w-6 h-6 text-gray-900" />
             </button>
-            <h1 className="text-xl font-bold text-gray-900">التقييمات</h1>
+            <h1 className="text-xl font-bold text-gray-900">{t('customer.reviewsPage.title')}</h1>
           </div>
         </div>
         
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">الطلب غير موجود</h3>
-            <p className="text-gray-600">يرجى التحقق من رابط الطلب</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('customer.reviewsPage.orderNotFound')}</h3>
+            <p className="text-gray-600">{t('customer.reviewsPage.checkOrderLink')}</p>
           </div>
         </div>
       </div>
@@ -61,7 +63,7 @@ export default function CustomerReviewPage() {
   const handleReviewSuccess = () => {
     setShowForm(false);
     setRefreshKey(prev => prev + 1);
-    toast.success('تم إضافة التقييم بنجاح!');
+    toast.success(t('customer.reviewsPage.reviewAddedSuccess'));
   };
 
   const isStoreReview = reviewType === 'store';
@@ -76,13 +78,13 @@ export default function CustomerReviewPage() {
             <ArrowLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="text-xl font-bold text-gray-900">
-            {isStoreReview ? 'تقييم المتجر' : 'تقييم المنتجات'}
+            {isStoreReview ? t('customer.reviewsPage.storeReview') : t('customer.reviewsPage.productReview')}
           </h1>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* معلومات الطلب */}
+        {/* {t('customer.reviewsPage.orderInfo')} */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -94,20 +96,20 @@ export default function CustomerReviewPage() {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">
-                {isStoreReview ? 'تقييم المتجر' : 'تقييم المنتجات'}
+                {isStoreReview ? t('customer.reviewsPage.storeReview') : t('customer.reviewsPage.productReview')}
               </h3>
-              <p className="text-sm text-gray-600">طلب #{order.orderNumber}</p>
+              <p className="text-sm text-gray-600">{t('errors.orderNumberPrefix')} {order.orderNumber}</p>
             </div>
           </div>
 
           <div className="text-sm text-gray-600">
             {isStoreReview ? (
               <div>
-                <span className="font-medium">المتجر:</span> {order.storeInfo?.nameAr}
+                <span className="font-medium">{t('customer.reviewsPage.store')}:</span> {order.storeInfo?.nameAr}
               </div>
             ) : (
               <div>
-                <span className="font-medium">المنتجات:</span>
+                <span className="font-medium">{t('customer.reviewsPage.products')}:</span>
                 <ul className="mt-1 space-y-1">
                   {order.items.map((item, index) => (
                     <li key={index} className="flex items-center gap-2">
@@ -121,7 +123,7 @@ export default function CustomerReviewPage() {
           </div>
         </div>
 
-        {/* نموذج التقييم */}
+        {/* {t('customer.reviewsPage.reviewForm')} */}
         {showForm && (
           <ReviewForm
             orderId={order._id}
@@ -134,27 +136,27 @@ export default function CustomerReviewPage() {
           />
         )}
 
-        {/* قائمة المراجعات */}
+        {/* {t('customer.reviewsPage.reviewList')} */}
         {reviews && reviews.length > 0 && (
           <div className="mt-6">
             <ReviewList
               key={refreshKey}
               reviews={reviews}
               reviewType={isStoreReview ? 'store' : 'product'}
-              title={`تقييمات ${isStoreReview ? 'المتجر' : 'المنتج'}`}
+              title={`${t('customer.reviews')} ${isStoreReview ? t('customer.reviewsPage.thisStore') : t('customer.reviewsPage.thisProduct')}`}
             />
           </div>
         )}
 
-        {/* رسالة عند عدم وجود مراجعات */}
+        {/* {t('customer.reviewsPage.noReviews')} */}
         {(!reviews || reviews.length === 0) && (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {!showForm ? 'شكراً لتقييمك!' : 'لا توجد تقييمات بعد'}
+              {!showForm ? t('customer.reviewsPage.thanksForReview') : t('customer.reviewsPage.noReviews')}
             </h3>
             <p className="text-gray-600">
-              {!showForm ? 'سيتم نشر تقييمك بعد التحقق منه' : `كن أول من يقيم ${isStoreReview ? 'هذا المتجر' : 'هذا المنتج'}`}
+              {!showForm ? t('customer.reviewsPage.reviewWillBePublished') : `${t('customer.reviewsPage.beFirstReview')} ${isStoreReview ? t('customer.reviewsPage.thisStore') : t('customer.reviewsPage.thisProduct')}`}
             </p>
           </div>
         )}

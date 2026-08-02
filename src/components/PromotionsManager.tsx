@@ -5,12 +5,14 @@ import { Tag, Plus, X, Calendar, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 interface PromotionsManagerProps {
   storeId: Id<"stores">;
 }
 
 export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
+  const { t } = useTranslation();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { sessionToken } = useAuth();
   const products = useQuery(api.products.getStoreProducts, {
@@ -35,7 +37,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.productId) {
-      toast.error("يرجى اختيار منتج");
+      toast.error(t('errors.selectProduct'));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
         startDate: new Date(formData.startDate).getTime(),
         endDate: new Date(formData.endDate).getTime(),
       });
-      toast.success("تم إنشاء العرض بنجاح! 🎉");
+      toast.success(t('errors.promotionCreated'));
       setShowCreateForm(false);
       setFormData({
         productId: "",
@@ -71,7 +73,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
   const handleCancel = async (promotionId: Id<"promotions">) => {
     try {
       await cancelPromotion({ sessionToken, promotionId });
-      toast.success("تم إلغاء العرض");
+      toast.success(t('errors.promotionCancelled'));
     } catch (error) {
       const message = error instanceof Error ? error.message : "حدث خطأ";
       toast.error(message);
@@ -81,7 +83,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
   if (!products || !promotions) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-pulse text-orange-600">جاري التحميل...</div>
+        <div className="animate-pulse text-orange-600">{t('errors.loadingPromotions')}</div>
       </div>
     );
   }
@@ -92,10 +94,10 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            إدارة العروض الترويجية
+            {t('errors.promotionsManagement')}
           </h1>
           <p className="text-gray-600">
-            أنشئ عروض خاصة لجذب المزيد من العملاء
+            {t('errors.createPromotionsToAttract')}
           </p>
         </div>
         <button
@@ -103,7 +105,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
           className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          عرض جديد
+          {t('errors.newPromotion')}
         </button>
       </div>
 
@@ -111,13 +113,13 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
       {showCreateForm && (
         <div className="mb-8 p-6 bg-white rounded-2xl shadow-lg border-2 border-orange-200">
           <h3 className="text-xl font-bold text-gray-900 mb-4">
-            إنشاء عرض ترويجي
+            {t('errors.createPromotionalOffer')}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                  المنتج
+                  {t('errors.product')}
                 </label>
                 <select
                   value={formData.productId}
@@ -127,7 +129,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
                   className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
                   required
                 >
-                  <option value="">اختر منتج</option>
+                  <option value="">{t('errors.selectProductOption')}</option>
                   {products.map((product) => (
                     <option key={product._id} value={product._id}>
                       {product.nameAr} - {product.price} EGP
@@ -138,7 +140,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                  نسبة الخصم (%)
+                  {t('errors.discountPercentage')}
                 </label>
                 <input
                   type="number"
@@ -158,7 +160,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                  عنوان العرض (English)
+                  {t('errors.offerTitleEnglish')}
                 </label>
                 <input
                   type="text"
@@ -174,7 +176,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                  عنوان العرض (عربي)
+                  {t('errors.offerTitleArabic')}
                 </label>
                 <input
                   type="text"
@@ -190,7 +192,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                  تاريخ البداية
+                  {t('errors.startDate')}
                 </label>
                 <input
                   type="date"
@@ -205,7 +207,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-start">
-                  تاريخ النهاية
+                  {t('errors.endDate')}
                 </label>
                 <input
                   type="date"
@@ -224,14 +226,14 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
                 type="submit"
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
               >
-                إنشاء العرض
+                {t('errors.createOffer')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
                 className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all"
               >
-                إلغاء
+                {t('errors.cancel')}
               </button>
             </div>
           </form>
@@ -240,13 +242,13 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
 
       {/* Active Promotions */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold text-gray-900">العروض النشطة</h3>
+        <h3 className="text-xl font-bold text-gray-900">{t('errors.activePromotions')}</h3>
         {promotions.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-2xl">
             <Tag className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">لا توجد عروض نشطة حالياً</p>
+            <p className="text-gray-600">{t('errors.noActivePromotions')}</p>
             <p className="text-gray-500 text-sm mt-2">
-              أنشئ عرضك الأول لجذب المزيد من العملاء
+              {t('errors.createFirstOffer')}
             </p>
           </div>
         ) : (
@@ -283,7 +285,7 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Percent className="w-4 h-4" />
-                      <span>خصم {promo.discountPercentage}%</span>
+                      <span>{t('errors.discount')} {promo.discountPercentage}%</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4" />
@@ -297,14 +299,14 @@ export default function PromotionsManager({ storeId }: PromotionsManagerProps) {
                   {product && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">السعر الأصلي:</span>
+                        <span className="text-sm text-gray-600">{t('errors.originalPrice')}:</span>
                         <span className="text-gray-400 line-through">
                           {product.originalPrice || product.price} EGP
                         </span>
                       </div>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-sm font-medium text-gray-900">
-                          السعر بعد الخصم:
+                          {t('errors.priceAfterDiscount')}:
                         </span>
                         <span className="text-xl font-bold text-orange-600">
                           {product.price} EGP

@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useTranslation } from "react-i18next";
 
 interface Notification {
   _id: string;
@@ -20,6 +21,7 @@ interface Notification {
 }
 
 export default function NotificationBell() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [showUnreadOnly, setShowUnreadOnly] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -53,9 +55,9 @@ export default function NotificationBell() {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await markAsRead({ sessionToken, notificationId: notificationId as any });
-      toast.success("تم تعليم الإشعار كمقروء");
+      toast.success(t('errors.notificationMarkedAsRead'));
     } catch (error) {
-      toast.error("فشل تحديث الإشعار");
+      toast.error(t('errors.notificationUpdateFailed'));
       console.error("Error marking notification as read:", error);
     }
   };
@@ -63,10 +65,10 @@ export default function NotificationBell() {
   const handleMarkAllAsRead = async () => {
     try {
       await markAllAsRead({ sessionToken });
-      toast.success("تم تعليم جميع الإشعارات كمقروءة");
+      toast.success(t('errors.allNotificationsMarkedAsRead'));
       setIsOpen(false);
     } catch (error) {
-      toast.error("فشل تحديث الإشعارات");
+      toast.error(t('errors.notificationsUpdateFailed'));
       console.error("Error marking all as read:", error);
     }
   };
@@ -76,7 +78,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-orange-600 transition-colors"
-        aria-label="الإشعارات"
+        aria-label={t('errors.notifications')}
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
@@ -90,13 +92,13 @@ export default function NotificationBell() {
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">الإشعارات</h3>
+            <h3 className="font-semibold text-gray-900">{t('errors.notifications')}</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowUnreadOnly(!showUnreadOnly)}
                 className="text-sm text-gray-600 hover:text-gray-800 font-medium"
               >
-                {showUnreadOnly ? 'عرض الكل' : 'غير المقروءة فقط'}
+                {showUnreadOnly ? t('errors.showAll') : t('errors.showUnreadOnly')}
               </button>
               {unreadCount > 0 && (
                 <button
@@ -104,7 +106,7 @@ export default function NotificationBell() {
                   className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
                 >
                   <CheckCheck className="w-4 h-4" />
-                  اقرأ الكل
+                  {t('errors.markAllAsRead')}
                 </button>
               )}
             </div>

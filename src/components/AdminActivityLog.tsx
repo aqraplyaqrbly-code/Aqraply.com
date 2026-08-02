@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   Search,
@@ -37,6 +38,7 @@ interface ActivityLog {
 }
 
 export default function ActivityLog() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEntityType, setFilterEntityType] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
@@ -106,21 +108,21 @@ export default function ActivityLog() {
     });
 
   const entityTypes = [
-    { key: null, label: "كل الكيانات" },
-    { key: "user", label: "المستخدمون" },
-    { key: "store", label: "المتاجر" },
-    { key: "product", label: "المنتجات" },
-    { key: "order", label: "الطلبات" },
-    { key: "notification", label: "الإشعارات" },
-    { key: "system", label: "النظام" },
+    { key: null, label: t('errors.allEntities') },
+    { key: "user", label: t('errors.users') },
+    { key: "store", label: t('errors.stores') },
+    { key: "product", label: t('errors.products') },
+    { key: "order", label: t('errors.orders') },
+    { key: "notification", label: t('errors.notifications') },
+    { key: "system", label: t('errors.system') },
   ];
 
   const statusTypes = [
-    { key: null, label: "كل الحالات" },
-    { key: "success", label: "نجح" },
-    { key: "failed", label: "فشل" },
-    { key: "warning", label: "تحذير" },
-    { key: "info", label: "معلومات" },
+    { key: null, label: t('errors.allStatuses') },
+    { key: "success", label: t('errors.success') },
+    { key: "failed", label: t('errors.failed') },
+    { key: "warning", label: t('errors.warning') },
+    { key: "info", label: t('errors.info') },
   ];
 
   const getEntityIcon = (type: string) => {
@@ -157,10 +159,10 @@ export default function ActivityLog() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "admin": return "مدير";
-      case "merchant": return "تاجر";
-      case "captain": return "كابتن";
-      case "customer": return "عميل";
+      case "admin": return t('errors.admin');
+      case "merchant": return t('errors.merchant');
+      case "captain": return t('errors.captain');
+      case "customer": return t('errors.customer');
       default: return role;
     }
   };
@@ -168,9 +170,9 @@ export default function ActivityLog() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">سجل النشاط</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('errors.activityLog')}</h1>
         <p className="text-gray-500 mt-1">
-          {activities ? `${activities.length} نشاط إجماليًا` : "جاري التحميل..."}
+          {activities ? `${activities.length} ${t('errors.totalActivities')}` : t('errors.loading')}
         </p>
       </div>
 
@@ -181,7 +183,7 @@ export default function ActivityLog() {
             <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
               <Activity className="w-5 h-5 text-blue-600" />
             </div>
-            <span className="text-sm text-gray-500">إجمالي النشاط</span>
+            <span className="text-sm text-gray-500">{t('errors.totalActivity')}</span>
           </div>
           <p className="text-3xl font-bold text-gray-900">{activities?.length ?? "—"}</p>
         </div>
@@ -190,7 +192,7 @@ export default function ActivityLog() {
             <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
-            <span className="text-sm text-gray-500">ناجح</span>
+            <span className="text-sm text-gray-500">{t('errors.successful')}</span>
           </div>
           <p className="text-3xl font-bold text-gray-900">
             {activities?.filter((a) => a.status === "success").length ?? "—"}
@@ -201,7 +203,7 @@ export default function ActivityLog() {
             <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
               <XCircle className="w-5 h-5 text-red-600" />
             </div>
-            <span className="text-sm text-gray-500">فشل</span>
+            <span className="text-sm text-gray-500">{t('errors.failed')}</span>
           </div>
           <p className="text-3xl font-bold text-gray-900">
             {activities?.filter((a) => a.status === "failed").length ?? "—"}
@@ -212,7 +214,7 @@ export default function ActivityLog() {
             <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-yellow-600" />
             </div>
-            <span className="text-sm text-gray-500">تحذير</span>
+            <span className="text-sm text-gray-500">{t('errors.warning')}</span>
           </div>
           <p className="text-3xl font-bold text-gray-900">
             {activities?.filter((a) => a.status === "warning").length ?? "—"}
@@ -227,7 +229,7 @@ export default function ActivityLog() {
             <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="ابحث في النشاط..."
+              placeholder={t('errors.searchActivity')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pr-10 pl-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400"
@@ -272,12 +274,12 @@ export default function ActivityLog() {
           {!activities ? (
             <div className="px-6 py-12 text-center">
               <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2" />
-              <p className="text-gray-400">جاري التحميل...</p>
+              <p className="text-gray-400">{t('errors.loading')}</p>
             </div>
           ) : filteredActivities.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 font-medium">لا توجد أنشطة</p>
+              <p className="text-gray-400 font-medium">{t('errors.noActivities')}</p>
             </div>
           ) : (
             filteredActivities.map((activity) => (
