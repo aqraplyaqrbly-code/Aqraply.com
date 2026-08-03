@@ -49,3 +49,26 @@ export const updateUserPassword = internalMutation({
     });
   },
 });
+
+// Internal query to get user by ID
+export const getUserById = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
+});
+
+// Internal mutation to update user password by ID
+export const updateUserPasswordById = internalMutation({
+  args: {
+    userId: v.id("users"),
+    hashedPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      passwordHash: args.hashedPassword,
+    });
+  },
+});

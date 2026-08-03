@@ -214,6 +214,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
 
 // ─── Dashboard Home ───────────────────────────────────────────────────────────
 function DashboardHome({ profile }: { profile: any }) {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const myStores = useQuery(api.stores.getMyStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const navigate = useNavigate();
@@ -452,6 +453,7 @@ function DashboardHome({ profile }: { profile: any }) {
 
 // ─── Orders Page ──────────────────────────────────────────────────────────────
 function Orders({ profile }: { profile: any }) {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const myStores = useQuery(api.stores.getMyStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const updateStatus = useMutation(api.orders.updateOrderStatus);
@@ -762,6 +764,7 @@ function Orders({ profile }: { profile: any }) {
 
 // ─── Analytics Page ───────────────────────────────────────────────────────────
 function Analytics({ profile }: { profile: any }) {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const myStores = useQuery(api.stores.getMyStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);

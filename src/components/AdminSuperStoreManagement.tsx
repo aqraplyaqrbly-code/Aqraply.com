@@ -724,7 +724,7 @@ function PasswordResetModal({
   onClose, 
   onReset, 
   newPassword, 
-  setNewPassword 
+  setNewPassword,
 }: {
   isOpen: boolean;
   onClose: () => void;

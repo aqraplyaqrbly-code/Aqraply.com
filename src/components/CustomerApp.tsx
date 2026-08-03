@@ -55,6 +55,7 @@ import {
   Mail,
   Store,
   Phone,
+  Lock,
 } from "lucide-react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -65,6 +66,7 @@ import SuspensionCheck from "./SuspensionCheck";
 import CustomerReviewPage from "./CustomerReviewPage";
 import StoreRatingsPage from "./StoreRatingsPage";
 import ProductRatingsPage from "./ProductRatingsPage";
+import ChangePasswordModal from "./ChangePasswordModal";
 import NotificationBell from "./NotificationBell";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "react-i18next";
@@ -1368,7 +1370,7 @@ function CartItemWithLivePrice({
   updateQuantity: (productId: Id<"products">, quantity: number) => void;
   removeFromCart: (productId: Id<"products">) => void;
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   // جلب بيانات المنتج الحالية من DB للسعر المحدث
   const storedProduct = useQuery(api.products.getProductWithImage, { 
@@ -2336,6 +2338,7 @@ function Profile() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const systemSettings = useQuery(api.systemSettings.getSettings);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -2399,6 +2402,17 @@ function Profile() {
                 <span className="font-semibold text-gray-900">الرئيسية</span>
               </div>
               <ArrowLeft className="w-5 h-5 text-gray-400" />
+            </button>
+
+            <button
+              onClick={() => setShowChangePassword(true)}
+              className="w-full p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors flex items-center justify-between border-2 border-orange-200"
+            >
+              <div className="flex items-center gap-3">
+                <Lock className="w-5 h-5 text-orange-600" />
+                <span className="font-semibold text-orange-600">تغيير كلمة المرور</span>
+              </div>
+              <ArrowLeft className="w-5 h-5 text-orange-400" />
             </button>
 
             <button
@@ -2476,6 +2490,11 @@ function Profile() {
       </div>
 
       <BottomNav active="profile" />
+
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+      />
     </div>
   );
 }

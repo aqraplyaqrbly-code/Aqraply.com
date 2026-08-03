@@ -48,6 +48,7 @@ import {
   Database,
   LogOut,
   Search,
+  Lock,
   Phone,
   XCircle,
   Shield,
@@ -58,6 +59,7 @@ import { useAuth } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
 
 import { NavigationBar } from "./NavigationBar";
+import ChangePasswordModal from "./ChangePasswordModal";
 import AdminAuth from "./AdminAuth";
 import { DashboardHeader } from "./admin/DashboardHeader";
 import { OrdersTable } from "./admin/OrdersTable";
@@ -68,6 +70,7 @@ export default function AdminDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   // إذا لم يكن المستخدم مسجل دخول أو لا يوجد ملف شخصي
   if (!isAuthenticated || !user || !user.profile) {
@@ -97,19 +100,19 @@ export default function AdminDashboard() {
       <NavigationBar />
       <div className="min-h-screen bg-gray-50" dir="rtl">
         <Routes>
-          <Route path="/" element={<AdminLayout><DashboardHeader /></AdminLayout>} />
-          <Route path="/users" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_users"><UsersTable /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/orders" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_orders"><OrdersTable /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/stores" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_stores"><StoresManagement /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/products" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_products"><ProductsManagement /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/captains" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_captains"><CaptainsManagement /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/notifications" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_notifications"><NotificationsManagement /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/activity" element={<AdminLayout><ProtectedAdminRoute requiredPermission="view_activity_logs"><ActivityLog /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/analytics" element={<AdminLayout><ProtectedAdminRoute requiredPermission="view_reports"><AnalyticsPage /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/settings" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_settings"><SystemSettings /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/super-stores" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_stores"><AdminSuperStoreManagement /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/export" element={<AdminLayout><ProtectedAdminRoute requiredPermission="view_reports"><AdminDataExport /></ProtectedAdminRoute></AdminLayout>} />
-          <Route path="/admin-management" element={<AdminLayout><ProtectedAdminRoute requiredPermission="manage_settings"><AdminManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><DashboardHeader /></AdminLayout>} />
+          <Route path="/users" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_users"><UsersTable /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/orders" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_orders"><OrdersTable /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/stores" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_stores"><StoresManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/products" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_products"><ProductsManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/captains" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_captains"><CaptainsManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/notifications" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_notifications"><NotificationsManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/activity" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="view_activity_logs"><ActivityLog /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/analytics" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="view_reports"><AnalyticsPage /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/settings" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_settings"><SystemSettings /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/super-stores" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_stores"><AdminSuperStoreManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/export" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="view_reports"><AdminDataExport /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/admin-management" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_settings"><AdminManagement /></ProtectedAdminRoute></AdminLayout>} />
         </Routes>
       </div>
     </>
@@ -117,10 +120,11 @@ export default function AdminDashboard() {
 }
 
 // ─── Layout Wrapper ───────────────────────────────────────────────────────────
-function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayout({ children, showChangePassword, setShowChangePassword }: { children: React.ReactNode; showChangePassword: boolean; setShowChangePassword: (value: boolean) => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, isAuthenticated, sessionToken } = useAuth();
+  const { t } = useTranslation();
   const myPermissions = useQuery(
     api.adminPermissions.getMyPermissions,
     isAuthenticated && sessionToken ? { sessionToken } : "skip"
@@ -200,7 +204,14 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Sign Out */}
-        <div className="p-3 sm:p-4 border-t border-purple-700">
+        <div className="p-3 sm:p-4 border-t border-purple-700 space-y-2">
+          <button
+            onClick={() => setShowChangePassword(true)}
+            className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-medium text-purple-200 hover:bg-white/10 hover:text-white transition-all"
+          >
+            <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
+            تغيير كلمة المرور
+          </button>
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-medium text-purple-200 hover:bg-white/10 hover:text-white transition-all"
@@ -217,6 +228,11 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+      />
     </div>
   );
 }
@@ -224,6 +240,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
 
 // ─── Stores Management ────────────────────────────────────────────────────────
 function StoresManagement() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const stores = useQuery(api.admin.getAllStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const pendingStores = useQuery(api.stores.getPendingStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
@@ -565,6 +582,7 @@ function StoresManagement() {
 
 // ─── Captains Management ──────────────────────────────────────────────────────
 function CaptainsManagement() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const captains = useQuery(api.captains.getAllCaptains, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const pendingCaptains = useQuery(api.captains.getPendingCaptains, isAuthenticated && sessionToken ? { sessionToken } : "skip");
@@ -865,6 +883,7 @@ function CaptainsManagement() {
 
 // ─── Analytics Page ───────────────────────────────────────────────────────────
 function AnalyticsPage() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const stats = useQuery(api.admin.getPlatformStats, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const orders = useQuery(api.orders.getAllOrders, isAuthenticated && sessionToken ? { sessionToken } : "skip");

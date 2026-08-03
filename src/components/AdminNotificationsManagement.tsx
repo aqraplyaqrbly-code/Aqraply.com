@@ -31,6 +31,7 @@ interface Notification {
 }
 
 export default function NotificationsManagement() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const notifications = useQuery(api.admin.getAllNotifications, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const sendNotification = useMutation(api.admin.sendNotification);

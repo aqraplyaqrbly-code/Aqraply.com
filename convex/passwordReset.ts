@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import bcrypt from "bcryptjs";
 import { internal } from "./_generated/api";
+import { getAuthUserId } from "./auth";
 
 // Helper function to generate OTP
 function generateSecureOTP(): string {
@@ -217,6 +218,59 @@ export const resetPassword = action({
     return {
       success: true,
       message: "تم إعادة تعيين كلمة المرور بنجاح",
+    };
+  },
+});
+
+// تغيير كلمة المرور للمستخدم المسجل دخوله
+export const changePassword = action({
+  args: {
+    currentPassword: v.string(),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول لتغيير كلمة المرور");
+    }
+
+    // التحقق من طول كلمة المرور الجديدة
+    if (args.newPassword.length < 6) {
+      throw new ConvexError("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل");
+    }
+
+    if (args.currentPassword === args.newPassword) {
+      throw new ConvexError("كلمة المرور الجديدة يجب أن تكون مختلفة عن الحالية");
+    }
+
+    // جلب بيانات المستخدم
+    const user = await ctx.runQuery(internal.passwordResetInternal.getUserById, { userId });
+    if (!user) {
+      throw new ConvexError("المستخدم غير موجود");
+    }
+
+    // التحقق من كلمة المرور الحالية
+    if (user.passwordHash) {
+      const isMatch = await bcrypt.compare(args.currentPassword, user.passwordHash);
+      if (!isMatch) {
+        throw new ConvexError("كلمة المرور الحالية غير صحيحة");
+      }
+    } else {
+      throw new ConvexError("لا يمكن تغيير كلمة المرور. يرجى استخدام إعادة تعيين كلمة المرور");
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(args.newPassword, 10);
+
+    // تحديث كلمة المرور
+    await ctx.runMutation(internal.passwordResetInternal.updateUserPasswordById, {
+      userId,
+      hashedPassword,
+    });
+
+    return {
+      success: true,
+      message: "تم تغيير كلمة المرور بنجاح",
     };
   },
 });

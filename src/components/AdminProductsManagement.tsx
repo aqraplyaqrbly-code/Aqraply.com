@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 export default function ProductsManagement() {
+  const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const products = useQuery(api.admin.getAllProducts, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const toggleProduct = useMutation(api.admin.toggleProduct);

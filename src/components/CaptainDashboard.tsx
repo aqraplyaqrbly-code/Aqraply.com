@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
 import OrderActionButtons from "./OrderActionButtons";
 import OrderProgressTimeline from "./OrderProgressTimeline";
+import ChangePasswordModal from "./ChangePasswordModal";
 import {
   MapPin,
   Navigation,
@@ -30,7 +31,8 @@ import {
   X,
   Mail,
   Camera,
-  Upload
+  Upload,
+  Lock
 } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
 
@@ -75,6 +77,7 @@ export default function CaptainDashboard() {
   const { t } = useTranslation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [connectionDuration, setConnectionDuration] = useState<string>("");
   const [editFormData, setEditFormData] = useState({
     fullName: "",
@@ -572,6 +575,15 @@ export default function CaptainDashboard() {
               >
                 <Edit className="w-5 h-5 text-gray-600" />
               </button>
+
+              {/* Change Password - Mobile only */}
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="تغيير كلمة المرور"
+              >
+                <Lock className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
           </div>
         </div>
@@ -976,6 +988,11 @@ export default function CaptainDashboard() {
           </div>
         </div>
       )}
+
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+      />
     </div>
   );
 }

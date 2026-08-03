@@ -17,10 +17,12 @@ import {
   Edit,
   Power,
   Eye,
-  Phone
+  Phone,
+  Lock
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 export default function StoreSettings() {
   const { t } = useTranslation();
@@ -29,6 +31,7 @@ export default function StoreSettings() {
   const myStores = useQuery(api.stores.getMyStores, isAuthenticated && sessionToken ? { sessionToken } : "skip");
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     if (myStores && myStores.length > 0 && !selectedStore) {
@@ -68,6 +71,13 @@ export default function StoreSettings() {
                     </option>
                   ))}
                 </select>
+                <button
+                  onClick={() => setShowChangePassword(true)}
+                  className="px-4 py-2 bg-orange-100 text-orange-600 font-semibold rounded-lg hover:bg-orange-200 transition-all flex items-center gap-2"
+                >
+                  <Lock className="w-5 h-5" />
+                  تغيير كلمة المرور
+                </button>
                 <button
                   onClick={() => setShowCreateForm(true)}
                   className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
@@ -110,6 +120,11 @@ export default function StoreSettings() {
           />
         ) : null}
       </div>
+
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+      />
     </div>
   );
 }
@@ -573,8 +588,7 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
             disabled={uploading}
             className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <Save className="w-5 h-5" />
-            {store ? "حفظ التغييرات" : "إنشاء المتجر"}
+            {uploading ? 'جاري الحفظ...' : 'حفظ المتجر'}
           </button>
         </div>
       </form>
