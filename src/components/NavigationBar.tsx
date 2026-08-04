@@ -75,7 +75,7 @@ export function NavigationBar() {
               to="/"
               className="flex items-center space-x-2 text-gray-900 hover:text-orange-600 transition-colors"
             >
-              <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
+              <img src="/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
             </Link>
           </div>
 

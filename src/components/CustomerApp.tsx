@@ -82,7 +82,7 @@ const FallbackNavigationBar = () => {
     <div className="max-w-7xl mx-auto px-3 sm:px-4">
       <div className="flex justify-between items-center h-14 sm:h-16">
         <div className="flex items-center gap-2 sm:gap-4">
-          <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
+          <img src="/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <LanguageSwitcher />

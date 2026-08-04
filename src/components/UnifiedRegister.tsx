@@ -311,7 +311,7 @@ export default function UnifiedRegister() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-32 mx-auto mb-4" />
+            <img src="/logo.png" alt="Aqraply Logo" className="h-32 mx-auto mb-4" />
             <p className="text-gray-600">
               {step === 'role' ? 'اختر نوع الحساب' :
                step === 'auth' ? 'إنشاء حساب جديد' : 'إكمال الملف الشخصي'}

@@ -214,7 +214,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
+              <img src="/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
             </div>
 
             <nav className="hidden md:flex items-center gap-6">

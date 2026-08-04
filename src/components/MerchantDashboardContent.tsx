@@ -87,7 +87,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
       <aside className="hidden lg:flex lg:flex-col w-72 bg-gradient-to-b from-orange-600 to-red-700 text-white h-screen shadow-xl">
         <div className="p-6 border-b border-orange-500">
           <div className="flex items-center gap-3">
-            <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
+            <img src="/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
           </div>
         </div>
 

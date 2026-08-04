@@ -196,7 +196,7 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
         {/* Logo */}
         <div className="p-4 sm:p-6 border-b border-purple-700">
           <div className="flex items-center gap-2 sm:gap-3">
-            <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
+            <img src="/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
           </div>
         </div>
 
