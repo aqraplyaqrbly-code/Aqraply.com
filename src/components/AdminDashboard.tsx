@@ -52,6 +52,8 @@ import {
   Phone,
   XCircle,
   Shield,
+  Menu,
+  X,
 } from "lucide-react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Id } from "../../convex/_generated/dataModel";
@@ -125,6 +127,7 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
   const location = useLocation();
   const { logout, isAuthenticated, sessionToken } = useAuth();
   const { t } = useTranslation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const myPermissions = useQuery(
     api.adminPermissions.getMyPermissions,
     isAuthenticated && sessionToken ? { sessionToken } : "skip"
@@ -170,18 +173,30 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
 
   return (
     <div className="flex min-h-screen bg-gray-50 flex-row-reverse">
+      {/* Mobile Menu Toggle Button */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-purple-600 text-white rounded-xl shadow-lg"
+      >
+        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-gradient-to-b from-purple-900 to-purple-800 text-white flex flex-col h-full">
+      <aside className={`fixed lg:static inset-y-0 right-0 z-50 w-64 bg-gradient-to-b from-purple-900 to-purple-800 text-white flex flex-col h-full transform transition-transform duration-300 ease-in-out ${
+        mobileMenuOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+      } ${mobileMenuOpen ? 'lg:hidden' : 'hidden lg:flex'}`}>
         {/* Logo */}
         <div className="p-4 sm:p-6 border-b border-purple-700">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <LayoutDashboard className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-sm sm:text-lg font-bold">لوحة الإدارة</h1>
-              <p className="text-[10px] sm:text-xs text-purple-300">Aqraply Admin</p>
-            </div>
+            <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
           </div>
         </div>
 
@@ -190,7 +205,10 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
           {filteredNavItems.map((item) => (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                navigate(item.path);
+                setMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 isActive(item.path)
                   ? "bg-white/20 text-white shadow-lg"
@@ -206,14 +224,20 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
         {/* Sign Out */}
         <div className="p-3 sm:p-4 border-t border-purple-700 space-y-2">
           <button
-            onClick={() => setShowChangePassword(true)}
+            onClick={() => {
+              setShowChangePassword(true);
+              setMobileMenuOpen(false);
+            }}
             className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-medium text-purple-200 hover:bg-white/10 hover:text-white transition-all"
           >
             <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
             تغيير كلمة المرور
           </button>
           <button
-            onClick={handleSignOut}
+            onClick={() => {
+              handleSignOut();
+              setMobileMenuOpen(false);
+            }}
             className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-medium text-purple-200 hover:bg-white/10 hover:text-white transition-all"
           >
             <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -224,7 +248,7 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
 
       {/* Main Content */}
       <main className="flex-1 min-h-screen overflow-y-auto">
-        <div className="p-3 sm:p-4 lg:p-8">
+        <div className="p-3 sm:p-4 lg:p-8 pt-16 lg:pt-8">
           {children}
         </div>
       </main>

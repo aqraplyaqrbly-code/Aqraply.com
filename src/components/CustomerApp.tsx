@@ -76,13 +76,13 @@ const FallbackNavigationBar = () => {
   const navigate = useNavigate();
   const { cartItems } = useCart();
   const { t } = useTranslation();
-  
+
   return (
   <nav className="bg-white shadow-md sticky top-0 z-50">
     <div className="max-w-7xl mx-auto px-3 sm:px-4">
       <div className="flex justify-between items-center h-14 sm:h-16">
         <div className="flex items-center gap-2 sm:gap-4">
-          <h1 className="text-lg sm:text-xl font-bold text-orange-600">{t('common.siteName')}</h1>
+          <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <LanguageSwitcher />

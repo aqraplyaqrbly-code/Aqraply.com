@@ -87,15 +87,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
       <aside className="hidden lg:flex lg:flex-col w-72 bg-gradient-to-b from-orange-600 to-red-700 text-white h-screen shadow-xl">
         <div className="p-6 border-b border-orange-500">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <Store className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">{t('errors.merchantDashboard')}</h1>
-              <p className="text-xs text-orange-200 truncate max-w-[160px]">
-                {profile.businessNameAr || profile.businessName || profile.fullName}
-              </p>
-            </div>
+            <img src="/src/assets/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
           </div>
         </div>
 
