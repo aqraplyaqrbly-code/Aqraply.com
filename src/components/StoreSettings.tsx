@@ -18,7 +18,8 @@ import {
   Power,
   Eye,
   Phone,
-  Lock
+  Lock,
+  Loader2
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
@@ -149,6 +150,41 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
   const [imageSource, setImageSource] = useState<string>(store?.imageId || store?.imageUrl || "");
   const [uploading, setUploading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [manuallyEditedFields, setManuallyEditedFields] = useState({
+    name: false,
+    description: false,
+    address: false,
+  });
+
+  // Translation function using MyMemory free API
+  const translateText = async (text: string): Promise<string> => {
+    if (!text || text.trim() === "") return "";
+    
+    try {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ar|en`
+      );
+      const data = await response.json();
+      
+      if (data.responseStatus === 200 && data.responseData) {
+        return data.responseData.translatedText;
+      }
+      return "";
+    } catch (error) {
+      console.error("Translation error:", error);
+      return "";
+    }
+  };
+
+  // Debounce function to avoid excessive API calls
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
 
   const resolvedImageUrl = useQuery(
     api.files.getFileUrl,
@@ -181,6 +217,120 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
       );
     }
   }, [store]);
+
+  // دالة الحصول على العنوان من الإحداثيات باستخدام OpenStreetMap Nominatim
+  const getAddressFromCoords = async (lat: number, lng: number): Promise<{ ar: string; en: string }> => {
+    try {
+      // Get Arabic address
+      const arResponse = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`
+      );
+      const arData = arResponse.ok ? await arResponse.json() : null;
+      const arAddress = arData?.display_name || "";
+
+      // Get English address
+      const enResponse = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=en`
+      );
+      const enData = enResponse.ok ? await enResponse.json() : null;
+      const enAddress = enData?.display_name || "";
+
+      return { ar: arAddress, en: enAddress };
+    } catch (error) {
+      console.error('Error getting address:', error);
+      return { ar: "", en: "" };
+    }
+  };
+
+  // دالة استخدام الموقع الحالي
+  const handleGetCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error("المتصفح لا يدعم تحديد الموقع");
+      return;
+    }
+
+    setIsGettingLocation(true);
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          }
+        );
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Update coordinates in form data
+      setFormData(prev => ({
+        ...prev,
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+      }));
+
+      setCurrentLocation({ lat: latitude, lng: longitude });
+
+      // Get address from coordinates
+      const addresses = await getAddressFromCoords(latitude, longitude);
+
+      // Update address fields
+      setFormData(prev => ({
+        ...prev,
+        addressAr: addresses.ar || prev.addressAr,
+        address: addresses.en || prev.address,
+      }));
+
+      toast.success("تم تحديد موقعك بنجاح.");
+    } catch (error: any) {
+      console.error('Error getting location:', error);
+      let errorMessage = "تعذر الحصول على موقعك الحالي. يرجى السماح بإذن الموقع.";
+      
+      if (error.code === error.PERMISSION_DENIED) {
+        errorMessage = "تم رفض إذن الموقع. يرجى السماح بالوصول للموقع في إعدادات المتصفح.";
+      } else if (error.code === error.POSITION_UNAVAILABLE) {
+        errorMessage = "معلومات الموقع غير متوفرة.";
+      } else if (error.code === error.TIMEOUT) {
+        errorMessage = "انتهت مهلة تحديد الموقع. يرجى المحاولة مرة أخرى.";
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  // Debounced translation handlers
+  const handleNameArChange = debounce(async (value: string) => {
+    if (!manuallyEditedFields.name && value.trim() !== "") {
+      const translated = await translateText(value);
+      if (translated) {
+        setFormData(prev => ({ ...prev, name: translated }));
+      }
+    }
+  }, 800);
+
+  const handleDescriptionArChange = debounce(async (value: string) => {
+    if (!manuallyEditedFields.description && value.trim() !== "") {
+      const translated = await translateText(value);
+      if (translated) {
+        setFormData(prev => ({ ...prev, description: translated }));
+      }
+    }
+  }, 800);
+
+  const handleAddressArChange = debounce(async (value: string) => {
+    if (!manuallyEditedFields.address && value.trim() !== "") {
+      const translated = await translateText(value);
+      if (translated) {
+        setFormData(prev => ({ ...prev, address: translated }));
+      }
+    }
+  }, 800);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -345,7 +495,10 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
               type="text"
               required
               value={formData.nameAr}
-              onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, nameAr: e.target.value });
+                handleNameArChange(e.target.value);
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               placeholder="مثال: مطعم البرجر الذهبي"
             />
@@ -359,7 +512,10 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
               type="text"
               required
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                setManuallyEditedFields(prev => ({ ...prev, name: true }));
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               placeholder="Example: Golden Burger Restaurant"
             />
@@ -375,7 +531,10 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
             <textarea
               required
               value={formData.descriptionAr}
-              onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, descriptionAr: e.target.value });
+                handleDescriptionArChange(e.target.value);
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               rows={3}
               placeholder="وصف مختصر عن متجرك..."
@@ -389,7 +548,10 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
             <textarea
               required
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, description: e.target.value });
+                setManuallyEditedFields(prev => ({ ...prev, description: true }));
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               rows={3}
               placeholder="Brief description of your store..."
@@ -455,7 +617,10 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
               type="text"
               required
               value={formData.addressAr}
-              onChange={(e) => setFormData({ ...formData, addressAr: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, addressAr: e.target.value });
+                handleAddressArChange(e.target.value);
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               placeholder="مثال: شارع التحرير، القاهرة"
             />
@@ -469,15 +634,40 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
               type="text"
               required
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, address: e.target.value });
+                setManuallyEditedFields(prev => ({ ...prev, address: true }));
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               placeholder="Example: Tahrir Street, Cairo"
             />
           </div>
         </div>
 
-        {/* الإحداثيات */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* زر استخدام الموقع الحالي */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleGetCurrentLocation}
+            disabled={isGettingLocation}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          >
+            {isGettingLocation ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                جاري تحديد الموقع...
+              </>
+            ) : (
+              <>
+                <MapPin className="w-4 h-4" />
+                استخدام موقعي الحالي
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* الإحداثيات - Hidden from UI but still saved internally */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">
               خط العرض (Latitude)
@@ -507,7 +697,7 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
               placeholder="31.2357"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* رقم الهاتف */}
         <div>
@@ -525,8 +715,8 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
           />
         </div>
 
-        {/* إعدادات التوصيل */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* إعدادات التوصيل - Hidden from UI but still saved internally */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">
               <span className="w-4 h-4 inline-block me-2">EGP</span>
@@ -572,7 +762,7 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
               placeholder="30"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* أزرار الحفظ */}
         <div className="flex gap-3 pt-4 border-t border-gray-200">

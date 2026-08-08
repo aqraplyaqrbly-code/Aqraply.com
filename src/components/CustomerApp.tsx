@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "react-hot-toast";
@@ -425,9 +425,60 @@ function StoresList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showNearby, setShowNearby] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(t('errors.todaysOffers'));
+  const [availableCategories, setAvailableCategories] = useState<string[]>([t('errors.todaysOffers')]);
   const { getItemCount } = useCart();
   
   const isArabic = i18n.language === 'ar';
+
+  // All store categories from dropdown list
+  const allStoreCategories = [
+    "مطاعم", "كافيهات", "سوبر ماركت", "مخابز", "حلويات",
+    "جزارة", "خضار وفاكهة", "صيدليات", "مستحضرات تجميل", "عطور",
+    "ملابس", "أحذية وشنط", "إلكترونيات", "موبايلات", "كمبيوتر ولابتوب",
+    "أجهزة منزلية", "أثاث", "مفروشات", "مكتبات", "ألعاب أطفال",
+    "رياضة", "مراكز صيانة", "خدمات سيارات", "مغاسل", "حلاقة وتجميل",
+    "جيم ولياقة", "مراكز تعليم", "عيادات", "معامل تحاليل", "خدمات أخرى", "أخرى"
+  ];
+
+  // Extract unique store categories from existing stores
+  useEffect(() => {
+    if (!stores || stores.length === 0) {
+      setAvailableCategories([t('errors.todaysOffers'), ...allStoreCategories]);
+      return;
+    }
+
+    const uniqueStoreCategories = Array.from(
+      new Set(stores.map(s => s.category).filter(Boolean))
+    ).sort() as string[];
+
+    // Combine all categories with existing ones, remove duplicates
+    const combinedCategories = [...allStoreCategories, ...uniqueStoreCategories];
+    const sortedCategories = Array.from(new Set(combinedCategories)).sort();
+
+    setAvailableCategories([t('errors.todaysOffers'), ...sortedCategories]);
+
+    // Reset selected category if it no longer exists
+    if (selectedCategory !== t('errors.todaysOffers') && !sortedCategories.includes(selectedCategory)) {
+      setSelectedCategory(t('errors.todaysOffers'));
+    }
+  }, [stores?.length]);
+
+  // Filter products by store category
+  const filteredProductsByCategory = useMemo(() => {
+    if (selectedCategory === t('errors.todaysOffers')) {
+      return allProducts?.filter(p => p.originalPrice && p.originalPrice > p.price) || [];
+    }
+
+    // Get stores with the selected category
+    const storesInCategory = stores?.filter(s => s.category === selectedCategory) || [];
+    
+    if (storesInCategory.length === 0) return [];
+
+    // Get all products from stores in this category
+    const storeIds = storesInCategory.map(s => s._id);
+    return allProducts?.filter(p => storeIds.includes(p.storeId)) || [];
+  }, [selectedCategory, allProducts, stores, t]);
   
   const nearbyStores = useQuery(api.location.getNearbyStores, 
     userLocation ? { 
@@ -542,66 +593,166 @@ function StoresList() {
             className="w-full pr-12 pl-4 py-4 bg-white rounded-xl shadow-lg border-2 border-transparent focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
           />
         </div>
-
-        {/* Search Results */}
-        {searchQuery && (filteredStores.length > 0 || filteredProducts.length > 0) && (
-          <div className="mt-4 bg-white rounded-xl shadow-lg p-4">
-            {filteredStores.length > 0 && (
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-3">🏪 {t('customer.matchingStores')}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {filteredStores.slice(0, 6).map((store) => (
-                    <button
-                      key={store._id}
-                      onClick={() => navigate(`/customer/store/${store._id}`)}
-                      className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
-                    >
-                      <h5 className="font-semibold text-gray-900">{isArabic ? store.nameAr : store.name}</h5>
-                      <p className="text-sm text-gray-600">{isArabic ? store.location?.addressAr : store.location?.address}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {filteredProducts.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">🔍 {t('customer.matchingProducts')}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {filteredProducts.slice(0, 8).map((product) => (
-                    <button
-                      key={product._id}
-                      onClick={() => navigate(`/customer/store/${product.storeId}`)}
-                      className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
-                    >
-                      <h5 className="font-semibold text-gray-900 text-sm">{isArabic ? product.nameAr : product.name}</h5>
-                      <p className="text-xs text-gray-600 mb-2">{product.category}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-orange-600">{(product.price ?? 0).toFixed(2)} {t('common.currency')}</span>
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
-                            -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                {filteredProducts.length > 8 && (
-                  <div className="text-center mt-4">
-                    <button
-                      onClick={() => navigate(`/customer?search=${encodeURIComponent(searchQuery)}`)}
-                      className="text-orange-600 hover:text-orange-700 font-semibold"
-                    >
-                      {t('customer.viewAllProducts')} ({filteredProducts.length})
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Categories Bar */}
+      <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm mb-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 py-3 overflow-x-auto" dir="ltr">
+            <div className="flex-1 overflow-x-auto scrollbar-hide" dir={document.documentElement.dir === "rtl" ? "rtl" : "ltr"}>
+              <div className="flex gap-3 pb-0 min-w-max justify-center sm:justify-start">
+                {availableCategories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-5 py-2 text-sm rounded-lg font-semibold whitespace-nowrap transition-all ${
+                      selectedCategory === category
+                        ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Results */}
+      {searchQuery && (filteredStores.length > 0 || filteredProducts.length > 0) && (
+        <div className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-4">
+          {filteredStores.length > 0 && (
+            <div className="mb-4">
+              <h4 className="font-semibold text-gray-900 mb-3">🏪 {t('customer.matchingStores')}</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredStores.slice(0, 6).map((store) => (
+                  <button
+                    key={store._id}
+                    onClick={() => navigate(`/customer/store/${store._id}`)}
+                    className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
+                  >
+                    <h5 className="font-semibold text-gray-900">{isArabic ? store.nameAr : store.name}</h5>
+                    <p className="text-sm text-gray-600">{isArabic ? store.location?.addressAr : store.location?.address}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {filteredProducts.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-3">🔍 {t('customer.matchingProducts')}</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {filteredProducts.slice(0, 8).map((product) => (
+                  <button
+                    key={product._id}
+                    onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                    className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
+                  >
+                    <h5 className="font-semibold text-gray-900 text-sm">{isArabic ? product.nameAr : product.name}</h5>
+                    <p className="text-xs text-gray-600 mb-2">{product.category}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-orange-600">{(product.price ?? 0).toFixed(2)} {t('common.currency')}</span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                          -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {filteredProducts.length > 8 && (
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => navigate(`/customer?search=${encodeURIComponent(searchQuery)}`)}
+                    className="text-orange-600 hover:text-orange-700 font-semibold"
+                  >
+                    {t('customer.viewAllProducts')} ({filteredProducts.length})
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {searchQuery && filteredStores.length === 0 && filteredProducts.length === 0 && (
+        <div className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-6 text-center">
+          <p className="text-gray-600">{t('customer.noStoresOrProductsFound')}</p>
+        </div>
+      )}
+
+      {/* Products by Category */}
+      {selectedCategory !== t('errors.todaysOffers') && (
+        <div className="max-w-7xl mx-auto px-4 mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-1.5 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-gray-900">{selectedCategory}</h2>
+            <span className="text-sm text-gray-500 font-medium">({filteredProductsByCategory.length})</span>
+          </div>
+
+          {!filteredProductsByCategory || filteredProductsByCategory.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+              <Package className="w-20 h-20 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg font-semibold">
+                {t('errors.noProductsInCategory')}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {filteredProductsByCategory.slice(0, 12).map((product) => (
+                <button
+                  key={product._id}
+                  onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-orange-200"
+                >
+                  <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                    <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 p-4 flex flex-col">
+                    <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                      {isArabic ? product.nameAr : product.name}
+                    </h4>
+                    <p className="text-xs text-gray-600 line-clamp-1 mb-3 flex-1">
+                      {isArabic ? product.descriptionAr : product.description}
+                    </p>
+
+                    <div className="pt-3 border-t border-gray-100 space-y-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl font-bold text-orange-600">
+                          {product.price}
+                        </span>
+                        <span className="text-xs text-gray-600 font-medium">
+                          EGP
+                        </span>
+                      </div>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <div className="text-xs text-gray-400 line-through">
+                          {product.originalPrice} EGP
+                        </div>
+                      )}
+
+                      <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-semibold">
+                        {product.category}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* عروض اليوم - Today's Deals */}
       {todayDeals.length > 0 && (

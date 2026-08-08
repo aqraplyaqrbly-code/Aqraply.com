@@ -99,20 +99,20 @@ export default function AdminSuperStoreManagement() {
   // فلترة المتاجر
   const filteredStores = React.useMemo(() => {
     let filtered = storesWithDetails;
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(store => 
-        store.nameAr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        store.nameEn.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(store =>
+        store.nameAr?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        store.nameEn?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(store => 
+      filtered = filtered.filter(store =>
         filterStatus === 'active' ? store.isActive : !store.isActive
       );
     }
-    
+
     return filtered;
   }, [storesWithDetails, searchQuery, filterStatus]);
 

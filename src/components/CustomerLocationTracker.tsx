@@ -250,19 +250,7 @@ export function CustomerLocationTracker({
       {/* معلومات الموقع الحالي */}
       {currentLocation && (
         <div className="bg-blue-50 rounded-lg p-3 mb-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-gray-600">{t('errors.latitude')}:</span>
-              <span className="font-mono text-gray-900 mr-1">
-                {currentLocation.latitude.toFixed(6)}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-600">{t('errors.longitude')}:</span>
-              <span className="font-mono text-gray-900 mr-1">
-                {currentLocation.longitude.toFixed(6)}
-              </span>
-            </div>
+          <div className="grid grid-cols-1 gap-2 text-sm">
             {currentLocation.accuracy && (
               <div>
                 <span className="text-gray-600">{t('errors.accuracy')}:</span>
@@ -272,7 +260,7 @@ export function CustomerLocationTracker({
               </div>
             )}
             {currentLocation.address && (
-              <div className="md:col-span-2">
+              <div>
                 <span className="text-gray-600">{t('errors.address')}:</span>
                 <span className="text-gray-900 mr-1 flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-blue-600" />

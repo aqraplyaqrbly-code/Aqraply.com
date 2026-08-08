@@ -13,6 +13,7 @@ import {
   validateRequired,
 } from '../utils/validation';
 import { useTranslation } from 'react-i18next';
+import LocationMapPicker from './LocationMapPicker';
 
 export default function UnifiedRegister() {
   const { t } = useTranslation();
@@ -49,6 +50,10 @@ export default function UnifiedRegister() {
   const [storeNameAr, setStoreNameAr] = useState('');
   const [storeAddress, setStoreAddress] = useState('');
   const [storeAddressAr, setStoreAddressAr] = useState('');
+  const [storeLocation, setStoreLocation] = useState<{ latitude: number; longitude: number }>({
+    latitude: 30.0444,
+    longitude: 31.2357,
+  });
 
   // Merchant errors
   const [storeNameError, setStoreNameError] = useState('');
@@ -272,8 +277,8 @@ export default function UnifiedRegister() {
         profileData.storeAddress = {
           address: storeAddress,
           addressAr: storeAddressAr || storeAddress,
-          latitude: 30.0444,
-          longitude: 31.2357,
+          latitude: storeLocation.latitude,
+          longitude: storeLocation.longitude,
         };
       } else if (selectedRole === 'captain') {
         profileData.nationalId = nationalId;
@@ -546,6 +551,22 @@ export default function UnifiedRegister() {
                     {storeAddressError && (
                       <p className="text-red-500 text-sm mt-1">{storeAddressError}</p>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      تحديد موقع المتجر على الخريطة
+                    </label>
+                    <LocationMapPicker
+                      onLocationChange={(lat, lng) => {
+                        setStoreLocation({ latitude: lat, longitude: lng });
+                      }}
+                      initialPosition={{ lat: storeLocation.latitude, lng: storeLocation.longitude }}
+                      className="mb-4"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      يمكنك النقر على الخريطة أو سحب العلامة لتحديد موقع المتجر
+                    </p>
                   </div>
                 </>
               )}

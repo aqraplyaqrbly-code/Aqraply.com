@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useNavigate } from "react-router-dom";
@@ -78,24 +78,38 @@ export default function HomePage() {
     }
   }, [allProducts?.length, imagesUpdated, updateProductImages]);
 
-  // Extract unique categories from products
+  // All store categories from dropdown list
+  const allStoreCategories = [
+    "مطاعم", "كافيهات", "سوبر ماركت", "مخابز", "حلويات",
+    "جزارة", "خضار وفاكهة", "صيدليات", "مستحضرات تجميل", "عطور",
+    "ملابس", "أحذية وشنط", "إلكترونيات", "موبايلات", "كمبيوتر ولابتوب",
+    "أجهزة منزلية", "أثاث", "مفروشات", "مكتبات", "ألعاب أطفال",
+    "رياضة", "مراكز صيانة", "خدمات سيارات", "مغاسل", "حلاقة وتجميل",
+    "جيم ولياقة", "مراكز تعليم", "عيادات", "معامل تحاليل", "خدمات أخرى", "أخرى"
+  ];
+
+  // Extract unique store categories from existing stores
   useEffect(() => {
-    if (!allProducts || allProducts.length === 0) {
-      setAvailableCategories([t('errors.todaysOffers')]);
+    if (!stores || stores.length === 0) {
+      setAvailableCategories([t('errors.todaysOffers'), ...allStoreCategories]);
       return;
     }
 
-    const uniqueCategories = Array.from(
-      new Set(allProducts.map(p => p.category).filter(Boolean))
+    const uniqueStoreCategories = Array.from(
+      new Set(stores.map(s => s.category).filter(Boolean))
     ).sort() as string[];
 
-    setAvailableCategories([t('errors.todaysOffers'), ...uniqueCategories]);
+    // Combine all categories with existing ones, remove duplicates
+    const combinedCategories = [...allStoreCategories, ...uniqueStoreCategories];
+    const sortedCategories = Array.from(new Set(combinedCategories)).sort();
+
+    setAvailableCategories([t('errors.todaysOffers'), ...sortedCategories]);
 
     // Reset selected category if it no longer exists
-    if (selectedCategory !== t('errors.todaysOffers') && !uniqueCategories.includes(selectedCategory)) {
+    if (selectedCategory !== t('errors.todaysOffers') && !sortedCategories.includes(selectedCategory)) {
       setSelectedCategory(t('errors.todaysOffers'));
     }
-  }, [allProducts?.length]);
+  }, [stores?.length]);
 
   // Animate stats on mount
   useEffect(() => {
@@ -137,10 +151,21 @@ export default function HomePage() {
     }
   }, [selectedCategory]);
 
-  // Filter products by category
-  const filteredProducts = selectedCategory === t('errors.todaysOffers')
-    ? allProducts.filter(p => p.originalPrice && p.originalPrice > p.price)
-    : allProducts.filter(p => p.category === selectedCategory);
+  // Filter products by store category
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === t('errors.todaysOffers')) {
+      return allProducts.filter(p => p.originalPrice && p.originalPrice > p.price);
+    }
+
+    // Get stores with the selected category
+    const storesInCategory = stores.filter(s => s.category === selectedCategory);
+    
+    if (storesInCategory.length === 0) return [];
+
+    // Get all products from stores in this category
+    const storeIds = storesInCategory.map(s => s._id);
+    return allProducts.filter(p => storeIds.includes(p.storeId));
+  }, [selectedCategory, allProducts, stores, t]);
 
   // Handle location search
   const handleLocationSearch = (e: React.ChangeEvent<HTMLInputElement>) => {

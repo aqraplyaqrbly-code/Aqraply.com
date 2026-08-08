@@ -101,7 +101,8 @@
     "daysAgo": "منذ {{count}} يوم",
     "meters": "م",
     "km": "كم",
-    "mins": "دق"
+    "mins": "دق",
+    "currency": "EGP"
   },
   "auth": {
     "welcome": "مرحباً بك",
@@ -375,7 +376,7 @@
     "order": "طلب",
     "products": "منتج",
     "otherProducts": "منتجات أخرى",
-    "currency": "ج.م",
+    "currency": "EGP",
     "status": {
       "pending": "قيد الانتظار",
       "confirmed": "تم التأكيد",
@@ -692,6 +693,10 @@
     "markAllAsRead": "اقرأ الكل",
     "invoice": "فاتورة الطلب",
     "orderNumber": "رقم الطلب",
+    "productsManagement": "إدارة المنتجات",
+    "addEditProducts": "إضافة/تعديل المنتجات",
+    "allStores": "جميع المتاجر",
+    "stores": "المتاجر",
     "print": "طباعة",
     "storeData": "بيانات المتجر",
     "storeName": "اسم المتجر",

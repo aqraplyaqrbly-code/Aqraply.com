@@ -512,7 +512,7 @@ function Orders({ profile }: { profile: any }) {
     .filter(
       (o) =>
         !searchTerm ||
-        o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.customerInfo?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 

@@ -282,8 +282,8 @@ function StoresManagement() {
     .filter(
       (s) =>
         !searchTerm ||
-        s.nameAr.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.name.toLowerCase().includes(searchTerm.toLowerCase())
+        s.nameAr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
   const handleToggle = async (storeId: string, currentActive: boolean) => {
@@ -623,7 +623,7 @@ function CaptainsManagement() {
     .filter(
       (c) =>
         !searchTerm ||
-        c.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 

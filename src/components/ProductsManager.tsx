@@ -298,10 +298,99 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     imageUrls.length > 0 ? { storageIds: imageUrls } : "skip"
   );
   const resolvedImageUrls = imagePreviewUrls || imageUrls;
-  const [newColor, setNewColor] = useState(""); // لإضافة لون جديد
-  const [newSize, setNewSize] = useState(""); // لإضافة مقاس جديد
-  const [newSizeLabel, setNewSizeLabel] = useState(""); // علامة المقاس
-  const [newCategory, setNewCategory] = useState(""); // لإضافة فئة جديدة
+  const [newColor, setNewColor] = useState("");
+  const [newSize, setNewSize] = useState("");
+  const [newSizeLabel, setNewSizeLabel] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+
+  // Category mapping: store category -> related product categories
+  const categoryMapping: { [key: string]: string[] } = {
+    "مطاعم": ["برجر", "بيتزا", "مشاوي", "ساندوتشات", "وجبات سريعة", "أطباق رئيسية", "مقبلات", "سلطات", "شوربات", "مشروبات", "حلويات"],
+    "كافيهات": ["قهوة", "شاي", "عصائر", "سموثي", "حلويات", "كعك", "بسكويت", "سناكس"],
+    "سوبر ماركت": ["ألبان", "مخبوزات", "معلبات", "مشروبات", "وجبات جاهزة", "منظفات", "عناية شخصية"],
+    "مخابز": ["خبز", "فطائر", "حلويات", "كعك", "بسكويت"],
+    "حلويات": ["شوكولاتة", "حلويات شرقية", "حلويات غربية", "آيس كريم", "كعك"],
+    "جزارة": ["لحم بقري", "لحم ضأن", "دجاج", "أسماك", "لحم مفروم"],
+    "خضار وفاكهة": ["خضار", "فاكهة", "عصائر طبيعية"],
+    "صيدليات": ["أدوية", "فيتامينات", "عناية شخصية", "مستحضرات طبية"],
+    "مستحضرات تجميل": ["مكياج", "عناية بالبشرة", "عناية بالشعر", "عطور"],
+    "عطور": ["عطور رجالية", "عطور نسائية", "عطور أطفال"],
+    "ملابس": ["ملابس رجالية", "ملابس نسائية", "ملابس أطفال", "ملابس رياضية"],
+    "أحذية وشنط": ["أحذية رجالية", "أحذية نسائية", "شنط", "حقائب"],
+    "إلكترونيات": ["هواتف", "لابتوب", "أجهزة منزلية", "إكسسوارات"],
+    "موبايلات": ["هواتف ذكية", "إكسسوارات موبايل", "شاشات حماية"],
+    "كمبيوتر ولابتوب": ["لابتوب", "كمبيوتر مكتبي", "إكسسوارات"],
+    "أجهزة منزلية": ["ثلاجات", "غسالات", "مكيفات", "أفران"],
+    "أثاث": ["غرف نوم", "طاولات", "كراسي", "خزائن"],
+    "مفروشات": ["سجاد", "ستائر", "مفروشات"],
+    "مكتبات": ["كتب", "قرطاسية", "أدوات مكتبية"],
+    "ألعاب أطفال": ["ألعاب تعليمية", "ألعاب رياضية", "ألعاب إلكترونية"],
+    "رياضة": ["ملابس رياضية", "أحذية رياضية", "معدات رياضية"],
+    "مراكز صيانة": ["صيانة هواتف", "صيانة كمبيوتر", "صيانة أجهزة"],
+    "خدمات سيارات": ["قطع غيار", "إكسسوارات سيارات", "زيوت"],
+    "مغاسل": ["غسيل ملابس", "تنظيف جاف", "كي ملابس"],
+    "حلاقة وتجميل": ["قص شعر", "تجميل", "عناية بالبشرة"],
+    "جيم ولياقة": ["عضلات", "كارديو", "يوجا"],
+    "مراكز تعليم": ["دورات", "كتب تعليمية", "أدوات تعليمية"],
+    "عيادات": ["طب عام", "أسنان", "عيادات متخصصة"],
+    "معامل تحاليل": ["تحاليل دم", "تحاليل أشعة"],
+    "خدمات أخرى": ["خدمات متنوعة"],
+    "أخرى": ["أخرى"]
+  };
+
+  const [manuallyEditedFields, setManuallyEditedFields] = useState({
+    name: false,
+    description: false,
+  });
+
+  // Translation function using MyMemory free API
+  const translateText = async (text: string): Promise<string> => {
+    if (!text || text.trim() === "") return "";
+    
+    try {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ar|en`
+      );
+      const data = await response.json();
+      
+      if (data.responseStatus === 200 && data.responseData) {
+        return data.responseData.translatedText;
+      }
+      return "";
+    } catch (error) {
+      console.error("Translation error:", error);
+      return "";
+    }
+  };
+
+  // Debounce function to avoid excessive API calls
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // Debounced translation handlers
+  const handleNameArChange = debounce(async (value: string) => {
+    if (!manuallyEditedFields.name && value.trim() !== "") {
+      const translated = await translateText(value);
+      if (translated) {
+        setFormData(prev => ({ ...prev, name: translated }));
+      }
+    }
+  }, 800);
+
+  const handleDescriptionArChange = debounce(async (value: string) => {
+    if (!manuallyEditedFields.description && value.trim() !== "") {
+      const translated = await translateText(value);
+      if (translated) {
+        setFormData(prev => ({ ...prev, description: translated }));
+      }
+    }
+  }, 800);
+
   const [allCategories, setAllCategories] = useState<Array<{storeId: string, category: string}>>(() => {
     // جلب الفئات المحفوظة من localStorage أو استخدام الفئات الافتراضية
     const savedCategories = localStorage.getItem('productCategories');
@@ -325,14 +414,29 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
   const updateProduct = useMutation(api.products.updateProduct);
   const generateUploadUrl = useMutation(api.products.generateUploadUrl);
 
-  // Filter categories based on selected store
+  // Filter categories based on selected store's category
   const filteredCategories = useMemo(() => {
     if (!formData.storeId) return [];
-    return allCategories
+    
+    // Get the selected store
+    const selectedStore = stores.find(s => s._id === formData.storeId);
+    if (!selectedStore) return [];
+    
+    // Get the store's category
+    const storeCategory = selectedStore.category;
+    
+    // Get mapped categories for this store category
+    const mappedCategories = categoryMapping[storeCategory] || [];
+    
+    // Get custom categories for this store
+    const customCategories = allCategories
       .filter(cat => cat.storeId === formData.storeId)
-      .map(cat => cat.category)
-      .filter((cat, index, arr) => arr.indexOf(cat) === index); // Remove duplicates
-  }, [allCategories, formData.storeId]);
+      .map(cat => cat.category);
+    
+    // Combine mapped and custom categories, remove duplicates
+    const combinedCategories = [...mappedCategories, ...customCategories];
+    return combinedCategories.filter((cat, index, arr) => arr.indexOf(cat) === index);
+  }, [allCategories, formData.storeId, stores]);
 
   // حفظ الفئات في localStorage عند التحديث
   useEffect(() => {
@@ -643,7 +747,10 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
                 type="text"
                 required
                 value={formData.nameAr}
-                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, nameAr: e.target.value });
+                  handleNameArChange(e.target.value);
+                }}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
                 placeholder="مثال: برجر لحم"
               />
@@ -655,7 +762,10 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  setManuallyEditedFields(prev => ({ ...prev, name: true }));
+                }}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
                 placeholder="Example: Beef Burger"
               />
@@ -667,7 +777,10 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
             <textarea
               required
               value={formData.descriptionAr}
-              onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, descriptionAr: e.target.value });
+                handleDescriptionArChange(e.target.value);
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               rows={3}
               placeholder="وصف المنتج..."
@@ -679,7 +792,10 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
             <textarea
               required
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, description: e.target.value });
+                setManuallyEditedFields(prev => ({ ...prev, description: true }));
+              }}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               rows={3}
               placeholder="Product description..."
