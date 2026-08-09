@@ -42,6 +42,9 @@ export const createOrder = mutation({
       throw new ConvexError("المتجر غير متاح حالياً");
     }
 
+    // جلب إعدادات النظام لاستخدامها كقيم افتراضية
+    const systemSettings = await ctx.db.query("systemSettings").first();
+
     const customerProfile = await ctx.db
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -98,13 +101,17 @@ export const createOrder = mutation({
       });
     }
 
-    if (subtotal < store.minOrderAmount) {
+    // استخدام إعدادات النظام كقيم افتراضية إذا لم يكن للمتجر إعدادات خاصة
+    const minOrderAmount = store.minOrderAmount ?? systemSettings?.minOrderAmount ?? 50;
+    const deliveryFee = store.deliveryFee ?? systemSettings?.deliveryFee ?? 20;
+    const commissionRate = store.commissionRate ?? systemSettings?.commissionRate ?? 10;
+
+    if (subtotal < minOrderAmount) {
       throw new ConvexError(
-        `الحد الأدنى للطلب هو ${store.minOrderAmount} EGP`,
+        `الحد الأدنى للطلب هو ${minOrderAmount} EGP`,
       );
     }
 
-    const deliveryFee = store.deliveryFee;
     const totalAmount = subtotal + deliveryFee;
     const now = Date.now();
 

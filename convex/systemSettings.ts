@@ -174,3 +174,55 @@ export const updateSettings = mutation({
     return await ctx.db.get(settingsId);
   },
 });
+
+// تطبيق إعدادات النظام على جميع المتاجر
+export const applySettingsToAllStores = mutation({
+  args: {
+    sessionToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
+
+    // جلب إعدادات النظام الحالية
+    const systemSettings = await ctx.db.query("systemSettings").first();
+    if (!systemSettings) {
+      throw new ConvexError("لا توجد إعدادات نظام");
+    }
+
+    // جلب جميع المتاجر
+    const stores = await ctx.db.query("stores").collect();
+
+    // تحديث كل متجر بالإعدادات الجديدة
+    let updatedCount = 0;
+    for (const store of stores) {
+      const updateData: any = {
+        updatedAt: Date.now(),
+      };
+
+      // تحديث رسوم التوصيل
+      if (systemSettings.deliveryFee !== undefined) {
+        updateData.deliveryFee = systemSettings.deliveryFee;
+      }
+
+      // تحديث نسبة العمولة
+      if (systemSettings.commissionRate !== undefined) {
+        updateData.commissionRate = systemSettings.commissionRate;
+      }
+
+      // تحديث الحد الأدنى للطلب
+      if (systemSettings.minOrderAmount !== undefined) {
+        updateData.minOrderAmount = systemSettings.minOrderAmount;
+      }
+
+      // تحديث حد التوصيل المجاني
+      if (systemSettings.freeDeliveryThreshold !== undefined) {
+        updateData.freeDeliveryThreshold = systemSettings.freeDeliveryThreshold;
+      }
+
+      await ctx.db.patch(store._id, updateData);
+      updatedCount++;
+    }
+
+    return { updatedCount, message: `تم تحديث ${updatedCount} متجر` };
+  },
+});

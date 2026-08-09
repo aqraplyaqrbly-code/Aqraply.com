@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
+import { normalizeArabicText } from "../lib/utils";
 import {
   Store,
   Package,
@@ -513,7 +514,7 @@ function Orders({ profile }: { profile: any }) {
       (o) =>
         !searchTerm ||
         o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        o.customerInfo?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
+        normalizeArabicText(o.customerInfo?.fullName || '').includes(normalizeArabicText(searchTerm))
     );
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {

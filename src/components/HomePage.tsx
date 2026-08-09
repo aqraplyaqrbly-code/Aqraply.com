@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ProductImage } from "./ProductImage";
 import LocationTracker from "./LocationTracker";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { normalizeArabicText } from "../lib/utils";
 import {
   Store,
   Search,
@@ -38,6 +39,7 @@ export default function HomePage() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [searchLocation, setSearchLocation] = useState("");
   const [filteredStores, setFilteredStores] = useState<any[]>([]);
+  const [searchFilteredProducts, setSearchFilteredProducts] = useState<any[]>([]);
   const [displayStats, setDisplayStats] = useState({
     stores: 0,
     orders: 0,
@@ -176,26 +178,29 @@ export default function HomePage() {
 
     if (searchTerm.trim() === "") {
       setFilteredStores([]);
+      setSearchFilteredProducts([]);
       return;
     }
 
     // Filter stores by name or address
     const filteredStores = stores.filter(
       (store: any) =>
-        store.nameAr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        store.location?.addressAr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        normalizeArabicText(store.nameAr || '').includes(normalizeArabicText(searchTerm)) ||
+        store.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        normalizeArabicText(store.location?.addressAr || '').includes(normalizeArabicText(searchTerm)) ||
         store.location?.address?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Filter products by name or category
     const filteredProducts = allProducts.filter(
       (product: any) =>
-        product.nameAr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        normalizeArabicText(product.nameAr || '').includes(normalizeArabicText(searchTerm)) ||
         product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+        normalizeArabicText(product.category || '').includes(normalizeArabicText(searchTerm))
     );
 
     setFilteredStores(filteredStores);
+    setSearchFilteredProducts(filteredProducts);
     
     // Show first matching store or product at top
     if (filteredStores.length > 0) {
@@ -438,81 +443,65 @@ export default function HomePage() {
                 </div>
 
                 {/* Search Results Dropdown */}
-                {searchLocation && filteredStores.length > 0 && (
+                {searchLocation && (filteredStores.length > 0 || searchFilteredProducts.length > 0) && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-80 overflow-y-auto z-40">
-                    {filteredStores.map((store) => (
-                      <button
-                        key={store._id}
-                        onClick={() => handleStoreSelect(store._id)}
-                        className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="text-start">
-                            <h4 className="font-bold text-gray-900">{store.nameAr}</h4>
-                            <p className="text-sm text-gray-600">{store.location?.addressAr}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
-                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                              <span className="font-semibold text-sm">{store.rating}</span>
+                    {filteredStores.length > 0 && (
+                      <div className="border-b border-gray-200">
+                        <div className="px-6 py-2 bg-orange-50 text-orange-700 font-bold text-sm">
+                          المتاجر ({filteredStores.length})
+                        </div>
+                        {filteredStores.map((store) => (
+                          <button
+                            key={store._id}
+                            onClick={() => handleStoreSelect(store._id)}
+                            className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-start">
+                                <h4 className="font-bold text-gray-900">{store.nameAr}</h4>
+                                <p className="text-sm text-gray-600">{store.location?.addressAr}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                  <span className="font-semibold text-sm">{store.rating}</span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {searchFilteredProducts.length > 0 && (
+                      <div>
+                        <div className="px-6 py-2 bg-blue-50 text-blue-700 font-bold text-sm">
+                          المنتجات ({searchFilteredProducts.length})
                         </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {searchLocation && filteredStores.length === 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
-                    <p className="text-gray-600">{t('errors.noStoresFound')}</p>
-                  </div>
-                )}
-
-                {/* Search Results for Products */}
-                {searchLocation && filteredProducts.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-96 overflow-y-auto z-40">
-                    <div className="p-4 border-b border-gray-100">
-                      <h4 className="font-semibold text-gray-900 mb-2">{t('errors.searchResults')}</h4>
-                    </div>
-                    {filteredProducts.slice(0, 5).map((product) => (
-                      <button
-                        key={product._id}
-                        onClick={() => navigate(`/customer/store/${product.storeId}`)}
-                        className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="text-start">
-                            <h5 className="font-bold text-gray-900">{product.nameAr}</h5>
-                            <p className="text-sm text-gray-600">{product.category}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-orange-600">{product.price} EGP</span>
-                            {product.originalPrice && product.originalPrice > product.price && (
-                              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
-                                -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                    {filteredProducts.length > 5 && (
-                      <div className="p-4 text-center">
-                        <button
-                          onClick={() => navigate(`/customer?search=${encodeURIComponent(searchLocation)}`)}
-                          className="text-orange-600 hover:text-orange-700 font-semibold"
-                        >
-                          {t('errors.showAllResults')} ({filteredProducts.length})
-                        </button>
+                        {searchFilteredProducts.slice(0, 5).map((product) => (
+                          <button
+                            key={product._id}
+                            onClick={() => handleStoreSelect(product.storeId)}
+                            className="w-full px-6 py-3 text-right hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-start">
+                                <h4 className="font-bold text-gray-900 text-sm">{product.nameAr}</h4>
+                                <p className="text-xs text-gray-600">{product.category}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-orange-600">{product.price} EGP</span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
                 )}
 
-                {searchLocation && filteredStores.length === 0 && filteredProducts.length === 0 && (
+                {searchLocation && filteredStores.length === 0 && searchFilteredProducts.length === 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
-                    <p className="text-gray-600">{t('errors.noStoresOrProductsFound')}</p>
+                    <p className="text-gray-600">{t('errors.noStoresFound')}</p>
                   </div>
                 )}
               </div>

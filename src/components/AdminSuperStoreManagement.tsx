@@ -4,6 +4,7 @@ import { api } from '../../convex/_generated/api';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContextNew';
 import { useTranslation } from 'react-i18next';
+import { normalizeArabicText } from '../lib/utils';
 import {
   Store,
   Package,
@@ -102,7 +103,7 @@ export default function AdminSuperStoreManagement() {
 
     if (searchQuery) {
       filtered = filtered.filter(store =>
-        store.nameAr?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        normalizeArabicText(store.nameAr || '').includes(normalizeArabicText(searchQuery)) ||
         store.nameEn?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }

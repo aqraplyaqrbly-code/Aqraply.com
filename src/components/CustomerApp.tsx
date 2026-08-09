@@ -8,6 +8,7 @@ import CustomerRegister from "./CustomerRegister";
 import CustomerOrders from "./CustomerOrders";
 import OrderDetails from "./OrderDetails";
 import { useAuth } from "../contexts/AuthContextNew";
+import { normalizeArabicText } from "../lib/utils";
 
 // Cart Item Interface
 interface CartItem {
@@ -522,15 +523,17 @@ function StoresList() {
   const newProducts = allProducts?.sort((a, b) => (b._creationTime || 0) - (a._creationTime || 0))
     .slice(0, 10) || [];
 
-  const filteredStores = stores?.filter(store => 
-    store?.nameAr?.includes(searchQuery) || 
-    store?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredStores = stores?.filter(store =>
+    normalizeArabicText(store?.nameAr || '').includes(normalizeArabicText(searchQuery)) ||
+    store?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    normalizeArabicText(store?.location?.addressAr || '').includes(normalizeArabicText(searchQuery)) ||
+    store?.location?.address?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
   const filteredProducts = allProducts?.filter(product =>
-    product?.nameAr?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    normalizeArabicText(product?.nameAr || '').includes(normalizeArabicText(searchQuery)) ||
     product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product?.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    normalizeArabicText(product?.category || '').includes(normalizeArabicText(searchQuery))
   ) || [];
 
   // حساب المسافة بين نقطتين

@@ -10,6 +10,7 @@ import AdminSuperStoreManagement from "./AdminSuperStoreManagement";
 import AdminDataExport from "./AdminDataExport";
 import AdminManagement from "./AdminManagement";
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
+import { normalizeArabicText } from "../lib/utils";
 import {
   Users,
   UserCheck,
@@ -282,7 +283,7 @@ function StoresManagement() {
     .filter(
       (s) =>
         !searchTerm ||
-        s.nameAr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        normalizeArabicText(s.nameAr || '').includes(normalizeArabicText(searchTerm)) ||
         s.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -623,7 +624,7 @@ function CaptainsManagement() {
     .filter(
       (c) =>
         !searchTerm ||
-        c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        normalizeArabicText(c.fullName || '').includes(normalizeArabicText(searchTerm)) ||
         c.phone?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 

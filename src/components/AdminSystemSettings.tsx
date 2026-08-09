@@ -156,6 +156,7 @@ export default function SystemSettings() {
   const systemSettings = useQuery(api.systemSettings.getSettings);
   const updateSettings = useMutation(api.systemSettings.updateSettings);
   const resetSettings = useMutation(api.adminExport.resetSystemSettings);
+  const applySettingsToAllStores = useMutation(api.systemSettings.applySettingsToAllStores);
 
   // تحديث الإعدادات عند تحميلها من الخادم
   useEffect(() => {
@@ -284,6 +285,24 @@ export default function SystemSettings() {
     } catch (error) {
       console.error('Reset settings error:', error);
       toast.error(t('errors.failedToResetSettings'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApplySettingsToAllStores = async () => {
+    if (!confirm('هل تريد تطبيق إعدادات النظام على جميع المتاجر؟ سيتم تحديث رسوم التوصيل ونسبة العمولة والحد الأدنى للطلب.')) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await applySettingsToAllStores({ sessionToken });
+      console.log('Apply settings result:', result);
+      
+      toast.success(result?.message || 'تم تطبيق الإعدادات على جميع المتاجر بنجاح');
+      
+    } catch (error) {
+      console.error('Apply settings error:', error);
+      toast.error(error instanceof Error ? error.message : 'فشل تطبيق الإعدادات');
     } finally {
       setIsLoading(false);
     }
@@ -843,6 +862,15 @@ export default function SystemSettings() {
               >
                 <RefreshCw className="w-5 h-5" />
                 {t('errors.reset')}
+              </button>
+              
+              <button
+                onClick={handleApplySettingsToAllStores}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Store className="w-5 h-5" />
+                تطبيق على جميع المتاجر
               </button>
               
               {/* Status indicators */}

@@ -18,7 +18,6 @@ import type * as auth from "../auth.js";
 import type * as authInternal from "../authInternal.js";
 import type * as basicSettings from "../basicSettings.js";
 import type * as captains from "../captains.js";
-import type * as categories from "../categories.js";
 import type * as cleanup from "../cleanup.js";
 import type * as constants from "../constants.js";
 import type * as export_ from "../export.js";
@@ -62,7 +61,6 @@ declare const fullApi: ApiFromModules<{
   authInternal: typeof authInternal;
   basicSettings: typeof basicSettings;
   captains: typeof captains;
-  categories: typeof categories;
   cleanup: typeof cleanup;
   constants: typeof constants;
   export: typeof export_;
