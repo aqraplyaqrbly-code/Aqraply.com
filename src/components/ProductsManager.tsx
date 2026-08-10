@@ -300,7 +300,6 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
   const resolvedImageUrls = imagePreviewUrls || imageUrls;
   const [newColor, setNewColor] = useState("");
   const [newSize, setNewSize] = useState("");
-  const [newSizeLabel, setNewSizeLabel] = useState("");
   const [newCategory, setNewCategory] = useState("");
 
   // Category mapping: store category -> related product categories
@@ -990,33 +989,25 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
             <h3 className="text-lg font-semibold text-gray-900 mb-4">المقاسات المتاحة (اختياري)</h3>
             
             {/* إضافة مقاس جديد */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               <input
                 type="text"
                 value={newSize}
                 onChange={(e) => setNewSize(e.target.value)}
-                placeholder="رمز المقاس (S, M, L, 28، 30)"
-                className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-              />
-              <input
-                type="text"
-                value={newSizeLabel}
-                onChange={(e) => setNewSizeLabel(e.target.value)}
-                placeholder="عرض المقاس (صغير، وسط، كبير)"
+                placeholder="المقاس (S, M, L, 28، 30، صغير، وسط، كبير)"
                 className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
               />
               <button
                 type="button"
                 onClick={() => {
-                  if (newSize && newSizeLabel) {
+                  if (newSize) {
                     setFormData({
                       ...formData,
-                      sizes: [...formData.sizes, { name: newSize, label: newSizeLabel }]
+                      sizes: [...formData.sizes, newSize]
                     });
                     setNewSize("");
-                    setNewSizeLabel("");
                   } else {
-                    toast.error("يرجى ملء جميع الحقول");
+                    toast.error("يرجى إدخال المقاس");
                   }
                 }}
                 className="px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -1030,18 +1021,13 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
             {formData.sizes.length > 0 && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-3">المقاسات المضافة:</h4>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
                   {formData.sizes.map((size: any, index: number) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200"
+                      className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200"
                     >
-                      <div className="flex gap-3">
-                        <span className="font-semibold text-gray-900 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg">
-                          {size.name}
-                        </span>
-                        <span className="text-gray-700 self-center">{size.label}</span>
-                      </div>
+                      <span className="text-gray-900 font-medium">{size}</span>
                       <button
                         type="button"
                         onClick={() => {

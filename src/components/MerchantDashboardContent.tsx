@@ -225,7 +225,14 @@ function DashboardHome({ profile }: { profile: any }) {
   const pendingOrders = storeOrders?.filter((o) =>
     ["pending", "confirmed", "preparing"].includes(o.status)
   ) || [];
-  const totalRevenue = deliveredOrders.reduce((sum, o) => sum + o.total, 0);
+  // ✅ استخدام subtotal بدلاً من total لاستبعاد رسوم التوصيل
+  // إذا لم يوجد subtotal، نستخدم total - deliveryFee
+  const totalRevenue = deliveredOrders.reduce((sum, o) => {
+    if (o.subtotal) return sum + o.subtotal;
+    // للطلبات القديمة التي لا تحتوي على subtotal
+    const deliveryFee = o.deliveryFee || 0;
+    return sum + (o.total || 0) - deliveryFee;
+  }, 0);
 
   // ✅ المشكلة محلولة: إجمالي الطلبات يُحسب من storeOrders.length بدلاً من store.totalOrders
   const totalOrdersCount = storeOrders?.length ?? 0;
@@ -786,7 +793,13 @@ function Analytics({ profile }: { profile: any }) {
       );
       days.push({
         label: date.toLocaleDateString("ar-EG", { weekday: "short" }),
-        revenue: dayOrders.filter((o) => o.status === "delivered").reduce((s, o) => s + o.total, 0),
+        // ✅ استخدام subtotal بدلاً من total لاستبعاد رسوم التوصيل
+        // إذا لم يوجد subtotal، نستخدم total - deliveryFee
+        revenue: dayOrders.filter((o) => o.status === "delivered").reduce((s, o) => {
+          if (o.subtotal) return s + o.subtotal;
+          const deliveryFee = o.deliveryFee || 0;
+          return s + (o.total || 0) - deliveryFee;
+        }, 0),
         count: dayOrders.length,
       });
     }

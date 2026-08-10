@@ -573,8 +573,14 @@ export const getMerchantStats = query({
       ),
     );
 
+    // ✅ استخدام subtotal بدلاً من orderTotal لاستبعاد رسوم التوصيل
+    // إذا لم يوجد subtotal، نستخدم total - deliveryFee
     const totalRevenue = deliveredOrders.reduce(
-      (sum, o) => sum + orderTotal(o),
+      (sum, o) => {
+        if (o.subtotal) return sum + o.subtotal;
+        const deliveryFee = o.deliveryFee || 0;
+        return sum + (o.total || 0) - deliveryFee;
+      },
       0,
     );
     const commissionRate = (store.commissionRate ?? 15) / 100;
@@ -585,7 +591,11 @@ export const getMerchantStats = query({
     const recentOrders = orders.filter((o) => o._creationTime > thirtyDaysAgo);
     const recentRevenue = recentOrders
       .filter((o) => o.status === "delivered")
-      .reduce((sum, o) => sum + orderTotal(o), 0);
+      .reduce((sum, o) => {
+        if (o.subtotal) return sum + o.subtotal;
+        const deliveryFee = o.deliveryFee || 0;
+        return sum + (o.total || 0) - deliveryFee;
+      }, 0);
 
     const productSales: Record<
       string,
