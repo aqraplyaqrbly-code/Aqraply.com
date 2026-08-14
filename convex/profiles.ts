@@ -37,7 +37,7 @@ export const getCurrentProfile = query({
 export const createProfile = mutation({
   args: {
     sessionToken: v.optional(v.string()),
-    role: v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain"), v.literal("admin"), v.literal("owner")),
+    role: v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain")),
     fullName: v.string(),
     phone: v.string(),
     location: v.optional(
@@ -77,7 +77,7 @@ export const createProfile = mutation({
     const requireStoreApproval = systemSettings?.storeApprovalRequired ?? true;
 
     // Determine if approval is required based on role
-    const needsApproval = 
+    const needsApproval =
       (role === "captain" && requireCaptainApproval) ||
       (role === "merchant" && requireStoreApproval);
 
@@ -103,7 +103,7 @@ export const createProfile = mutation({
       vehicleType: vehicleType,
       vehicleNumber: vehicleNumber,
       isSuspended: false,
-      isOwner: false,
+      isOwner: false, // Always false for registration - owner assigned server-side
     });
 
     return profileId;
@@ -141,16 +141,15 @@ export const ensureAdminRole = mutation({
 
     if (existingProfile) {
       if (existingProfile.role !== "admin") {
-        await ctx.db.patch(existingProfile._id, { role: "admin", isOwner: true });
+        // Promote to admin only, NOT owner
+        await ctx.db.patch(existingProfile._id, { role: "admin" });
         return { ok: true as const, promoted: true as const };
       }
-      // Ensure isOwner is true for admin emails
-      if (!existingProfile.isOwner) {
-        await ctx.db.patch(existingProfile._id, { isOwner: true });
-      }
+      // Already admin
       return { ok: true as const, promoted: false as const };
     }
 
+    // Create admin profile without owner status
     const profileId = await ctx.db.insert("profiles", {
       userId,
       role: "admin",
@@ -169,41 +168,16 @@ export const ensureAdminRole = mutation({
         longitude: 0,
       },
       isSuspended: false,
-      isOwner: true, // Set isOwner to true for admin emails
+      isOwner: false, // Admin does not automatically get owner status
     });
 
     return { ok: true as const, created: true as const, profileId };
   },
 });
 
-/** Make current user owner (for development/testing) */
-export const makeOwner = mutation({
-  args: {
-    sessionToken: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx, args.sessionToken);
-    if (!userId) {
-      throw new ConvexError("يجب تسجيل الدخول أولاً");
-    }
-
-    const existingProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-
-    if (!existingProfile) {
-      throw new ConvexError("الملف الشخصي غير موجود");
-    }
-
-    await ctx.db.patch(existingProfile._id, {
-      role: "admin",
-      isOwner: true,
-    });
-
-    return { ok: true as const };
-  },
-});
+// REMOVED: makeOwner - Security vulnerability
+// This function was removed as it allowed any authenticated user to promote themselves to Owner.
+// Use setOwnerByEmail with proper owner authorization instead.
 
 // Update profile
 export const updateProfile = mutation({
@@ -239,7 +213,7 @@ export const updateProfile = mutation({
   },
 });
 
-// Set user as owner by email (for initial setup)
+// Set user as owner by email (for initial setup - Owner only)
 export const setOwnerByEmail = mutation({
   args: {
     sessionToken: v.optional(v.string()),
@@ -252,6 +226,16 @@ export const setOwnerByEmail = mutation({
       throw new ConvexError("يجب تسجيل الدخول");
     }
 
+    // Check if current user is owner
+    const currentProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!currentProfile || !currentProfile.isOwner) {
+      throw new ConvexError("غير مصرح - فقط المالك يمكنه تعيين مالك");
+    }
+
     // Find user by email
     const user = await ctx.db
       .query("users")
@@ -260,6 +244,11 @@ export const setOwnerByEmail = mutation({
 
     if (!user) {
       throw new ConvexError("المستخدم غير موجود");
+    }
+
+    // Prevent modifying own isOwner status
+    if (user._id === userId) {
+      throw new ConvexError("لا يمكن تعديل حالة المالك الخاصة بك");
     }
 
     // Find profile

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 import { ConvexError } from "convex/values";
+import { checkRateLimit } from "./rateLimit";
 
 // الحصول على محفظة المستخدم
 export const getMyWallet = query({
@@ -23,20 +24,34 @@ export const getMyWallet = query({
   },
 });
 
-// إضافة رصيد للمحفظة
+// إضافة رصيد للمحفظة (Admin only - for payment verification)
 export const addBalance = mutation({
   args: {
     sessionToken: v.optional(v.string()),
+    userId: v.id("users"),
     amount: v.number(),
     description: v.string(),
     descriptionAr: v.string(),
   },
   handler: async (ctx, args) => {
-    const { sessionToken, amount, description, descriptionAr } = args;
-    const userId = await getAuthUserId(ctx, sessionToken);
-    if (!userId) {
+    const { sessionToken, userId, amount, description, descriptionAr } = args;
+    const currentUserId = await getAuthUserId(ctx, sessionToken);
+    if (!currentUserId) {
       throw new ConvexError("يجب تسجيل الدخول أولاً");
     }
+
+    // Authorization check: Only admin or owner can add balance
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", currentUserId))
+      .first();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "owner")) {
+      throw new ConvexError("غير مصرح - فقط المدير يمكنه إضافة رصيد");
+    }
+
+    // Rate limiting: 5 balance additions per hour per admin
+    await checkRateLimit(ctx, currentUserId.toString(), "addBalance", 5, 60 * 60 * 1000);
 
     if (amount <= 0) {
       throw new ConvexError("المبلغ يجب أن يكون أكبر من صفر");

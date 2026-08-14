@@ -3,9 +3,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "react-hot-toast";
 import { Id } from "../../convex/_generated/dataModel";
+import { useAuth } from "../contexts/AuthContextNew";
 
 export function useProducts() {
-  const products = useQuery(api.products.getAllProductsWithImages);
+  const { sessionToken } = useAuth();
+  const products = useQuery(api.products.getAllProductsWithImages, sessionToken ? { sessionToken } : undefined);
   const stores = useQuery(api.stores.getAllStores);
   
   // Add mutations as needed

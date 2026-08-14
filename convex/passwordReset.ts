@@ -69,7 +69,7 @@ export const requestPasswordReset = mutation({
       identifier: args.email,
       identifierType: "email",
       otp,
-      otpHash: otp, // في وضع التطوير، نستخدم OTP نفسه كـ hash
+      otpHash: await bcrypt.hash(otp, 10), // Always hash OTP, even in development
       expiresAt,
       createdAt: Date.now(),
       isVerified: false,
@@ -78,7 +78,7 @@ export const requestPasswordReset = mutation({
     });
 
     // TODO: إرسال OTP على الإيميل
-    console.log(`Password reset OTP for ${args.email}: ${otp}`);
+    // Removed console.log for security - OTP should never be logged
     
     try {
       // مثال مع خدمة إرسال بريد إلكتروني

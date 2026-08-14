@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "./auth";
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import { checkRateLimit } from "./rateLimit";
 
 export const getActiveStores = query({
   handler: async (ctx) => {
@@ -35,11 +36,29 @@ export const getActiveStores = query({
 export const getStoreById = query({
   args: {
     storeId: v.id("stores"),
+    sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const store = await ctx.db.get(args.storeId);
     if (!store) {
       return null;
+    }
+
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    
+    // Check if user is authorized (store owner or admin)
+    let isAuthorized = false;
+    if (userId) {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+      
+      const isAdminOrOwner = userProfile && 
+        (userProfile.role === "admin" || userProfile.role === "owner" || userProfile.isOwner);
+      const isStoreOwner = store.ownerId === userId;
+      
+      isAuthorized = isAdminOrOwner || isStoreOwner;
     }
 
     // Convert imageId to imageUrl if it exists
@@ -53,10 +72,33 @@ export const getStoreById = query({
       }
     }
 
-    return {
-      ...store,
+    // Return public data for everyone, sensitive data only for authorized users
+    const publicData = {
+      _id: store._id,
+      name: store.name,
+      nameAr: store.nameAr,
+      description: store.description,
+      descriptionAr: store.descriptionAr,
+      category: store.category,
       imageUrl: imageUrl || store.imageUrl,
+      rating: store.rating,
+      isActive: store.isActive,
+      location: {
+        address: store.location.address,
+        addressAr: store.location.addressAr,
+        // Hide detailed coordinates for public access
+        latitude: isAuthorized ? store.location.latitude : null,
+        longitude: isAuthorized ? store.location.longitude : null,
+      },
+      // Hide sensitive data for public access
+      phone: isAuthorized ? store.phone : null,
+      ownerId: isAuthorized ? store.ownerId : null,
+      commissionRate: isAuthorized ? store.commissionRate : null,
+      subscriptionType: isAuthorized ? store.subscriptionType : null,
+      createdAt: store.createdAt,
     };
+
+    return publicData;
   },
 });
 
@@ -79,9 +121,29 @@ export const getMyStores = query({
 
 export const getStoresByOwner = query({
   args: {
+    sessionToken: v.optional(v.string()),
     ownerId: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول أولاً");
+    }
+
+    // Check if user is admin/owner or the owner being requested
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    const isAdminOrOwner = profile && 
+      (profile.role === "admin" || profile.role === "owner" || profile.isOwner);
+    
+    // Only allow access if user is admin/owner or requesting their own stores
+    if (!isAdminOrOwner && args.ownerId !== userId) {
+      throw new ConvexError("ليس لديك صلاحية لعرض هذه المتاجر");
+    }
+
     return await ctx.db
       .query("stores")
       .withIndex("by_owner", (q) => q.eq("ownerId", args.ownerId))
@@ -117,9 +179,20 @@ export const createStore = mutation({
       throw new ConvexError("يجب تسجيل الدخول أولاً");
     }
 
+    // Rate limiting: 1 store per day per user
+    await checkRateLimit(ctx, userId.toString(), "createStore", 1, 24 * 60 * 60 * 1000);
+
     // Check if store approval is required from system settings
     const systemSettings = await ctx.db.query("systemSettings").first();
     const requireApproval = systemSettings?.storeApprovalRequired ?? true;
+
+    // Price validation
+    if (args.deliveryFee < 0) {
+      throw new ConvexError("رسوم التوصيل يجب أن تكون أكبر من أو تساوي صفر");
+    }
+    if (args.minOrderAmount < 0) {
+      throw new ConvexError("الحد الأدنى للطلب يجب أن يكون أكبر من أو يساوي صفر");
+    }
 
     const storeId = await ctx.db.insert("stores", {
       name: args.name,
@@ -192,6 +265,14 @@ export const updateStore = mutation({
 
     if (store.ownerId !== userId) {
       throw new ConvexError("ليس لديك صلاحية لتعديل هذا المتجر");
+    }
+
+    // Price validation
+    if (updateData.deliveryFee < 0) {
+      throw new ConvexError("رسوم التوصيل يجب أن تكون أكبر من أو تساوي صفر");
+    }
+    if (updateData.minOrderAmount < 0) {
+      throw new ConvexError("الحد الأدنى للطلب يجب أن يكون أكبر من أو يساوي صفر");
     }
 
     await ctx.db.patch(storeId, {

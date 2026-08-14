@@ -13,13 +13,13 @@ export default function CustomerReviewPage() {
   const { t } = useTranslation();
   const { orderId, reviewType } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, sessionToken } = useAuth();
 
   const [showForm, setShowForm] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // جلب بيانات الطلب
-  const order = useQuery(api.orders.getOrderById, isAuthenticated && orderId ? { orderId: orderId as any } : "skip");
+  const order = useQuery(api.orders.getOrderById, isAuthenticated && orderId ? { orderId: orderId as any, sessionToken } : "skip");
 
   // جلب المراجعات
   const storeReviews = useQuery(api.reviews.getStoreReviews, {

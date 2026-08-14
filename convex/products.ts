@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "./auth";
 import { ConvexError } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { checkRateLimit } from "./rateLimit";
 
 const sizeValidator = v.optional(
   v.array(
@@ -32,18 +33,54 @@ async function assertStoreOwner(
 export const getAllProductsWithImages = query({
   args: {
     availableOnly: v.optional(v.boolean()),
+    sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const products = args.availableOnly
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    
+    // Check if user is authorized (admin or owner)
+    let isAuthorized = false;
+    if (userId) {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+      
+      isAuthorized = !!userProfile && 
+        (userProfile.role === "admin" || userProfile.role === "owner" || userProfile.isOwner) ? true : false;
+    }
+
+    // Always filter to available products for unauthorized users
+    const shouldFilterAvailable = !isAuthorized || args.availableOnly;
+    
+    const products = shouldFilterAvailable
       ? await ctx.db
           .query("products")
           .withIndex("by_available", (q) => q.eq("isAvailable", true))
           .collect()
       : await ctx.db.query("products").collect();
 
+    // Return only public data, hide sensitive information
     return products.map((product) => ({
-      ...product,
+      _id: product._id,
+      name: product.name,
+      nameAr: product.nameAr,
+      description: product.description,
+      descriptionAr: product.descriptionAr,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.category,
       images: product.images?.length ? product.images : product.imageIds || [],
+      imageIds: product.imageIds,
+      isAvailable: product.isAvailable,
+      isFeatured: product.isFeatured,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      sku: product.sku,
+      // Keep storeId for navigation, but hide sensitive data
+      storeId: product.storeId,
+      stock: isAuthorized ? product.stock : null,
+      createdAt: product.createdAt,
     }));
   },
 });
@@ -147,24 +184,112 @@ export const getStoreProducts = query({
 export const getProduct = query({
   args: {
     productId: v.id("products"),
+    sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.productId);
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      return null;
+    }
+
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    
+    // Check if user is authorized (store owner or admin)
+    let isAuthorized = false;
+    if (userId) {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+      
+      const isAdminOrOwner = userProfile && 
+        (userProfile.role === "admin" || userProfile.role === "owner" || userProfile.isOwner);
+      
+      // Check if user is the store owner
+      let isStoreOwner = false;
+      if (product.storeId) {
+        const store = await ctx.db.get(product.storeId);
+        isStoreOwner = !!store && store.ownerId !== null && store.ownerId === userId;
+      }
+      
+      isAuthorized = !!isAdminOrOwner || isStoreOwner;
+    }
+
+    // Only show active products to unauthorized users
+    if (!isAuthorized && !product.isAvailable) {
+      return null;
+    }
+
+    // Return public data for everyone, sensitive data only for authorized users
+    const publicData = {
+      _id: product._id,
+      name: product.name,
+      nameAr: product.nameAr,
+      description: product.description,
+      descriptionAr: product.descriptionAr,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.category,
+      images: product.images?.length ? product.images : product.imageIds || [],
+      imageIds: product.imageIds,
+      isAvailable: product.isAvailable,
+      isFeatured: product.isFeatured,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      sku: product.sku,
+      // Keep storeId for navigation, but hide sensitive data
+      storeId: product.storeId,
+      stock: isAuthorized ? product.stock : null,
+      createdAt: product.createdAt,
+    };
+
+    return publicData;
   },
 });
 
 export const getProductWithImage = query({
   args: {
     productId: v.id("products"),
+    sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const product = await ctx.db.get(args.productId);
     if (!product) return null;
 
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    
+    // Check if user is authorized (store owner or admin)
+    let isAuthorized = false;
+    if (userId) {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+      
+      const isAdminOrOwner = userProfile && 
+        (userProfile.role === "admin" || userProfile.role === "owner" || userProfile.isOwner);
+      
+      // Check if user is the store owner
+      let isStoreOwner = false;
+      if (product.storeId) {
+        const store = await ctx.db.get(product.storeId);
+        isStoreOwner = !!store && store.ownerId !== null && store.ownerId === userId;
+      }
+      
+      isAuthorized = !!isAdminOrOwner || isStoreOwner;
+    }
+
+    // Only show active products to unauthorized users
+    if (!isAuthorized && !product.isAvailable) {
+      return null;
+    }
+
     // Use imageIds (storage IDs) instead of images (direct URLs) for proper image resolution
     return {
       ...product,
       images: product.imageIds?.length ? product.imageIds.map(id => String(id)) : product.images || [],
+      // Keep storeId for navigation, but hide sensitive data
+      stock: isAuthorized ? product.stock : null,
     };
   },
 });
@@ -214,7 +339,18 @@ export const createProduct = mutation({
       throw new ConvexError("يجب تسجيل الدخول أولاً");
     }
 
+    // Rate limiting: 20 products per hour per merchant
+    await checkRateLimit(ctx, userId.toString(), "createProduct", 20, 60 * 60 * 1000);
+
     await assertStoreOwner(ctx, storeId, userId);
+
+    // Price validation
+    if (productData.price <= 0) {
+      throw new ConvexError("السعر يجب أن يكون أكبر من صفر");
+    }
+    if (productData.originalPrice !== undefined && productData.originalPrice < productData.price) {
+      throw new ConvexError("السعر الأصلي يجب أن يكون مساوياً أو أكبر من السعر الحالي");
+    }
 
     const images = productData.images || [];
     if (images.length > 10) {
@@ -285,6 +421,14 @@ export const updateProduct = mutation({
     }
 
     await assertStoreOwner(ctx, product.storeId, userId);
+
+    // Price validation
+    if (updateData.price !== undefined && updateData.price <= 0) {
+      throw new ConvexError("السعر يجب أن يكون أكبر من صفر");
+    }
+    if (updateData.originalPrice !== undefined && updateData.price !== undefined && updateData.originalPrice < updateData.price) {
+      throw new ConvexError("السعر الأصلي يجب أن يكون مساوياً أو أكبر من السعر الحالي");
+    }
 
     if (updateData.images && updateData.images.length > 10) {
       throw new ConvexError("الحد الأقصى للصور هو 10 صور");

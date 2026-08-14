@@ -134,7 +134,7 @@ export default function AdminManagement() {
     setLoading(true);
     try {
       await upsertPermissions({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         userId: userIdToUse as any,
         manage_users: permissions.manage_users || false,
         manage_orders: permissions.manage_orders || false,
@@ -171,7 +171,7 @@ export default function AdminManagement() {
   const handleSuspend = async (userId: any) => {
     setLoading(true);
     try {
-      await suspendAdmin({ sessionToken, userId });
+      await suspendAdmin({ ...(sessionToken && { sessionToken }), userId });
       toast.success(t('errors.adminSuspended'));
     } catch (error: any) {
       toast.error(error.message || t('errors.errorSuspendingAdmin'));
@@ -183,7 +183,7 @@ export default function AdminManagement() {
   const handleActivate = async (userId: any) => {
     setLoading(true);
     try {
-      await activateAdmin({ sessionToken, userId });
+      await activateAdmin({ ...(sessionToken && { sessionToken }), userId });
       toast.success(t('errors.adminActivated'));
     } catch (error: any) {
       toast.error(error.message || t('errors.errorActivatingAdmin'));
@@ -197,7 +197,7 @@ export default function AdminManagement() {
 
     setLoading(true);
     try {
-      await deleteAdminPermissions({ sessionToken, userId });
+      await deleteAdminPermissions({ ...(sessionToken && { sessionToken }), userId });
       toast.success(t('errors.adminDeleted'));
     } catch (error: any) {
       toast.error(error.message || t('errors.errorDeletingAdmin'));
@@ -211,7 +211,7 @@ export default function AdminManagement() {
 
     setLoading(true);
     try {
-      await makeOwner({ sessionToken });
+      await makeOwner({ ...(sessionToken && { sessionToken }) });
       toast.success(t('errors.ownerMade'));
       // Refresh the page to update permissions
       window.location.reload();

@@ -170,10 +170,12 @@ function ProductDetailModal({
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   
   const isArabic = i18n.language === 'ar';
+  const { sessionToken } = useAuth();
   
   // جلب بيانات المنتج المحدثة من DB (السعر والمقاسات والصور)
   const liveProduct = useQuery(api.products.getProductWithImage, { 
-    productId: product._id 
+    productId: product._id,
+    ...(sessionToken ? { sessionToken } : {})
   });
   
   // استخدام البيانات المحدثة أو البيانات المحلية كـ fallback
@@ -421,8 +423,9 @@ export default function CustomerApp() {
 function StoresList() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { sessionToken } = useAuth();
   const stores = useQuery(api.stores.getActiveStores);
-  const allProducts = useQuery(api.products.getAllProductsWithImages, { availableOnly: true });
+  const allProducts = useQuery(api.products.getAllProductsWithImages, { availableOnly: true, ...(sessionToken && { sessionToken }) });
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showNearby, setShowNearby] = useState(false);
@@ -657,7 +660,7 @@ function StoresList() {
                     <h5 className="font-semibold text-gray-900 text-sm">{isArabic ? product.nameAr : product.name}</h5>
                     <p className="text-xs text-gray-600 mb-2">{product.category}</p>
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-orange-600">{(product.price ?? 0).toFixed(2)} {t('common.currency')}</span>
+                      <span className="font-bold text-orange-600">{product.price !== null && product.price !== undefined ? product.price.toFixed(2) : '—'} {t('common.currency')}</span>
                       {product.originalPrice && product.originalPrice > product.price && (
                         <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
                           -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
@@ -807,12 +810,12 @@ function StoresList() {
                     {/* Prices */}
                     <div className="space-y-1">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-lg font-bold text-red-600">{(product.price ?? 0).toFixed(2)}</span>
+                        <span className="text-lg font-bold text-red-600">{product.price !== null && product.price !== undefined ? product.price.toFixed(2) : '—'}</span>
                         <span className="text-xs text-gray-600">{t('common.currency')}</span>
                       </div>
-                      {product.originalPrice && (
+                      {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
                         <div className="text-xs text-gray-400 line-through">
-                          {(product.originalPrice ?? 0).toFixed(2)} {t('common.currency')}
+                          {product.originalPrice.toFixed(2)} {t('common.currency')}
                         </div>
                       )}
                     </div>
@@ -1115,7 +1118,7 @@ function StoresList() {
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-4 pb-4 border-b border-gray-100">
                     <div className="flex items-center gap-1 bg-yellow-50 px-2.5 py-1.5 rounded-lg">
                       <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                      <span className="font-semibold">{(store.rating ?? 0).toFixed(1)}</span>
+                      <span className="font-semibold">{store.rating !== null && store.rating !== undefined ? store.rating.toFixed(1) : '—'}</span>
                     </div>
                     <div className="flex items-center gap-1 bg-blue-50 px-2.5 py-1.5 rounded-lg">
                       <Clock className="w-4 h-4 text-blue-600" />
@@ -1153,8 +1156,8 @@ function StoreDetails() {
   const { t, i18n } = useTranslation();
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const store = useQuery(api.stores.getStoreById, storeId ? { storeId: storeId as any } : "skip");
+  const { isAuthenticated, sessionToken } = useAuth();
+  const store = useQuery(api.stores.getStoreById, storeId ? { storeId: storeId as any, ...(sessionToken ? { sessionToken } : {}) } : "skip");
   const products = useQuery(api.products.getStoreProductsWithImages, storeId ? { storeId: storeId as any, availableOnly: false } : "skip");
   const { cart, addToCart, getItemCount } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -1293,9 +1296,11 @@ function StoreDetails() {
                 <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-gray-900 font-medium">{isArabic ? store.location.addressAr : store.location.address}</p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    📍 {store.location.latitude.toFixed(4)}, {store.location.longitude.toFixed(4)}
-                  </p>
+                  {store.location.latitude && store.location.longitude && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      📍 {store.location.latitude.toFixed(4)}, {store.location.longitude.toFixed(4)}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1443,12 +1448,12 @@ function StoreDetails() {
                             {/* Price Section */}
                             <div className="space-y-2 pt-3 border-t border-gray-100">
                               <div className="flex items-baseline gap-1.5">
-                                <span className="text-2xl font-bold text-orange-600">{(product.price ?? 0).toFixed(2)}</span>
+                                <span className="text-2xl font-bold text-orange-600">{product.price !== null && product.price !== undefined ? product.price.toFixed(2) : '—'}</span>
                                 <span className="text-xs text-gray-600 font-medium">EGP</span>
                               </div>
-                              {product.originalPrice && product.originalPrice > product.price && (
+                              {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
                                 <div className="text-xs text-gray-400 line-through">
-                                  {(product.originalPrice ?? 0).toFixed(2)} EGP
+                                  {product.originalPrice.toFixed(2)} EGP
                                 </div>
                               )}
                               
@@ -1526,9 +1531,11 @@ function CartItemWithLivePrice({
 }) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
+  const { sessionToken } = useAuth();
   // جلب بيانات المنتج الحالية من DB للسعر المحدث
   const storedProduct = useQuery(api.products.getProductWithImage, { 
-    productId: item.productId 
+    productId: item.productId,
+    ...(sessionToken ? { sessionToken } : {})
   });
   
   // استخدام السعر من DB أو السعر المخزن إذا لم يحمل
@@ -1558,7 +1565,9 @@ function CartItemWithLivePrice({
               )}
               {storedProduct?.sizes && storedProduct.sizes.length > 0 && (
                 <span className="text-xs text-gray-500">
-                  {t('customer.sizes')}: {storedProduct.sizes.join(', ')}
+                  {t('customer.sizes')}: {Array.isArray(storedProduct.sizes) 
+                    ? storedProduct.sizes.map((s: any) => typeof s === 'string' ? s : s.label).join(', ')
+                    : storedProduct.sizes}
                 </span>
               )}
               {storedProduct?.colors && storedProduct.colors.length > 0 && (
@@ -1616,7 +1625,7 @@ function CartItemWithLivePrice({
             
             {isPriceChanged && (
               <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded inline-block mt-2 font-semibold">
-                ⚠️ {t('customer.priceChanged')}: {(item.price ?? 0).toFixed(2)} → {(currentPrice ?? 0).toFixed(2)} {t('common.currency')}
+                ⚠️ {t('customer.priceChanged')}: {item.price?.toFixed(2) ?? '—'} → {currentPrice?.toFixed(2) ?? '—'} {t('common.currency')}
               </div>
             )}
           </div>
@@ -1632,14 +1641,14 @@ function CartItemWithLivePrice({
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>سعر الوحدة:</span>
-              <span className="font-medium">{(currentPrice ?? 0).toFixed(2)} EGP</span>
+              <span className="font-medium">{currentPrice !== null && currentPrice !== undefined ? currentPrice.toFixed(2) : '—'} EGP</span>
               <span>×</span>
               <span className="font-medium">{item.quantity}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">الإجمالي:</span>
               <span className={`text-lg font-bold ${isPriceChanged ? 'text-red-600' : 'text-orange-600'}`}>
-                {(currentPrice * item.quantity).toFixed(2)} EGP
+                {currentPrice !== null && currentPrice !== undefined ? (currentPrice * item.quantity).toFixed(2) : '—'} EGP
               </span>
             </div>
             {item.quantity > 1 && (
@@ -2287,7 +2296,8 @@ function Checkout() {
 function OrderSuccess() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const order = useQuery(api.orders.getOrderById, orderId ? { orderId: orderId as any } : "skip");
+  const { sessionToken } = useAuth();
+  const order = useQuery(api.orders.getOrderById, orderId ? { orderId: orderId as any, sessionToken } : "skip");
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

@@ -64,7 +64,7 @@ export default function AdminAuth() {
     if (loading) return;
     setLoading(true);
     try {
-      const result = await ensureAdminRole({ sessionToken: sessionToken || undefined });
+      const result = await ensureAdminRole({ ...(sessionToken && { sessionToken }) });
       if (result.ok) {
         toast.success(t('errors.adminProfileCreated'));
         // FIXED: Use navigate instead of window.location.reload()
@@ -99,7 +99,7 @@ export default function AdminAuth() {
       await signIn(email, password);
 
       // Admin verification runs once only after authentication is confirmed
-      const adminResult = await ensureAdminRole({ sessionToken: sessionToken || undefined });
+      const adminResult = await ensureAdminRole({ ...(sessionToken && { sessionToken }) });
       if (!adminResult.ok) {
         throw new Error("هذا البريد غير مصرح له بدخول لوحة المدير");
       }

@@ -290,7 +290,7 @@ function StoresManagement() {
   const handleToggle = async (storeId: string, currentActive: boolean) => {
     try {
       await toggleStore({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         storeId: storeId as Id<"stores">,
         isActive: !currentActive,
       });
@@ -303,7 +303,7 @@ function StoresManagement() {
   const handleApproveStore = async (storeId: string) => {
     try {
       await approveStore({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         storeId: storeId as Id<"stores">,
       });
       toast.success("تمت الموافقة على المتجر بنجاح");
@@ -319,7 +319,7 @@ function StoresManagement() {
     }
     try {
       await rejectStore({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         storeId: storeId as Id<"stores">,
         reason: rejectionReason,
       });
@@ -514,7 +514,7 @@ function StoresManagement() {
                   )}
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Star className="w-4 h-4 text-yellow-400" />
-                    <span>{store.rating.toFixed(1)} • {store.totalOrders} طلب</span>
+                    <span>{store.rating !== null && store.rating !== undefined ? store.rating.toFixed(1) : '—'} • {store.totalOrders} طلب</span>
                   </div>
                   {store.ownerProfile && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -631,7 +631,7 @@ function CaptainsManagement() {
   const handleApprove = async (captainId: string) => {
     try {
       await approveCaptain({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         captainId: captainId as any,
       });
       toast.success("تمت الموافقة على الكابتن بنجاح");
@@ -647,7 +647,7 @@ function CaptainsManagement() {
     }
     try {
       await rejectCaptain({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         captainId: captainId as any,
         reason: rejectionReason,
       });
@@ -1090,7 +1090,7 @@ function AnalyticsPage() {
                 <div className="text-right">
                   <div className="flex items-center gap-1">
                     <Star className="w-3 h-3 text-yellow-400" />
-                    <span className="text-sm font-medium text-gray-700">{store.rating.toFixed(1)}</span>
+                    <span className="text-sm font-medium text-gray-700">{store.rating !== null && store.rating !== undefined ? store.rating.toFixed(1) : '—'}</span>
                   </div>
                 </div>
               </div>

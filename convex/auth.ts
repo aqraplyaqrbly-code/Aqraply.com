@@ -35,20 +35,14 @@ export async function getAuthUserId(ctx: any, sessionToken?: string | null): Pro
   // First try to get session token from args (for queries/mutations)
   let token = sessionToken;
   
-  // Debug logging
-  console.log("[getAuthUserId] Received sessionToken:", sessionToken);
-  
   // If not in args, try to get from request headers (for actions)
   if (!token) {
     token = ctx.request?.headers?.get("x-session-token") || null;
   }
   
   if (!token) {
-    console.log("[getAuthUserId] No token found, returning null");
     return null;
   }
-
-  console.log("[getAuthUserId] Looking for session with token:", token);
 
   // Find session in sessions table
   const session = await ctx.db
@@ -56,21 +50,16 @@ export async function getAuthUserId(ctx: any, sessionToken?: string | null): Pro
     .withIndex("by_token", (q: any) => q.eq("token", token))
     .first();
 
-  console.log("[getAuthUserId] Found session:", session ? "YES" : "NO");
-
   if (!session) {
-    console.log("[getAuthUserId] ERROR: Session not found in database");
     return null;
   }
 
   // Check if session expired
   if (session.expiresAt && session.expiresAt < Date.now()) {
-    console.log("[getAuthUserId] ERROR: Session expired at:", new Date(session.expiresAt).toISOString());
     // Cannot delete in this context, just return null
     return null;
   }
 
-  console.log("[getAuthUserId] Authenticated userId:", session.userId);
   return session.userId;
 }
 
@@ -290,7 +279,7 @@ export const createUserProfile = mutation({
     phone: v.optional(v.string()),
     password: v.string(),
     fullName: v.string(),
-    role: v.string(),
+    role: v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain")),
     location: v.optional(
       v.object({
         address: v.string(),
@@ -334,10 +323,11 @@ export const createUserProfile = mutation({
       }
     }
 
-    // Create user profile
+    // Create user profile with non-privileged role only
+    // Admin and owner roles are assigned server-side through secure functions
     const profileId = await ctx.db.insert("profiles", {
       userId: userId!,
-      role: args.role as "customer" | "merchant" | "captain" | "admin" | "owner",
+      role: args.role as "customer" | "merchant" | "captain",
       fullName: args.fullName,
       phone: args.phone || "",
       phoneVerified: false,
@@ -353,7 +343,7 @@ export const createUserProfile = mutation({
         longitude: 0,
       },
       isSuspended: false,
-      isOwner: args.role === "owner",
+      isOwner: false, // Always false for registration - owner assigned server-side
     });
 
     return {
@@ -364,35 +354,7 @@ export const createUserProfile = mutation({
   },
 });
 
-// Reset all passwords to a default value (Action to support bcrypt)
-export const resetAllPasswords = action({
-  args: {},
-  handler: async (ctx) => {
-    const users = await ctx.runQuery(internal.authInternal.getAllUsers);
-    const newPassword = "Password123!";
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    let updated = 0;
-    for (const user of users) {
-      if (user.email) {
-        // Update the user with hashed password using internal mutation
-        await ctx.runMutation(internal.authInternal.upgradeUserPassword, {
-          userId: user._id,
-          hashedPassword,
-        });
-        updated++;
-      }
-    }
-
-    return {
-      success: true,
-      updated,
-      message: `تم تحديث ${updated} مستخدم`,
-      credentials: {
-        password: newPassword,
-        note: "استخدم هذه كلمة المرور لجميع المستخدمين",
-      },
-    };
-  },
-});
+// REMOVED: resetAllPasswords - Security vulnerability
+// This function was removed as it allowed resetting all passwords without proper authorization.
+// If password reset is needed, use the individual password reset flow with OTP verification.
 

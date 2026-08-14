@@ -18,13 +18,9 @@ function generateSecureOTP(): string {
 
 // Helper function to hash OTP
 async function hashOTP(otp: string): Promise<string> {
-  // In development, return plain OTP for easier testing
-  if (process.env.NODE_ENV === "development" || !process.env.OTP_SECRET) {
-    return otp;
-  }
-  
+  // Always hash OTP for security - removed development bypass
   const encoder = new TextEncoder();
-  const data = encoder.encode(otp + process.env.OTP_SECRET);
+  const data = encoder.encode(otp + (process.env.OTP_SECRET || "default-secret"));
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
@@ -149,7 +145,6 @@ export const requestPasswordResetOTP = mutation({
     return {
       success: true,
       message: "تم إرسال رمز التحقق بنجاح",
-      otp, // Return OTP for development purposes (remove in production)
     };
   },
 });

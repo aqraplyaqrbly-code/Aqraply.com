@@ -5,13 +5,15 @@ import { api } from '../../convex/_generated/api';
 import ReviewList from './ReviewList';
 import { ArrowLeft, Store, Star } from 'lucide-react';
 import RatingComponent from './RatingComponent';
+import { useAuth } from '../contexts/AuthContextNew';
 
 export default function StoreRatingsPage() {
   const { storeId } = useParams();
   const navigate = useNavigate();
+  const { sessionToken } = useAuth();
   
   // جلب بيانات المتجر
-  const store = useQuery(api.stores.getStoreById, storeId ? { storeId: storeId as any } : "skip");
+  const store = useQuery(api.stores.getStoreById, storeId ? { storeId: storeId as any, ...(sessionToken ? { sessionToken } : {}) } : "skip");
 
   // جلب المراجعات
   const reviews = useQuery(api.reviews.getStoreReviews, {

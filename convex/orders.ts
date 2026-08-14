@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 import { ConvexError } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { checkRateLimit } from "./rateLimit";
 
 // Create new order (checkout sends store + line items + delivery address)
 export const createOrder = mutation({
@@ -36,6 +37,9 @@ export const createOrder = mutation({
     if (!userId) {
       throw new ConvexError("يجب تسجيل الدخول أولاً");
     }
+
+    // Rate limiting: 10 orders per hour per user
+    await checkRateLimit(ctx, userId.toString(), "createOrder", 10, 60 * 60 * 1000);
 
     const store = await ctx.db.get(orderArgs.storeId);
     if (!store || !store.isActive) {
@@ -76,6 +80,11 @@ export const createOrder = mutation({
       }
       if (!product.isAvailable) {
         throw new ConvexError(`المنتج ${product.nameAr} غير متوفر حالياً`);
+      }
+
+      // Quantity validation
+      if (item.quantity <= 0) {
+        throw new ConvexError("الكمية يجب أن تكون أكبر من صفر");
       }
 
       subtotal += product.price * item.quantity;
@@ -444,11 +453,41 @@ export const getStoreOrders = query({
 
 // Update order status
 export const getOrderById = query({
-  args: { orderId: v.id("orders") },
+  args: { 
+    orderId: v.id("orders"),
+    sessionToken: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx, args.sessionToken);
     const order = await ctx.db.get(args.orderId);
     if (!order) {
       return null;
+    }
+
+    // Authorization check: Only allow access if user is the customer, store owner, or admin
+    if (userId) {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+
+      // Check if user is admin or owner
+      const isAdminOrOwner = userProfile && 
+        (userProfile.role === "admin" || userProfile.role === "owner" || userProfile.isOwner);
+
+      // Check if user is the customer
+      const isCustomer = order.customerId && userProfile && order.customerId === userProfile._id;
+
+      // Check if user is the store owner
+      const store = await ctx.db.get(order.storeId);
+      const isStoreOwner = store && store.ownerId === userId;
+
+      if (!isAdminOrOwner && !isCustomer && !isStoreOwner) {
+        throw new ConvexError("ليس لديك صلاحية لعرض هذا الطلب");
+      }
+    } else {
+      // No session token - deny access
+      throw new ConvexError("يجب تسجيل الدخول لعرض الطلب");
     }
 
     // Fetch store info
@@ -607,9 +646,42 @@ export const updateOrderStatus = mutation({
       throw new ConvexError("يجب تسجيل الدخول أولاً");
     }
 
+    // Rate limiting: 30 status updates per minute per merchant
+    await checkRateLimit(ctx, userId.toString(), "updateOrderStatus", 30, 60 * 1000);
+
     const order = await ctx.db.get(orderId);
     if (!order) {
       throw new ConvexError("الطلب غير موجود");
+    }
+
+    // Authorization check: Only merchant (store owner) can update order status
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile || profile.role !== "merchant") {
+      throw new ConvexError("غير مصرح - فقط التاجر يمكنه تحديث حالة الطلب");
+    }
+
+    // Ownership check: Only store owner can update their store's orders
+    const store = await ctx.db.get(order.storeId);
+    if (!store || store.ownerId !== userId) {
+      throw new ConvexError("غير مصرح - هذا الطلب لا يتبع متجرك");
+    }
+
+    // Transition validation for merchant
+    const currentStatus = order.status;
+    const validTransitions: Record<string, string[]> = {
+      "pending": ["confirmed", "cancelled"],
+      "confirmed": ["preparing", "cancelled"],
+      "preparing": ["ready", "cancelled"],
+      "ready": ["cancelled"],
+    };
+
+    const allowedTransitions = validTransitions[currentStatus] || [];
+    if (!allowedTransitions.includes(status)) {
+      throw new ConvexError(`غير مصرح - لا يمكن تغيير الحالة من ${currentStatus} إلى ${status}`);
     }
 
     // If merchant is marking order as ready and a captain is assigned, notify the captain
@@ -632,7 +704,6 @@ export const updateOrderStatus = mutation({
     await ctx.db.patch(orderId, {
       status,
       updatedAt: Date.now(),
-      ...(status === "delivered" ? { actualDeliveryTime: Date.now() } : {})
     });
   },
 });

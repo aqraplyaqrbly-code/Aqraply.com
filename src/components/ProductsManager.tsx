@@ -286,7 +286,7 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     quantity: product?.quantity?.toString() || "", // {t('errors.stockQuantity')}
     code: product?.code || "", // {t('errors.productCode')}
     colors: product?.colors || [], // {t('errors.availableColors')}
-    sizes: product?.sizes || [], // {t('errors.availableSizes')}
+    sizes: product?.sizes || [], // {t('errors.availableSizes')} - Array of {label, name} objects
   });
 
   const [imageUrls, setImageUrls] = useState<string[]>(product?.images || []);
@@ -1003,7 +1003,7 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
                   if (newSize) {
                     setFormData({
                       ...formData,
-                      sizes: [...formData.sizes, newSize]
+                      sizes: [...formData.sizes, { label: newSize, name: newSize }]
                     });
                     setNewSize("");
                   } else {
@@ -1027,7 +1027,7 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
                       key={index}
                       className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200"
                     >
-                      <span className="text-gray-900 font-medium">{size}</span>
+                      <span className="text-gray-900 font-medium">{typeof size === 'string' ? size : size.label}</span>
                       <button
                         type="button"
                         onClick={() => {

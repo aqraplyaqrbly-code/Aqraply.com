@@ -61,7 +61,7 @@ export default function AdminChangePassword() {
     setLoading(true);
     try {
       const result = await changePassword({
-        sessionToken,
+        ...(sessionToken && { sessionToken }),
         currentPassword,
         newPassword,
         confirmPassword,

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ProductImage } from "./ProductImage";
 import LocationTracker from "./LocationTracker";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useAuth } from "../contexts/AuthContextNew";
 import { normalizeArabicText } from "../lib/utils";
 import {
   Store,
@@ -53,9 +54,11 @@ export default function HomePage() {
   const productsRef = useRef<HTMLElement>(null);
 
   // Fetch data
+  const { sessionToken } = useAuth();
   const stores = useQuery(api.stores.getActiveStores);
   const allProducts = useQuery(api.products.getAllProductsWithImages, {
     availableOnly: false,
+    ...(sessionToken && { sessionToken }),
   }) || [];
   const systemSettings = useQuery(api.systemSettings.getSettings);
   

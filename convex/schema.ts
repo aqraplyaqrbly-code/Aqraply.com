@@ -413,9 +413,10 @@ export default defineSchema({
 
   authRateLimits: defineTable({
     identifier: v.string(),
-    lastAttemptTime: v.number(),
-    attemptsLeft: v.number(),
-  }).index("identifier", ["identifier"]),
+    action: v.string(),
+    windowStart: v.number(),
+    attempts: v.number(),
+  }).index("by_identifier_action", ["identifier", "action"]),
 
   storeReviews: defineTable({
     storeId: v.id("stores"),
