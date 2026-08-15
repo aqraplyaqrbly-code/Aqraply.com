@@ -9,6 +9,7 @@ import {
   Store,
   Truck,
   ShoppingBag,
+  ShoppingCart,
   Crown,
   Home
 } from 'lucide-react';
@@ -75,7 +76,7 @@ export function NavigationBar() {
               to="/"
               className="flex items-center space-x-2 text-gray-900 hover:text-orange-600 transition-colors"
             >
-              <img src="/logo.png" alt="Aqraply Logo" className="h-24 w-auto" />
+              <ShoppingCart className="h-8 w-8" />
             </Link>
           </div>
 
