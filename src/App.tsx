@@ -40,9 +40,8 @@ import { AdminErrorBoundary } from "./components/AdminErrorBoundary";
 import MaintenanceMode from "./components/MaintenanceMode";
 import AiAssistant from "./components/AiAssistant";
 
-export default function App() {
-  const { sessionToken, isAuthenticated } = useAuth();
-  const { saveFcmToken } = useAuth();
+function AppContent() {
+  const { sessionToken, isAuthenticated, saveFcmToken } = useAuth();
   
   // Set document direction based on saved language
   useEffect(() => {
@@ -72,8 +71,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SystemSettingsProvider>
-        <AuthProvider>
-          <BrowserRouter>
+        <BrowserRouter>
           <Routes>
           {/* الصفحة الرئيسية - متاحة للجميع */}
           <Route path="/" element={
@@ -274,9 +272,16 @@ export default function App() {
           }}
         />
         </BrowserRouter>
-      </AuthProvider>
-    </SystemSettingsProvider>
+      </SystemSettingsProvider>
     </ErrorBoundary>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
