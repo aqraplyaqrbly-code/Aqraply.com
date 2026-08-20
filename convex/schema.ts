@@ -44,6 +44,7 @@ export default defineSchema({
     suspensionDate: v.optional(v.number()),
     rejectionReason: v.optional(v.string()),
     isOwner: v.optional(v.boolean()),
+    fcmToken: v.optional(v.string()), // Firebase Cloud Messaging token for push notifications
     // Old format fields
     businessName: v.optional(v.string()),
     businessNameAr: v.optional(v.string()),

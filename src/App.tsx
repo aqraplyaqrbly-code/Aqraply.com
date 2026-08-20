@@ -2,6 +2,8 @@ import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import "./i18n";
+import { requestNotificationPermission } from "./firebase";
+import { useAuth } from "./contexts/AuthContextNew";
 
 // Import components
 import HomePage from "./components/HomePage";
@@ -39,12 +41,33 @@ import MaintenanceMode from "./components/MaintenanceMode";
 import AiAssistant from "./components/AiAssistant";
 
 export default function App() {
+  const { sessionToken, isAuthenticated } = useAuth();
+  const { saveFcmToken } = useAuth();
+  
   // Set document direction based on saved language
   useEffect(() => {
     const savedLanguage = localStorage.getItem("language") || "en";
     document.documentElement.dir = savedLanguage === "ar" ? "rtl" : "ltr";
     document.documentElement.lang = savedLanguage;
   }, []);
+
+  // Request notification permission and save FCM token
+  useEffect(() => {
+    if (isAuthenticated && sessionToken) {
+      requestNotificationPermission().then(async token => {
+        if (token) {
+          console.log("Notification permission granted, token:", token);
+          // Save FCM token to Convex
+          try {
+            await saveFcmToken({ sessionToken, fcmToken: token });
+            console.log("FCM Token saved to Convex");
+          } catch (error) {
+            console.error("Failed to save FCM token:", error);
+          }
+        }
+      });
+    }
+  }, [isAuthenticated, sessionToken, saveFcmToken]);
 
   return (
     <ErrorBoundary>

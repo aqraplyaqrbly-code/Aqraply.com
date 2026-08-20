@@ -24,6 +24,7 @@ import type * as dataAudit from "../dataAudit.js";
 import type * as export_ from "../export.js";
 import type * as exportAll from "../exportAll.js";
 import type * as files from "../files.js";
+import type * as firebaseNotifications from "../firebaseNotifications.js";
 import type * as http from "../http.js";
 import type * as importData from "../importData.js";
 import type * as location from "../location.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   export: typeof export_;
   exportAll: typeof exportAll;
   files: typeof files;
+  firebaseNotifications: typeof firebaseNotifications;
   http: typeof http;
   importData: typeof importData;
   location: typeof location;

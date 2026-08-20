@@ -6,10 +6,7 @@ import { ConvexError } from "convex/values";
 const DEFAULT_ADMIN_EMAILS = ["markezzat39@gmail.com"];
 
 function getAdminEmails(): string[] {
-  const fromEnv = process.env.ADMIN_EMAILS;
-  if (fromEnv) {
-    return fromEnv.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-  }
+  // In Convex, process.env is not available. Use hardcoded values or Convex secrets
   return DEFAULT_ADMIN_EMAILS;
 }
 
@@ -297,8 +294,37 @@ export const updateOnlineStatus = mutation({
     await ctx.db.patch(profile._id, {
       isOnline: isOnline,
       lastSeen: Date.now(),
-      // Set connectedAt when going online, undefined when going offline
-      ...(isOnline ? { connectedAt: Date.now() } : { connectedAt: undefined }),
+    });
+
+    return { success: true };
+  },
+});
+
+// Save FCM Token for push notifications
+export const saveFcmToken = mutation({
+  args: {
+    sessionToken: v.optional(v.string()),
+    fcmToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { sessionToken, fcmToken } = args;
+    const userId = await getAuthUserId(ctx, sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول");
+    }
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile) {
+      throw new ConvexError("الملف الشخصي غير موجود");
+    }
+
+    // Update profile with FCM token
+    await ctx.db.patch(profile._id, {
+      fcmToken: fcmToken,
     });
 
     return { success: true };

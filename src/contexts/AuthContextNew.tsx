@@ -61,6 +61,7 @@ interface AuthContextType {
   createProfile: (data: any) => Promise<any>;
   updateProfile: (data: any) => Promise<any>;
   updateCaptainStatus: (isOnline: boolean) => Promise<any>;
+  saveFcmToken: (data: { sessionToken: string; fcmToken: string }) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createProfileMutation = useMutation(api.profiles.createProfile);
   const updateProfileMutation = useMutation(api.profiles.updateProfile);
   const updateCaptainStatusMutation = useMutation(api.profiles.updateOnlineStatus);
+  const saveFcmTokenMutation = useMutation(api.profiles.saveFcmToken);
 
   // Ref to track previous user data and prevent unnecessary state updates
   const previousUserData = useRef<User | null>(null);
@@ -178,6 +180,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return await updateCaptainStatusMutation({ isOnline });
   };
 
+  const saveFcmToken = async (data: { sessionToken: string; fcmToken: string }) => {
+    return await saveFcmTokenMutation(data);
+  };
+
   const isAuthenticated = !!user;
   const role = user?.profile?.role || null;
 
@@ -233,7 +239,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     createProfile,
     updateProfile,
     updateCaptainStatus,
-  }), [user, isLoading, isAuthenticated, role, sessionToken, signInAction, signUpAction, signOutMutation, createProfileMutation, updateProfileMutation, updateCaptainStatusMutation]);
+    saveFcmToken,
+  }), [user, isLoading, isAuthenticated, role, sessionToken, signInAction, signUpAction, signOutMutation, createProfileMutation, updateProfileMutation, updateCaptainStatusMutation, saveFcmTokenMutation]);
 
   return (
     <AuthContext.Provider value={value}>
