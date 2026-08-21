@@ -4,6 +4,7 @@ import { getAuthUserId } from "./auth";
 import { ConvexError } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { checkRateLimit } from "./rateLimit";
+import { api } from "./_generated/api";
 
 // Create new order (checkout sends store + line items + delivery address)
 export const createOrder = mutation({
@@ -151,6 +152,27 @@ export const createOrder = mutation({
     await ctx.db.patch(orderArgs.storeId, {
       totalOrders: (store.totalOrders ?? 0) + 1,
     });
+
+    // Send notification to merchant about new order
+    try {
+      if (store.ownerId) {
+        const merchantProfile = await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", store.ownerId as any))
+          .first();
+
+        if (merchantProfile && merchantProfile.fcmToken) {
+          await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+            fcmToken: merchantProfile.fcmToken,
+            title: "طلب جديد! 🛒",
+            body: `طلب جديد #${orderId.slice(-6).toUpperCase()} - ${totalAmount} EGP`,
+            data: { type: "new_order", orderId: orderId.toString() },
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error sending merchant notification:", error);
+    }
 
     return { orderId };
   },
@@ -699,6 +721,54 @@ export const updateOrderStatus = mutation({
           relatedOrderId: orderId,
         });
       }
+    }
+
+    // Send notification to customer about order status change
+    try {
+      const customerProfile = await ctx.db.get(order.customerId);
+      if (customerProfile && customerProfile.fcmToken) {
+        let title = "";
+        let body = "";
+        
+        switch (status) {
+          case "confirmed":
+            title = "تم تأكيد الطلب ✓";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} تم تأكيده`;
+            break;
+          case "preparing":
+            title = "جاري التحضير 🍳";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} جاري التحضير`;
+            break;
+          case "ready":
+            title = "الطلب جاهز للتوصيل 🚚";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} جاهز للتوصيل`;
+            break;
+          case "delivered":
+            title = "تم التوصيل ✓";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} تم التوصيل`;
+            break;
+          case "rejected":
+            title = "تم رفض الطلب ❌";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} تم رفضه`;
+            break;
+          case "cancelled":
+            title = "تم إلغاء الطلب ❌";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} تم إلغاؤه`;
+            break;
+          default:
+            title = "تحديث حالة الطلب";
+            body = `طلب #${orderId.slice(-6).toUpperCase()} - ${status}`;
+        }
+
+        await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+          fcmToken: customerProfile.fcmToken,
+          title,
+          body,
+          data: { type: "order_status_update", orderId: orderId.toString(), status },
+        });
+      }
+    } catch (error) {
+      console.error("Error sending customer notification:", error);
     }
 
     await ctx.db.patch(orderId, {

@@ -4,6 +4,7 @@ import { getAuthUserId } from "./auth";
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { checkRateLimit } from "./rateLimit";
+import { api } from "./_generated/api";
 
 export const getActiveStores = query({
   handler: async (ctx) => {
@@ -226,6 +227,28 @@ export const createStore = mutation({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
+
+    // Send notification to customers about new store
+    try {
+      // Get all customer profiles with FCM tokens
+      const customerProfiles = await ctx.db
+        .query("profiles")
+        .withIndex("by_role", (q) => q.eq("role", "customer"))
+        .collect();
+
+      for (const profile of customerProfiles) {
+        if (profile.fcmToken) {
+          await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+            fcmToken: profile.fcmToken,
+            title: "متجر جديد! 🏪",
+            body: `${args.nameAr} - ${args.name}`,
+            data: { type: "new_store", storeId: storeId.toString() },
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error sending store notification:", error);
+    }
 
     return storeId;
   },
