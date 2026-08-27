@@ -1,19 +1,47 @@
-import { action, query } from "./_generated/server";
+"use node";
+
+import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { api } from "./_generated/api";
+import { GoogleAuth } from "google-auth-library";
 
-// Firebase Cloud Messaging configuration
-// For HTTP v1 API, you would need:
-// - Project ID: aqraply-a8035
-// - Service Account credentials (JSON file)
-// - OAuth 2.0 access token generation with JWT signing
-// 
-// For now using Legacy API with Server Key (simpler for Convex environment)
-// Set FIREBASE_SERVER_KEY in Convex environment variables
-const FIREBASE_SERVER_KEY = "YOUR_FIREBASE_SERVER_KEY_HERE"; // Replace with actual Server Key
+// Firebase Cloud Messaging configuration - HTTP v1 API
+const FIREBASE_PROJECT_ID = "aqraply-a8035";
 
-// Send notification to a specific user using FCM
+// دالة جلب Access Token تلقائياً من مفاتيح Service Account
+async function getAccessToken() {
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  
+  // معالجة المفتاح السري بأمان وتنسيق الأسطر
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (privateKey) {
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  }
+
+  if (!clientEmail || !privateKey) {
+    throw new ConvexError("Missing Firebase credentials in Convex environment variables");
+  }
+
+  try {
+    const auth = new GoogleAuth({
+      credentials: {
+        client_email: clientEmail,
+        private_key: privateKey,
+      },
+      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
+    });
+
+    const client = await auth.getClient();
+    const tokenResponse = await client.getAccessToken();
+    return tokenResponse.token;
+  } catch (error: any) {
+    console.error("❌ Auth Error Details:", error);
+    throw new ConvexError(`Firebase Auth Failed: ${error.message || error}`);
+  }
+}
+
+// Send notification to a specific user using FCM HTTP v1 API
 export const sendPushNotification = action({
   args: {
     fcmToken: v.string(),
@@ -24,51 +52,67 @@ export const sendPushNotification = action({
   handler: async (ctx, args) => {
     const { fcmToken, title, body, data } = args;
 
-    // Send notification via Firebase Cloud Messaging (Legacy API)
+    console.log("🔔 Sending notification:", { title, body, fcmToken: fcmToken.substring(0, 20) + "..." });
+
+    // تحويل كل قيم الـ data إلى Strings لتفادي رفض Firebase FCM
+    const formattedData: Record<string, string> = {};
+    if (data) {
+      Object.keys(data).forEach((key) => {
+        formattedData[key] = String(data[key]);
+      });
+    }
+
+    // Prepare message for HTTP v1 API - use android notification only to prevent duplicates
     const message = {
-      notification: {
-        title,
-        body,
+      message: {
+        token: fcmToken,
+        android: {
+          priority: "high",
+          notification: {
+            title,
+            body,
+            icon: "ic_notification",
+            click_action: "https://aqraply.com",
+          },
+        },
+        data: formattedData,
       },
-      data: data || {},
-      token: fcmToken,
     };
 
     try {
-      const response = await fetch("https://fcm.googleapis.com/fcm/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `key=${FIREBASE_SERVER_KEY}`,
-        },
-        body: JSON.stringify(message),
-      });
+      // 1. توليد التوكن
+      const accessToken = await getAccessToken();
+      console.log("🔑 Access token generated successfully");
+
+      // 2. إرسال الطلب لـ FCM
+      console.log("📡 Sending to FCM HTTP v1 API...");
+      const response = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(message),
+        }
+      );
+
+      console.log("📊 FCM Response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new ConvexError(`FCM error: ${errorText}`);
+        console.error("❌ FCM Error Body:", errorText);
+        throw new ConvexError(`FCM API Error [${response.status}]: ${errorText}`);
       }
 
       const result = await response.json();
+      console.log("✅ Notification sent successfully:", result);
       return { success: true, result };
-    } catch (error) {
-      console.error("Error sending push notification:", error);
-      throw new ConvexError("Failed to send push notification");
+    } catch (error: any) {
+      console.error("❌ Final Execution Error:", error);
+      // إرسال تفاصيل الخطأ الحقيقي بدلاً من رسالة عامة
+      throw new ConvexError(error.message || "Failed to send push notification");
     }
-  },
-});
-
-// Query to get FCM token for a user
-export const getUserFcmToken = query({
-  args: {
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .first();
-
-    return profile?.fcmToken || null;
   },
 });

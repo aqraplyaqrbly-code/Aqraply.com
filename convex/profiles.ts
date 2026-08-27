@@ -10,6 +10,21 @@ function getAdminEmails(): string[] {
   return DEFAULT_ADMIN_EMAILS;
 }
 
+// Query to get FCM token for a user
+export const getUserFcmToken = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return profile?.fcmToken || null;
+  },
+});
+
 // Get current user profile
 export const getCurrentProfile = query({
   args: {

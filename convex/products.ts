@@ -391,16 +391,34 @@ export const createProduct = mutation({
         .withIndex("by_role", (q) => q.eq("role", "customer"))
         .collect();
 
-      for (const profile of customerProfiles) {
+      console.log("📢 Found customer profiles:", customerProfiles.length);
+      console.log("📢 Customers with FCM tokens:", customerProfiles.filter(p => p.fcmToken).length);
+      console.log("📢 Starting notification loop...");
+
+      for (let i = 0; i < customerProfiles.length; i++) {
+        const profile = customerProfiles[i];
+        console.log(`📢 Processing customer ${i + 1}/${customerProfiles.length}:`, profile.userId);
+        
         if (profile.fcmToken) {
-          await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
-            fcmToken: profile.fcmToken,
-            title: "منتج جديد! 🛍️",
-            body: `${productData.nameAr} - ${productData.name}`,
-            data: { type: "new_product", productId: productId.toString() },
-          });
+          console.log("📢 Customer has FCM token, scheduling notification...");
+          try {
+            // Use scheduler to call the action
+            const scheduledId = await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+              fcmToken: profile.fcmToken,
+              title: "منتج جديد! 🛍️",
+              body: `${productData.nameAr} - ${productData.name}`,
+              data: { type: "new_product", productId: productId.toString() },
+            });
+            console.log("📢 Notification scheduled with ID:", scheduledId);
+          } catch (error) {
+            console.error("❌ Error scheduling notification for customer:", profile.userId, error);
+          }
+        } else {
+          console.log("⚠️ Customer has no FCM token:", profile.userId);
         }
       }
+      
+      console.log("📢 Notification loop completed");
     } catch (error) {
       console.error("Error sending product notification:", error);
     }
