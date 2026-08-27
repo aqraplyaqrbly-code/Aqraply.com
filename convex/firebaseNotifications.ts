@@ -62,19 +62,15 @@ export const sendPushNotification = action({
       });
     }
 
-    // Prepare message for HTTP v1 API - use android notification only to prevent duplicates
+    // إضافة البيانات الأساسية في data فقط لمنع الإشعار المزدوج
+    formattedData["title"] = title;
+    formattedData["body"] = body;
+    formattedData["url"] = "https://aqraply.com";
+
+    // Prepare message for HTTP v1 API - data only to prevent duplicate notifications
     const message = {
       message: {
         token: fcmToken,
-        android: {
-          priority: "high",
-          notification: {
-            title,
-            body,
-            icon: "ic_notification",
-            click_action: "https://aqraply.com",
-          },
-        },
         data: formattedData,
       },
     };
