@@ -36,31 +36,19 @@ messaging.onBackgroundMessage((payload) => {
 
 // فتح الموقع عند الضغط على الإشعار
 self.addEventListener('notificationclick', (event) => {
-  console.log('🔔 NOTIFICATION CLICKED:', event);
-  event.notification.close();
+  event.notification.close(); // إغلاق الإشعار عند الضغط
 
-  const targetUrl = event.notification.data?.url || 'https://aqraply.com';
-  console.log('🎯 Target URL:', targetUrl);
-
+  // فتح موقع aqraply.com أو تركيز النافذة إذا كانت مفتوحة
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      console.log('📱 Window clients found:', windowClients.length);
-      
-      for (let client of windowClients) {
-        console.log('Checking client:', client.url);
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          console.log('✅ Focusing existing client');
-          client.navigate(targetUrl);
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('aqraply.com') && 'focus' in client) {
           return client.focus();
         }
       }
-      
-      console.log('🚀 Opening new window with URL:', targetUrl);
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow('https://www.aqraply.com/orders'); // الرابط المراد فتحه
       }
-    }).catch((error) => {
-      console.error('❌ Error in notificationclick handler:', error);
     })
   );
 });
