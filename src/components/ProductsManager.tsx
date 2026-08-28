@@ -15,11 +15,13 @@ import {
   ArrowLeft,
   Upload,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronDown
 } from "lucide-react";
 import { ProductImage } from "./ProductImage";
 import { useAuth } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
+import { MAIN_CATEGORIES, getSubcategoriesByMainCategory } from "../constants/categories";
 
 export default function ProductsManager() {
   const { t } = useTranslation();
@@ -280,13 +282,16 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     descriptionAr: product?.descriptionAr || "",
     price: product?.price?.toString() || "",
     originalPrice: product?.originalPrice?.toString() || "",
-    category: product?.category || "",
+    category: product?.category || "", // Legacy field for backward compatibility
+    mainCategory: product?.mainCategory || "",
+    subcategory: product?.subcategory || "",
     weight: product?.weight?.toString() || "",
     preparationTime: product?.preparationTime?.toString() || "",
     quantity: product?.quantity?.toString() || "", // {t('errors.stockQuantity')}
     code: product?.code || "", // {t('errors.productCode')}
     colors: product?.colors || [], // {t('errors.availableColors')}
     sizes: product?.sizes || [], // {t('errors.availableSizes')} - Array of {label, name} objects
+    condition: product?.condition || "new", // New: Product condition (new, used, refurbished)
   });
 
   const [imageUrls, setImageUrls] = useState<string[]>(product?.images || []);
@@ -300,42 +305,6 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
   const resolvedImageUrls = imagePreviewUrls || imageUrls;
   const [newColor, setNewColor] = useState("");
   const [newSize, setNewSize] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-
-  // Category mapping: store category -> related product categories
-  const categoryMapping: { [key: string]: string[] } = {
-    "مطاعم": ["برجر", "بيتزا", "مشاوي", "ساندوتشات", "وجبات سريعة", "أطباق رئيسية", "مقبلات", "سلطات", "شوربات", "مشروبات", "حلويات"],
-    "كافيهات": ["قهوة", "شاي", "عصائر", "سموثي", "حلويات", "كعك", "بسكويت", "سناكس"],
-    "سوبر ماركت": ["ألبان", "مخبوزات", "معلبات", "مشروبات", "وجبات جاهزة", "منظفات", "عناية شخصية"],
-    "مخابز": ["خبز", "فطائر", "حلويات", "كعك", "بسكويت"],
-    "حلويات": ["شوكولاتة", "حلويات شرقية", "حلويات غربية", "آيس كريم", "كعك"],
-    "جزارة": ["لحم بقري", "لحم ضأن", "دجاج", "أسماك", "لحم مفروم"],
-    "خضار وفاكهة": ["خضار", "فاكهة", "عصائر طبيعية"],
-    "صيدليات": ["أدوية", "فيتامينات", "عناية شخصية", "مستحضرات طبية"],
-    "مستحضرات تجميل": ["مكياج", "عناية بالبشرة", "عناية بالشعر", "عطور"],
-    "عطور": ["عطور رجالية", "عطور نسائية", "عطور أطفال"],
-    "ملابس": ["ملابس رجالية", "ملابس نسائية", "ملابس أطفال", "ملابس رياضية"],
-    "أحذية وشنط": ["أحذية رجالية", "أحذية نسائية", "شنط", "حقائب"],
-    "إلكترونيات": ["هواتف", "لابتوب", "أجهزة منزلية", "إكسسوارات"],
-    "موبايلات": ["هواتف ذكية", "إكسسوارات موبايل", "شاشات حماية"],
-    "كمبيوتر ولابتوب": ["لابتوب", "كمبيوتر مكتبي", "إكسسوارات"],
-    "أجهزة منزلية": ["ثلاجات", "غسالات", "مكيفات", "أفران"],
-    "أثاث": ["غرف نوم", "طاولات", "كراسي", "خزائن"],
-    "مفروشات": ["سجاد", "ستائر", "مفروشات"],
-    "مكتبات": ["كتب", "قرطاسية", "أدوات مكتبية"],
-    "ألعاب أطفال": ["ألعاب تعليمية", "ألعاب رياضية", "ألعاب إلكترونية"],
-    "رياضة": ["ملابس رياضية", "أحذية رياضية", "معدات رياضية"],
-    "مراكز صيانة": ["صيانة هواتف", "صيانة كمبيوتر", "صيانة أجهزة"],
-    "خدمات سيارات": ["قطع غيار", "إكسسوارات سيارات", "زيوت"],
-    "مغاسل": ["غسيل ملابس", "تنظيف جاف", "كي ملابس"],
-    "حلاقة وتجميل": ["قص شعر", "تجميل", "عناية بالبشرة"],
-    "جيم ولياقة": ["عضلات", "كارديو", "يوجا"],
-    "مراكز تعليم": ["دورات", "كتب تعليمية", "أدوات تعليمية"],
-    "عيادات": ["طب عام", "أسنان", "عيادات متخصصة"],
-    "معامل تحاليل": ["تحاليل دم", "تحاليل أشعة"],
-    "خدمات أخرى": ["خدمات متنوعة"],
-    "أخرى": ["أخرى"]
-  };
 
   const [manuallyEditedFields, setManuallyEditedFields] = useState({
     name: false,
@@ -390,57 +359,23 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     }
   }, 800);
 
-  const [allCategories, setAllCategories] = useState<Array<{storeId: string, category: string}>>(() => {
-    // جلب الفئات المحفوظة من localStorage أو استخدام الفئات الافتراضية
-    const savedCategories = localStorage.getItem('productCategories');
-    if (savedCategories) {
-      try {
-        return JSON.parse(savedCategories);
-      } catch {
-        const defaultCategories = ["برجر", "بيتزا", "مشاوي", "مشروبات", "حلويات", "سلطات", "أخرى"];
-        return stores.map(store => 
-          defaultCategories.map(cat => ({ storeId: store._id, category: cat }))
-        ).flat();
+  // Update mainCategory and subcategory when store changes
+  useEffect(() => {
+    if (formData.storeId) {
+      const selectedStore = stores.find(s => s._id === formData.storeId);
+      if (selectedStore && selectedStore.mainCategory) {
+        setFormData(prev => ({
+          ...prev,
+          mainCategory: selectedStore.mainCategory,
+          subcategory: selectedStore.subcategory || "",
+        }));
       }
     }
-    const defaultCategories = ["برجر", "بيتزا", "مشاوي", "مشروبات", "حلويات", "سلطات", "أخرى"];
-    return stores.map(store => 
-      defaultCategories.map(cat => ({ storeId: store._id, category: cat }))
-    ).flat();
-  }); // كل الفئات لكل المتاجر
+  }, [formData.storeId, stores]);
 
   const createProduct = useMutation(api.products.createProduct);
   const updateProduct = useMutation(api.products.updateProduct);
   const generateUploadUrl = useMutation(api.products.generateUploadUrl);
-
-  // Filter categories based on selected store's category
-  const filteredCategories = useMemo(() => {
-    if (!formData.storeId) return [];
-    
-    // Get the selected store
-    const selectedStore = stores.find(s => s._id === formData.storeId);
-    if (!selectedStore) return [];
-    
-    // Get the store's category
-    const storeCategory = selectedStore.category;
-    
-    // Get mapped categories for this store category
-    const mappedCategories = categoryMapping[storeCategory] || [];
-    
-    // Get custom categories for this store
-    const customCategories = allCategories
-      .filter(cat => cat.storeId === formData.storeId)
-      .map(cat => cat.category);
-    
-    // Combine mapped and custom categories, remove duplicates
-    const combinedCategories = [...mappedCategories, ...customCategories];
-    return combinedCategories.filter((cat, index, arr) => arr.indexOf(cat) === index);
-  }, [allCategories, formData.storeId, stores]);
-
-  // حفظ الفئات في localStorage عند التحديث
-  useEffect(() => {
-    localStorage.setItem('productCategories', JSON.stringify(allCategories));
-  }, [JSON.stringify(allCategories)]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -554,7 +489,9 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
         descriptionAr: formData.descriptionAr,
         price: parseFloat(formData.price),
         originalPrice: parseFloat(formData.originalPrice) || undefined,
-        category: formData.category,
+        category: formData.category, // Legacy field for backward compatibility
+        mainCategory: formData.mainCategory,
+        subcategory: formData.subcategory,
         weight: parseFloat(formData.weight) || undefined,
         preparationTime: parseInt(formData.preparationTime) || undefined,
         quantity: parseInt(formData.quantity) || 0,
@@ -563,6 +500,7 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
         colors: formData.colors,
         sizes: formData.sizes,
         isAvailable: true,
+        condition: formData.condition, // New: Product condition
       };
 
       if (product) {
@@ -853,60 +791,82 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
 
           <div className="border-t pt-4">
             <label className="block text-sm font-semibold text-gray-700 mb-3 text-start">الفئة</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            
+            {/* القسم الرئيسي */}
+            <div className="relative mb-3">
               <select
                 required
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                disabled={!formData.storeId}
-                className={`px-4 py-3 border-2 rounded-lg focus:ring-2 transition-all ${
-                  !formData.storeId 
-                    ? 'border-gray-200 bg-gray-100 cursor-not-allowed' 
-                    : 'border-gray-200 focus:border-orange-500 focus:ring-orange-200'
-                }`}
+                value={formData.mainCategory}
+                onChange={(e) => {
+                  const newMainCategory = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    mainCategory: newMainCategory,
+                    subcategory: "" // Reset subcategory when main category changes
+                  });
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all appearance-none bg-white"
               >
-                <option value="">
-                  {!formData.storeId ? 'اختر المتجر أولاً' : 'اختر الفئة'}
-                </option>
-                {filteredCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                <option value="">اختر القسم الرئيسي</option>
+                {MAIN_CATEGORIES.filter(cat => cat.id !== "todays_offers").map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.nameAr}
                   </option>
                 ))}
               </select>
-              <input
-                type="text"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="أضف فئة جديدة"
-                className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (newCategory && formData.storeId && !filteredCategories.includes(newCategory)) {
-                    setAllCategories([...allCategories, { storeId: formData.storeId, category: newCategory }]);
-                    setFormData({ ...formData, category: newCategory });
-                    setNewCategory("");
-                  }
-                }}
-                disabled={!formData.storeId}
-                className={`px-4 py-3 rounded-lg transition-colors ${
-                  !formData.storeId 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
-              >
-                <Plus className="w-5 h-5" />
-                إضافة فئة
-              </button>
+              <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
-            {filteredCategories.length > 0 && (
-              <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                <p className="text-sm text-blue-800 text-start">الفئات المتاحة: {filteredCategories.join(', ')}</p>
+
+            {/* القسم الفرعي */}
+            {formData.mainCategory && (
+              <div className="relative">
+                <select
+                  required
+                  value={formData.subcategory}
+                  onChange={(e) => {
+                    const newSubcategory = e.target.value;
+                    const subcategories = getSubcategoriesByMainCategory(formData.mainCategory);
+                    const selectedSub = subcategories.find(sub => sub.id === newSubcategory);
+                    
+                    setFormData({ 
+                      ...formData, 
+                      subcategory: newSubcategory,
+                      category: selectedSub?.nameAr || "" // Update legacy field for backward compatibility
+                    });
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all appearance-none bg-white"
+                >
+                  <option value="">اختر التصنيف الفرعي</option>
+                  {getSubcategoriesByMainCategory(formData.mainCategory).map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.nameAr}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
             )}
           </div>
+
+          {/* حالة المنتج */}
+          {formData.mainCategory === "second_hand" && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">حالة المنتج</label>
+              <div className="relative">
+                <select
+                  required
+                  value={formData.condition}
+                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all appearance-none bg-white"
+                >
+                  <option value="new">جديد</option>
+                  <option value="used">مستعمل</option>
+                  <option value="refurbished">مجدّد</option>
+                </select>
+                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">وقت التحضير (دقيقة)</label>

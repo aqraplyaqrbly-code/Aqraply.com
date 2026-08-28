@@ -11,7 +11,7 @@ export default defineSchema({
     emailVerificationTime: v.optional(v.number()),
     phone: v.optional(v.string()),
     isAnonymous: v.optional(v.boolean()),
-    role: v.optional(v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain"), v.literal("admin"), v.literal("owner"))),
+    role: v.optional(v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain"), v.literal("admin"), v.literal("owner"), v.literal("service_provider"))),
     isSuspended: v.optional(v.boolean()),
     createdAt: v.optional(v.number()), // Made optional for migration
   })
@@ -21,7 +21,7 @@ export default defineSchema({
 
   profiles: defineTable({
     userId: v.id("users"),
-    role: v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain"), v.literal("admin"), v.literal("owner")),
+    role: v.union(v.literal("customer"), v.literal("merchant"), v.literal("captain"), v.literal("admin"), v.literal("owner"), v.literal("service_provider")),
     fullName: v.string(),
     phone: v.string(),
     phoneVerified: v.boolean(),
@@ -64,8 +64,10 @@ export default defineSchema({
     nameAr: v.string(),
     description: v.string(),
     descriptionAr: v.string(),
-    category: v.string(),
-    categoryId: v.optional(v.string()),
+    category: v.string(), // Legacy field for backward compatibility
+    categoryId: v.optional(v.string()), // Legacy field for backward compatibility
+    mainCategory: v.optional(v.string()), // New: Main category ID
+    subcategory: v.optional(v.string()), // New: Subcategory ID
     imageUrl: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
     rating: v.number(),
@@ -78,6 +80,7 @@ export default defineSchema({
     isOnline: v.optional(v.boolean()),
     isApproved: v.optional(v.boolean()),
     ownerId: v.optional(v.string()),
+    isServiceProvider: v.optional(v.boolean()), // New: Individual service provider (not a business store)
     location: v.object({
       address: v.string(),
       addressAr: v.string(),
@@ -99,8 +102,11 @@ export default defineSchema({
   })
     .index("by_owner", ["ownerId"])
     .index("by_category", ["category"])
+    .index("by_main_category", ["mainCategory"])
+    .index("by_subcategory", ["subcategory"])
     .index("by_active", ["isActive"])
-    .index("by_updated", ["updatedAt"]),
+    .index("by_updated", ["updatedAt"])
+    .index("by_service_provider", ["isServiceProvider"]),
 
   products: defineTable({
     storeId: v.id("stores"),
@@ -108,8 +114,10 @@ export default defineSchema({
     nameAr: v.string(),
     description: v.string(),
     descriptionAr: v.string(),
-    category: v.string(),
-    categoryId: v.optional(v.string()),
+    category: v.string(), // Legacy field for backward compatibility
+    categoryId: v.optional(v.string()), // Legacy field for backward compatibility
+    mainCategory: v.optional(v.string()), // New: Main category ID
+    subcategory: v.optional(v.string()), // New: Subcategory ID
     price: v.number(),
     originalPrice: v.optional(v.number()),
     code: v.optional(v.string()),
@@ -122,6 +130,7 @@ export default defineSchema({
     rating: v.optional(v.number()),
     reviewCount: v.optional(v.number()),
     totalRatings: v.optional(v.number()),
+    condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition for second-hand items
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
     // Fields from old data format
@@ -141,8 +150,11 @@ export default defineSchema({
   })
     .index("by_store", ["storeId"])
     .index("by_category", ["category"])
+    .index("by_main_category", ["mainCategory"])
+    .index("by_subcategory", ["subcategory"])
     .index("by_available", ["isAvailable"])
-    .index("by_updated", ["updatedAt"]),
+    .index("by_updated", ["updatedAt"])
+    .index("by_condition", ["condition"]),
 
   orders: defineTable({
     customerId: v.id("profiles"),

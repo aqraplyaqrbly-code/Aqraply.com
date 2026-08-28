@@ -9,6 +9,7 @@ import CustomerOrders from "./CustomerOrders";
 import OrderDetails from "./OrderDetails";
 import { useAuth } from "../contexts/AuthContextNew";
 import { normalizeArabicText } from "../lib/utils";
+import { MAIN_CATEGORIES, getSubcategoriesByMainCategory } from "../constants/categories";
 
 // Cart Item Interface
 interface CartItem {
@@ -57,6 +58,8 @@ import {
   Store,
   Phone,
   Lock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -430,59 +433,64 @@ function StoresList() {
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showNearby, setShowNearby] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(t('errors.todaysOffers'));
-  const [availableCategories, setAvailableCategories] = useState<string[]>([t('errors.todaysOffers')]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const { getItemCount } = useCart();
   
   const isArabic = i18n.language === 'ar';
 
-  // All store categories from dropdown list
-  const allStoreCategories = [
-    "مطاعم", "كافيهات", "سوبر ماركت", "مخابز", "حلويات",
-    "جزارة", "خضار وفاكهة", "صيدليات", "مستحضرات تجميل", "عطور",
-    "ملابس", "أحذية وشنط", "إلكترونيات", "موبايلات", "كمبيوتر ولابتوب",
-    "أجهزة منزلية", "أثاث", "مفروشات", "مكتبات", "ألعاب أطفال",
-    "رياضة", "مراكز صيانة", "خدمات سيارات", "مغاسل", "حلاقة وتجميل",
-    "جيم ولياقة", "مراكز تعليم", "عيادات", "معامل تحاليل", "خدمات أخرى", "أخرى"
-  ];
-
-  // Extract unique store categories from existing stores
-  useEffect(() => {
-    if (!stores || stores.length === 0) {
-      setAvailableCategories([t('errors.todaysOffers'), ...allStoreCategories]);
-      return;
-    }
-
-    const uniqueStoreCategories = Array.from(
-      new Set(stores.map(s => s.category).filter(Boolean))
-    ).sort() as string[];
-
-    // Combine all categories with existing ones, remove duplicates
-    const combinedCategories = [...allStoreCategories, ...uniqueStoreCategories];
-    const sortedCategories = Array.from(new Set(combinedCategories)).sort();
-
-    setAvailableCategories([t('errors.todaysOffers'), ...sortedCategories]);
-
-    // Reset selected category if it no longer exists
-    if (selectedCategory !== t('errors.todaysOffers') && !sortedCategories.includes(selectedCategory)) {
-      setSelectedCategory(t('errors.todaysOffers'));
-    }
-  }, [stores?.length]);
-
-  // Filter products by store category
+  // Filter products by main category and subcategory
   const filteredProductsByCategory = useMemo(() => {
     if (selectedCategory === t('errors.todaysOffers')) {
       return allProducts?.filter(p => p.originalPrice && p.originalPrice > p.price) || [];
     }
 
-    // Get stores with the selected category
-    const storesInCategory = stores?.filter(s => s.category === selectedCategory) || [];
+    // Filter by main category and optionally subcategory
+    // Support both new (mainCategory/subcategory) and legacy (category) fields
+    let filtered = allProducts?.filter(p => {
+      // Check new structure first
+      if (p.mainCategory === selectedCategory) return true;
+      
+      // Fallback to legacy structure for backward compatibility
+      if (p.category) {
+        // Map legacy category to main category
+        const mainCat = MAIN_CATEGORIES.find(cat => 
+          cat.subcategories.some(sub => sub.nameAr === p.category)
+        );
+        if (mainCat && mainCat.id === selectedCategory) return true;
+      }
+      
+      return false;
+    }) || [];
     
-    if (storesInCategory.length === 0) return [];
-
-    // Get all products from stores in this category
-    const storeIds = storesInCategory.map(s => s._id);
-    return allProducts?.filter(p => storeIds.includes(p.storeId)) || [];
-  }, [selectedCategory, allProducts, stores, t]);
+    if (selectedSubcategory) {
+      filtered = filtered.filter(p => {
+        // Check new structure first
+        if (p.subcategory === selectedSubcategory) return true;
+        
+        // Fallback to legacy structure
+        const subCat = MAIN_CATEGORIES.find(cat => cat.id === selectedCategory)
+          ?.subcategories.find(sub => sub.id === selectedSubcategory);
+        if (subCat && p.category === subCat.nameAr) return true;
+        
+        return false;
+      });
+    }
+    
+    // If no products found with new structure, try legacy-only filtering
+    if (filtered.length === 0 && !selectedSubcategory) {
+      const mainCat = MAIN_CATEGORIES.find(cat => cat.id === selectedCategory);
+      if (mainCat) {
+        filtered = allProducts?.filter(p => {
+          if (!p.category) return false;
+          return mainCat.subcategories.some(sub => sub.nameAr === p.category);
+        }) || [];
+      }
+    }
+    
+    return filtered;
+  }, [selectedCategory, selectedSubcategory, allProducts, t]);
   
   const nearbyStores = useQuery(api.location.getNearbyStores, 
     userLocation ? { 
@@ -602,26 +610,107 @@ function StoresList() {
       </div>
 
       {/* Categories Bar */}
-      <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm mb-6">
+      <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm mb-6 pb-12">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 py-3 overflow-x-auto" dir="ltr">
-            <div className="flex-1 overflow-x-auto scrollbar-hide" dir={document.documentElement.dir === "rtl" ? "rtl" : "ltr"}>
+          <div className="flex items-center gap-3 py-3" dir="ltr">
+            <button
+              onClick={() => {
+                const container = document.getElementById("categories-scroll");
+                if (container) {
+                  container.scrollBy({ left: -300, behavior: 'smooth' });
+                }
+              }}
+              className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex-shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <div
+              id="categories-scroll"
+              className="flex-1 overflow-x-auto scrollbar-hide"
+              dir={document.documentElement.dir === "rtl" ? "rtl" : "ltr"}
+            >
               <div className="flex gap-3 pb-0 min-w-max justify-center sm:justify-start">
-                {availableCategories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-5 py-2 text-sm rounded-lg font-semibold whitespace-nowrap transition-all ${
-                      selectedCategory === category
-                        ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                {/* Today's Offers */}
+                <button
+                  onClick={() => {
+                    setSelectedCategory(t('errors.todaysOffers'));
+                    setSelectedSubcategory(null);
+                  }}
+                  className={`px-5 py-2 text-sm rounded-lg font-semibold whitespace-nowrap transition-all ${
+                    selectedCategory === t('errors.todaysOffers')
+                      ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  🔥 {t('errors.todaysOffers')}
+                </button>
+
+                {/* Main Categories with Dropdown */}
+                {MAIN_CATEGORIES.filter(cat => cat.id !== "todays_offers").map((mainCat) => (
+                  <div
+                    key={mainCat.id}
+                    className="relative group"
+                    onMouseEnter={(e) => {
+                      setHoveredCategory(mainCat.id);
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setDropdownPosition({ top: rect.bottom, left: rect.left });
+                    }}
+                    onMouseLeave={() => setHoveredCategory(null)}
                   >
-                    {category}
-                  </button>
+                    <button
+                      onClick={() => {
+                        setSelectedCategory(mainCat.id);
+                        setSelectedSubcategory(null);
+                      }}
+                      className={`px-5 py-2 text-sm rounded-lg font-semibold whitespace-nowrap transition-all ${
+                        selectedCategory === mainCat.id && !selectedSubcategory
+                          ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {mainCat.icon} {mainCat.nameAr}
+                    </button>
+
+                    {/* Subcategories Dropdown - Fixed positioning to appear above everything */}
+                    {hoveredCategory === mainCat.id && dropdownPosition && (
+                      <div 
+                        className="fixed bg-white rounded-xl shadow-2xl border border-gray-200 py-2 min-w-[200px] z-[99999]"
+                        style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+                      >
+                        {mainCat.subcategories.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              setSelectedCategory(mainCat.id);
+                              setSelectedSubcategory(sub.id);
+                              setHoveredCategory(null);
+                            }}
+                            className={`block w-full text-right px-4 py-2 text-sm hover:bg-orange-50 transition-colors ${
+                              selectedSubcategory === sub.id ? "bg-orange-50 text-orange-700 font-semibold" : "text-gray-700"
+                            }`}
+                          >
+                            {sub.nameAr}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
+
+            <button
+              onClick={() => {
+                const container = document.getElementById("categories-scroll");
+                if (container) {
+                  container.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+              }}
+              className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex-shrink-0"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>

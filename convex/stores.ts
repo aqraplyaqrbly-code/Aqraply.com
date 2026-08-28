@@ -161,7 +161,9 @@ export const createStore = mutation({
     description: v.string(),
     descriptionAr: v.string(),
     descriptionEn: v.optional(v.string()),
-    category: v.string(),
+    category: v.string(), // Legacy field for backward compatibility
+    mainCategory: v.optional(v.string()), // New: Main category ID
+    subcategory: v.optional(v.string()), // New: Subcategory ID
     imageUrl: v.optional(v.string()),
     imageId: v.optional(v.string()),
     latitude: v.number(),
@@ -172,6 +174,7 @@ export const createStore = mutation({
     minOrderAmount: v.number(),
     estimatedDeliveryTime: v.number(),
     phone: v.optional(v.string()),
+    isServiceProvider: v.optional(v.boolean()), // New: Individual service provider
   },
   handler: async (ctx, args) => {
     const { sessionToken, ...storeData } = args;
@@ -202,10 +205,13 @@ export const createStore = mutation({
       description: args.description,
       descriptionAr: args.descriptionAr,
       descriptionEn: args.descriptionEn || args.description,
-      category: args.category,
+      category: args.category, // Legacy field for backward compatibility
+      mainCategory: args.mainCategory, // New field
+      subcategory: args.subcategory, // New field
       imageUrl: args.imageUrl,
       imageId: args.imageId as Id<"_storage"> | undefined,
       ownerId: userId,
+      isServiceProvider: args.isServiceProvider || false, // New field
       location: {
         latitude: args.latitude,
         longitude: args.longitude,
@@ -262,7 +268,9 @@ export const updateStore = mutation({
     nameAr: v.string(),
     description: v.string(),
     descriptionAr: v.string(),
-    category: v.string(),
+    category: v.string(), // Legacy field for backward compatibility
+    mainCategory: v.optional(v.string()), // New: Main category ID
+    subcategory: v.optional(v.string()), // New: Subcategory ID
     imageUrl: v.optional(v.string()),
     imageId: v.optional(v.string()),
     latitude: v.number(),
@@ -273,6 +281,7 @@ export const updateStore = mutation({
     minOrderAmount: v.number(),
     estimatedDeliveryTime: v.number(),
     phone: v.optional(v.string()),
+    isServiceProvider: v.optional(v.boolean()), // New: Individual service provider
   },
   handler: async (ctx, args) => {
     const { sessionToken, storeId, ...updateData } = args;
@@ -304,6 +313,8 @@ export const updateStore = mutation({
       description: updateData.description,
       descriptionAr: updateData.descriptionAr,
       category: updateData.category,
+      mainCategory: updateData.mainCategory,
+      subcategory: updateData.subcategory,
       imageUrl: updateData.imageUrl,
       imageId: updateData.imageId as Id<"_storage"> | undefined,
       location: {
@@ -316,6 +327,7 @@ export const updateStore = mutation({
       minOrderAmount: updateData.minOrderAmount,
       estimatedDeliveryTime: updateData.estimatedDeliveryTime,
       phone: updateData.phone ?? store.phone,
+      isServiceProvider: updateData.isServiceProvider ?? store.isServiceProvider,
       updatedAt: Date.now(),
     });
 

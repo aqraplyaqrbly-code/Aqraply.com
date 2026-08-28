@@ -19,11 +19,13 @@ import {
   Eye,
   Phone,
   Lock,
-  Loader2
+  Loader2,
+  ChevronDown
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContextNew";
 import { useTranslation } from "react-i18next";
 import ChangePasswordModal from "./ChangePasswordModal";
+import { MAIN_CATEGORIES, getSubcategoriesByMainCategory, mapOldCategoryToNew } from "../constants/categories";
 
 export default function StoreSettings() {
   const { t } = useTranslation();
@@ -137,6 +139,8 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
     description: store?.description || "",
     descriptionAr: store?.descriptionAr || "",
     category: store?.category || "",
+    mainCategory: store?.mainCategory || "",
+    subcategory: store?.subcategory || "",
     address: store?.location?.address || "",
     addressAr: store?.location?.addressAr || "",
     latitude: store?.location?.latitude?.toString() || "30.0444",
@@ -145,6 +149,7 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
     minOrderAmount: store?.minOrderAmount?.toString() || "50",
     estimatedDeliveryTime: store?.estimatedDeliveryTime?.toString() || "30",
     phone: store?.phone || "",
+    isServiceProvider: store?.isServiceProvider || false,
   });
 
   const [imageSource, setImageSource] = useState<string>(store?.imageId || store?.imageUrl || "");
@@ -156,6 +161,7 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
     description: false,
     address: false,
   });
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   // Translation function using MyMemory free API
   const translateText = async (text: string): Promise<string> => {
@@ -389,7 +395,9 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
         nameAr: formData.nameAr,
         description: formData.description,
         descriptionAr: formData.descriptionAr,
-        category: formData.category,
+        category: formData.category, // Legacy field for backward compatibility
+        mainCategory: formData.mainCategory,
+        subcategory: formData.subcategory,
         imageUrl: isDirectUrl ? imageSource : undefined,
         imageId: isDirectUrl ? undefined : imageSource,
         latitude: parseFloat(formData.latitude),
@@ -400,6 +408,7 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
         minOrderAmount: parseFloat(formData.minOrderAmount),
         estimatedDeliveryTime: parseInt(formData.estimatedDeliveryTime),
         phone: formData.phone,
+        isServiceProvider: formData.isServiceProvider,
       };
 
       if (store) {
@@ -565,45 +574,76 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
             <Package className="w-4 h-4 inline-block me-2" />
             فئة المتجر
           </label>
-          <select
-            required
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-          >
-            <option value="">اختر الفئة</option>
-            <option value="مطاعم">مطاعم</option>
-            <option value="كافيهات">كافيهات</option>
-            <option value="سوبر ماركت">سوبر ماركت</option>
-            <option value="مخابز">مخابز</option>
-            <option value="حلويات">حلويات</option>
-            <option value="جزارة">جزارة</option>
-            <option value="خضار وفاكهة">خضار وفاكهة</option>
-            <option value="صيدليات">صيدليات</option>
-            <option value="مستحضرات تجميل">مستحضرات تجميل</option>
-            <option value="عطور">عطور</option>
-            <option value="ملابس">ملابس</option>
-            <option value="أحذية وشنط">أحذية وشنط</option>
-            <option value="إلكترونيات">إلكترونيات</option>
-            <option value="موبايلات">موبايلات</option>
-            <option value="كمبيوتر ولابتوب">كمبيوتر ولابتوب</option>
-            <option value="أجهزة منزلية">أجهزة منزلية</option>
-            <option value="أثاث">أثاث</option>
-            <option value="مفروشات">مفروشات</option>
-            <option value="مكتبات">مكتبات</option>
-            <option value="ألعاب أطفال">ألعاب أطفال</option>
-            <option value="رياضة">رياضة</option>
-            <option value="مراكز صيانة">مراكز صيانة</option>
-            <option value="خدمات سيارات">خدمات سيارات</option>
-            <option value="مغاسل">مغاسل</option>
-            <option value="حلاقة وتجميل">حلاقة وتجميل</option>
-            <option value="جيم ولياقة">جيم ولياقة</option>
-            <option value="مراكز تعليم">مراكز تعليم</option>
-            <option value="عيادات">عيادات</option>
-            <option value="معامل تحاليل">معامل تحاليل</option>
-            <option value="خدمات أخرى">خدمات أخرى</option>
-            <option value="أخرى">أخرى</option>
-          </select>
+          
+          {/* نوع المزود الخدمة */}
+          <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.isServiceProvider}
+                onChange={(e) => setFormData({ ...formData, isServiceProvider: e.target.checked })}
+                className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
+              />
+              <span className="text-sm text-gray-700">
+                <strong>مقدم خدمة فردية</strong> (مثل: تنظيف منازل، سباكة، كهرباء منزلية)
+              </span>
+            </label>
+          </div>
+          
+          {/* القسم الرئيسي */}
+          <div className="relative mb-3">
+            <select
+              required
+              value={formData.mainCategory}
+              onChange={(e) => {
+                const newMainCategory = e.target.value;
+                setFormData({ 
+                  ...formData, 
+                  mainCategory: newMainCategory,
+                  subcategory: "" // Reset subcategory when main category changes
+                });
+              }}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all appearance-none bg-white"
+            >
+              <option value="">اختر القسم الرئيسي</option>
+              {MAIN_CATEGORIES.filter(cat => cat.id !== "todays_offers").map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.nameAr}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          </div>
+
+          {/* القسم الفرعي */}
+          {formData.mainCategory && (
+            <div className="relative">
+              <select
+                required
+                value={formData.subcategory}
+                onChange={(e) => {
+                  const newSubcategory = e.target.value;
+                  const subcategories = getSubcategoriesByMainCategory(formData.mainCategory);
+                  const selectedSub = subcategories.find(sub => sub.id === newSubcategory);
+                  
+                  setFormData({ 
+                    ...formData, 
+                    subcategory: newSubcategory,
+                    category: selectedSub?.nameAr || "" // Update legacy field for backward compatibility
+                  });
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all appearance-none bg-white"
+              >
+                <option value="">اختر التصنيف الفرعي</option>
+                {getSubcategoriesByMainCategory(formData.mainCategory).map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.nameAr}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+          )}
         </div>
 
         {/* العنوان */}

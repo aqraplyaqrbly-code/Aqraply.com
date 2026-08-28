@@ -28,6 +28,7 @@ import type * as firebaseNotifications from "../firebaseNotifications.js";
 import type * as http from "../http.js";
 import type * as importData from "../importData.js";
 import type * as location from "../location.js";
+import type * as migrations_migrateCategories from "../migrations/migrateCategories.js";
 import type * as notifications from "../notifications.js";
 import type * as orders from "../orders.js";
 import type * as passwordReset from "../passwordReset.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   importData: typeof importData;
   location: typeof location;
+  "migrations/migrateCategories": typeof migrations_migrateCategories;
   notifications: typeof notifications;
   orders: typeof orders;
   passwordReset: typeof passwordReset;

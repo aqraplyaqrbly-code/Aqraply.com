@@ -320,7 +320,9 @@ export const createProduct = mutation({
     nameAr: v.string(),
     description: v.string(),
     descriptionAr: v.string(),
-    category: v.string(),
+    category: v.string(), // Legacy field for backward compatibility
+    mainCategory: v.optional(v.string()), // New: Main category ID
+    subcategory: v.optional(v.string()), // New: Subcategory ID
     price: v.number(),
     originalPrice: v.optional(v.number()),
     code: v.optional(v.string()),
@@ -332,6 +334,7 @@ export const createProduct = mutation({
     colors: v.optional(v.array(v.string())),
     sizes: sizeValidator,
     isAvailable: v.optional(v.boolean()),
+    condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition
   },
   handler: async (ctx, args) => {
     const { sessionToken, storeId, ...productData } = args;
@@ -372,7 +375,10 @@ export const createProduct = mutation({
       quantity: productData.quantity ?? 0,
       images,
       imageIds: productData.imageIds,
-      category: productData.category,
+      category: productData.category, // Legacy field for backward compatibility
+      mainCategory: productData.mainCategory, // New field
+      subcategory: productData.subcategory, // New field
+      condition: productData.condition || "new", // New field, default to "new"
       colors: productData.colors ?? [],
       sizes: productData.sizes ?? [],
       isAvailable: productData.isAvailable ?? true,
@@ -436,7 +442,9 @@ export const updateProduct = mutation({
     nameAr: v.optional(v.string()),
     description: v.optional(v.string()),
     descriptionAr: v.optional(v.string()),
-    category: v.optional(v.string()),
+    category: v.optional(v.string()), // Legacy field for backward compatibility
+    mainCategory: v.optional(v.string()), // New: Main category ID
+    subcategory: v.optional(v.string()), // New: Subcategory ID
     price: v.optional(v.number()),
     originalPrice: v.optional(v.number()),
     code: v.optional(v.string()),
@@ -448,6 +456,7 @@ export const updateProduct = mutation({
     colors: v.optional(v.array(v.string())),
     sizes: sizeValidator,
     isAvailable: v.optional(v.boolean()),
+    condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition
   },
   handler: async (ctx, args) => {
     const { sessionToken, productId, storeId: _storeId, ...updateData } = args;
