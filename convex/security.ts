@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { getAuthUserId } from "./auth";
@@ -62,7 +62,7 @@ async function logSecurityEvent(
 }
 
 // Request OTP for password reset
-export const requestPasswordResetOTP = mutation({
+export const requestPasswordResetOTP = action({
   args: {
     identifier: v.string(), // email or phone
     identifierType: v.union(v.literal("email"), v.literal("phone")),
@@ -71,15 +71,15 @@ export const requestPasswordResetOTP = mutation({
     // Find user by email or phone
     let user;
     if (args.identifierType === "email") {
-      user = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", args.identifier))
-        .first();
+      user = await ctx.runQuery(internal.securityInternal.findUserByIdentifier, {
+        identifier: args.identifier,
+        identifierType: args.identifierType,
+      });
     } else {
-      user = await ctx.db
-        .query("users")
-        .withIndex("phone", (q) => q.eq("phone", args.identifier))
-        .first();
+      user = await ctx.runQuery(internal.securityInternal.findUserByIdentifier, {
+        identifier: args.identifier,
+        identifierType: args.identifierType,
+      });
     }
 
     // Don't reveal if user exists for security
@@ -91,14 +91,13 @@ export const requestPasswordResetOTP = mutation({
     }
 
     // Clean up expired OTPs
-    const oldOTPs = await ctx.db
-      .query("otpVerifications")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+    const oldOTPs = await ctx.runQuery(internal.securityInternal.getUserOTPs, {
+      userId: user._id,
+    });
 
     for (const otp of oldOTPs) {
       if (otp.expiresAt < Date.now()) {
-        await ctx.db.delete(otp._id);
+        await ctx.runMutation(internal.securityInternal.deleteOTP, { otpId: otp._id });
       }
     }
 
@@ -117,11 +116,11 @@ export const requestPasswordResetOTP = mutation({
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     // Store OTP
-    await ctx.db.insert("otpVerifications", {
+    await ctx.runMutation(internal.securityInternal.storeOTP, {
       userId: user._id,
       identifier: args.identifier,
       identifierType: args.identifierType,
-      otp, // Store plain OTP for sending (will be deleted after verification)
+      otp,
       otpHash,
       expiresAt,
       createdAt: Date.now(),
@@ -131,13 +130,12 @@ export const requestPasswordResetOTP = mutation({
     });
 
     // Log security event
-    await logSecurityEvent(
-      ctx,
-      "password_reset_request",
-      user._id,
-      true,
-      `OTP sent to ${args.identifierType}: ${args.identifier}`
-    );
+    await ctx.runMutation(internal.securityInternal.logSecurityEvent, {
+      eventType: "password_reset_request",
+      userId: user._id,
+      success: true,
+      details: `OTP sent to ${args.identifierType}: ${args.identifier}`,
+    });
 
     // TODO: Send OTP via Email/SMS/WhatsApp
     console.log(`OTP for ${args.identifier}: ${otp}`);
@@ -145,6 +143,7 @@ export const requestPasswordResetOTP = mutation({
     return {
       success: true,
       message: "تم إرسال رمز التحقق بنجاح",
+      otp, // Return OTP for development
     };
   },
 });
