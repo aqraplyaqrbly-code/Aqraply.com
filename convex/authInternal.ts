@@ -95,6 +95,20 @@ export const findUserByEmail = internalQuery({
   },
 });
 
+// Internal query to find user by phone
+export const findUserByPhone = internalQuery({
+  args: {
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("phone", (q) => q.eq("phone", args.phone))
+      .first();
+    return user;
+  },
+});
+
 // Internal query to get all users
 export const getAllUsers = internalQuery({
   args: {},
