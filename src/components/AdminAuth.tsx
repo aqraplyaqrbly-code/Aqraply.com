@@ -48,7 +48,7 @@ export default function AdminAuth() {
 
   // التحقق من حالة المستخدم
   useEffect(() => {
-    if (isAuthenticated && user && !user.profile && !loading && !hasCreatedProfile.current) {
+    if (isAuthenticated && user && !user.profile && !loading && !hasCreatedProfile.current && sessionToken) {
       // إذا كان المستخدم مسجل دخول ولكن ليس لديه ملف شخصي
       // يمكن إنشاء ملف شخصي تلقائي للمدير
       handleCreateAdminProfile();
@@ -58,14 +58,20 @@ export default function AdminAuth() {
     if (!isAuthenticated || !user) {
       hasCreatedProfile.current = false;
     }
-  }, [isAuthenticated, user?._id, user?.profile, loading]);
+  }, [isAuthenticated, user?._id, user?.profile, sessionToken]);
 
   const handleCreateAdminProfile = async () => {
     if (loading) return;
     setLoading(true);
     try {
-      const result = await ensureAdminRole({ ...(sessionToken && { sessionToken }) });
-      if (result.ok) {
+      // Only call ensureAdminRole if sessionToken exists
+      if (!sessionToken) {
+        console.error("No session token available");
+        setLoading(false);
+        return;
+      }
+      const result = await ensureAdminRole({ sessionToken });
+      if (result && result.ok) {
         toast.success(t('errors.adminProfileCreated'));
         // FIXED: Use navigate instead of window.location.reload()
         navigate("/admin", { replace: true });
@@ -96,11 +102,14 @@ export default function AdminAuth() {
 
     try {
       // Use custom auth signIn
-      await signIn(email, password);
+      const signInResult = await signIn(email, password);
 
       // Admin verification runs once only after authentication is confirmed
-      const adminResult = await ensureAdminRole({ ...(sessionToken && { sessionToken }) });
-      if (!adminResult.ok) {
+      if (!signInResult.sessionToken) {
+        throw new Error("فشل تسجيل الدخول: لم يتم الحصول على رمز الجلسة");
+      }
+      const adminResult = await ensureAdminRole({ sessionToken: signInResult.sessionToken });
+      if (!adminResult || !adminResult.ok) {
         throw new Error("هذا البريد غير مصرح له بدخول لوحة المدير");
       }
       toast.success("تم تسجيل الدخول بنجاح!");

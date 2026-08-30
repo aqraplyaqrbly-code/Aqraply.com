@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { ShoppingBag, Shield, ArrowRight, RefreshCw, Clock, CheckCircle } from "lucide-react";
@@ -20,7 +20,7 @@ export default function CustomerVerifyOTP() {
   const [canResend, setCanResend] = useState(false);
 
   const verifyOTP = useMutation(api.security.verifyOTP);
-  const requestPasswordResetOTP = useMutation(api.security.requestPasswordResetOTP);
+  const requestPasswordResetOTP = useAction(api.security.requestPasswordResetOTP);
 
   // Countdown timer
   useEffect(() => {

@@ -26,10 +26,7 @@ export const createSession = internalMutation({
     token: v.string(),
   },
   handler: async (ctx, args) => {
-    console.log("[createSession] Creating session for userId:", args.userId);
-    console.log("[createSession] Session token:", args.token);
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
-    console.log("[createSession] Expires at:", new Date(expiresAt).toISOString());
     
     const sessionId = await ctx.db.insert("sessions", {
       userId: args.userId,
@@ -38,7 +35,6 @@ export const createSession = internalMutation({
       expiresAt,
     });
     
-    console.log("[createSession] Session created with ID:", sessionId);
     return sessionId;
   },
 });
@@ -79,18 +75,10 @@ export const findUserByEmail = internalQuery({
     email: v.string(),
   },
   handler: async (ctx, args) => {
-    console.log("[findUserByEmail] Searching for email:", args.email);
     const user = await ctx.db
       .query("users")
       .filter((q: any) => q.eq(q.field("email"), args.email))
       .first();
-    console.log("[findUserByEmail] Found user:", user ? "YES" : "NO");
-    if (user) {
-      console.log("[findUserByEmail] User ID:", user._id);
-      console.log("[findUserByEmail] User email:", user.email);
-      console.log("[findUserByEmail] User has passwordHash:", user.passwordHash ? "YES" : "NO");
-      console.log("[findUserByEmail] User has password:", user.password ? "YES" : "NO");
-    }
     return user;
   },
 });

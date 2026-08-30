@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Truck, Lock, ArrowRight, CheckCircle, Eye, EyeOff } from "lucide-react";
@@ -20,7 +20,7 @@ export default function CaptainResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const resetPasswordWithOTP = useMutation(api.security.resetPasswordWithOTP);
+  const resetPasswordWithOTP = useAction(api.security.resetPasswordWithOTP);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -589,7 +589,6 @@ export const updateSystemSettings = mutation({
       await ctx.db.insert("systemSettings", settingsData);
     }
 
-    console.log("Settings updated:", settingsData);
     return { success: true };
   },
 });
@@ -611,7 +610,6 @@ export const deleteOldSystemSettings = mutation({
       await ctx.db.delete(setting._id);
     }
 
-    console.log("Deleted old system settings");
     return { success: true, deleted: existingSettings.length };
   },
 });
@@ -634,7 +632,6 @@ export const resetSystemSettings = mutation({
       await ctx.db.delete(existingSettings._id);
     }
 
-    console.log("Settings reset - deleted saved settings");
     return { success: true };
   },
 });

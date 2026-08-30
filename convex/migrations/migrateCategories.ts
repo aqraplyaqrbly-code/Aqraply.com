@@ -9,18 +9,14 @@ import { mapOldCategoryToNew } from "../../src/constants/categories";
 export const migrateCategories = mutation({
   args: {},
   handler: async (ctx) => {
-    console.log("Starting category migration...");
-
     // Get all stores
     const stores = await ctx.db.query("stores").collect();
-    console.log(`Found ${stores.length} stores to migrate`);
 
     let storesUpdated = 0;
 
     for (const store of stores) {
       // Skip if already has mainCategory
       if (store.mainCategory) {
-        console.log(`Skipping store ${store._id} - already has mainCategory`);
         continue;
       }
 
@@ -34,20 +30,17 @@ export const migrateCategories = mutation({
         });
         
         storesUpdated++;
-        console.log(`Migrated store ${store._id}: ${store.category} -> ${mapped.mainCategory}/${mapped.subcategory}`);
       }
     }
 
     // Get all products
     const products = await ctx.db.query("products").collect();
-    console.log(`Found ${products.length} products to migrate`);
 
     let productsUpdated = 0;
 
     for (const product of products) {
       // Skip if already has mainCategory
       if (product.mainCategory) {
-        console.log(`Skipping product ${product._id} - already has mainCategory`);
         continue;
       }
 
@@ -61,11 +54,8 @@ export const migrateCategories = mutation({
         });
         
         productsUpdated++;
-        console.log(`Migrated product ${product._id}: ${product.category} -> ${mapped.mainCategory}/${mapped.subcategory}`);
       }
     }
-
-    console.log(`Migration complete: ${storesUpdated} stores, ${productsUpdated} products updated`);
     
     return {
       storesUpdated,

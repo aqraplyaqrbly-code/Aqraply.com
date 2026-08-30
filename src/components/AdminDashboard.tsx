@@ -82,21 +82,21 @@ export default function AdminDashboard() {
 
   // التحقق من أن المستخدم مدير
   if (user.profile.role !== "admin" && user.profile.role !== "owner") {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
-      <div className="text-center p-8 bg-white rounded-2xl shadow-sm border">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">{t('admin.unauthorized')}</h2>
-        <p className="mb-6 text-gray-600">{t('admin.adminOnly')}</p>
-        <button
-          onClick={() => navigate("/")}
-          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          {t('admin.backToHome')}
-        </button>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">{t('admin.unauthorized')}</h2>
+          <p className="mb-6 text-gray-600">{t('admin.adminOnly')}</p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            {t('admin.backToHome')}
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <>

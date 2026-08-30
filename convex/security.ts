@@ -4,7 +4,7 @@ import { ConvexError } from "convex/values";
 import { getAuthUserId } from "./auth";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 
 // Helper function to generate secure OTP
 function generateSecureOTP(): string {
@@ -40,27 +40,6 @@ async function hashToken(token: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// Helper function to log security events
-async function logSecurityEvent(
-  ctx: any,
-  eventType: any,
-  userId?: any,
-  success: boolean = true,
-  details?: string,
-  ipAddress?: string,
-  userAgent?: string
-) {
-  await ctx.db.insert("securityLogs", {
-    userId,
-    eventType,
-    ipAddress,
-    userAgent,
-    details,
-    success,
-    timestamp: Date.now(),
-  });
 }
 
 // Helper function to send OTP email via Resend
@@ -386,9 +365,81 @@ export const requestPasswordResetOTP = action({
     return {
       success: true,
       message: emailSent ? "تم إرسال رمز التحقق بنجاح" : "تم إنشاء رمز التحقق",
-      otp, // Return OTP for development
-      emailSent,
     };
+  },
+});
+
+// Find OTP by identifier (query)
+export const findOTPByIdentifier = query({
+  args: {
+    identifier: v.string(),
+    identifierType: v.union(v.literal("email"), v.literal("phone")),
+  },
+  handler: async (ctx, args) => {
+    const otpRecord = await ctx.db
+      .query("otpVerifications")
+      .withIndex("by_identifier_type", (q) =>
+        q.eq("identifier", args.identifier).eq("identifierType", args.identifierType)
+      )
+      .first();
+    return otpRecord;
+  },
+});
+
+// Update user password (mutation)
+export const updateUserPassword = mutation({
+  args: {
+    userId: v.id("users"),
+    passwordHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      passwordHash: args.passwordHash,
+    });
+  },
+});
+
+// Delete OTP (mutation)
+export const deleteOTP = mutation({
+  args: {
+    otpId: v.id("otpVerifications"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.otpId);
+  },
+});
+
+// Log security event (mutation)
+export const logSecurityEvent = mutation({
+  args: {
+    eventType: v.union(
+      v.literal("login"),
+      v.literal("logout"),
+      v.literal("password_reset_request"),
+      v.literal("password_reset_complete"),
+      v.literal("password_change"),
+      v.literal("otp_verification"),
+      v.literal("failed_login"),
+      v.literal("failed_otp"),
+      v.literal("account_created"),
+      v.literal("account_deleted")
+    ),
+    userId: v.optional(v.id("users")),
+    success: v.boolean(),
+    details: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("securityLogs", {
+      userId: args.userId,
+      eventType: args.eventType,
+      ipAddress: args.ipAddress,
+      userAgent: args.userAgent,
+      details: args.details,
+      success: args.success,
+      timestamp: Date.now(),
+    });
   },
 });
 
@@ -409,13 +460,6 @@ export const verifyOTP = mutation({
       .first();
 
     if (!otpRecord) {
-      await logSecurityEvent(
-        ctx,
-        "failed_otp",
-        undefined,
-        false,
-        `Invalid OTP for ${args.identifier}`
-      );
       throw new ConvexError("رمز التحقق غير صحيح");
     }
 
@@ -424,24 +468,10 @@ export const verifyOTP = mutation({
     }
 
     if (otpRecord.expiresAt < Date.now()) {
-      await logSecurityEvent(
-        ctx,
-        "failed_otp",
-        otpRecord.userId,
-        false,
-        `Expired OTP for ${args.identifier}`
-      );
       throw new ConvexError("رمز التحقق منتهي الصلاحية");
     }
 
     if (otpRecord.attempts >= otpRecord.maxAttempts) {
-      await logSecurityEvent(
-        ctx,
-        "failed_otp",
-        otpRecord.userId,
-        false,
-        `Max attempts reached for ${args.identifier}`
-      );
       throw new ConvexError("تم تجاوز الحد الأقصى للمحاولات. الرجاء طلب رمز جديد");
     }
 
@@ -453,14 +483,6 @@ export const verifyOTP = mutation({
         attempts: otpRecord.attempts + 1,
       });
 
-      await logSecurityEvent(
-        ctx,
-        "failed_otp",
-        otpRecord.userId,
-        false,
-        `Invalid OTP attempt ${otpRecord.attempts + 1}/${otpRecord.maxAttempts} for ${args.identifier}`
-      );
-
       throw new ConvexError("رمز التحقق غير صحيح");
     }
 
@@ -469,15 +491,6 @@ export const verifyOTP = mutation({
       isVerified: true,
       verifiedAt: Date.now(),
     });
-
-    // Log security event
-    await logSecurityEvent(
-      ctx,
-      "otp_verification",
-      otpRecord.userId,
-      true,
-      `OTP verified for ${args.identifier}`
-    );
 
     return {
       success: true,
@@ -488,7 +501,7 @@ export const verifyOTP = mutation({
 });
 
 // Reset password after OTP verification
-export const resetPasswordWithOTP = mutation({
+export const resetPasswordWithOTP = action({
   args: {
     identifier: v.string(),
     identifierType: v.union(v.literal("email"), v.literal("phone")),
@@ -497,54 +510,68 @@ export const resetPasswordWithOTP = mutation({
     confirmPassword: v.string(),
   },
   handler: async (ctx, args) => {
-    // Validate passwords match
-    if (args.newPassword !== args.confirmPassword) {
-      throw new ConvexError("كلمة المرور وتأكيد كلمة المرور غير متطابقين");
+    try {
+      // Validate passwords match
+      if (args.newPassword !== args.confirmPassword) {
+        throw new Error("كلمة المرور وتأكيد كلمة المرور غير متطابقين");
+      }
+
+      // Validate password strength
+      if (args.newPassword.length < 8) {
+        throw new Error("كلمة المرور ضعيفة، يجب أن تكون 8 أحرف على الأقل");
+      }
+
+      // Check for at least one uppercase letter
+      if (!/[A-Z]/.test(args.newPassword)) {
+        throw new Error("كلمة المرور ضعيفة، يجب أن تحتوي على حرف كبير واحد على الأقل");
+      }
+
+      // Check for at least one lowercase letter
+      if (!/[a-z]/.test(args.newPassword)) {
+        throw new Error("كلمة المرور ضعيفة، يجب أن تحتوي على حرف صغير واحد على الأقل");
+      }
+
+      // Check for at least one number
+      if (!/[0-9]/.test(args.newPassword)) {
+        throw new Error("كلمة المرور ضعيفة، يجب أن تحتوي على رقم واحد على الأقل");
+      }
+
+      // Find and verify OTP
+      const otpRecord = await ctx.runQuery(api.security.findOTPByIdentifier, {
+        identifier: args.identifier,
+        identifierType: args.identifierType,
+      });
+
+      if (!otpRecord) {
+        throw new Error("رمز التحقق غير صحيح أو انتهت صلاحيته");
+      }
+
+      if (!otpRecord.isVerified) {
+        throw new Error("يجب التحقق من رمز OTP أولاً");
+      }
+
+      if (otpRecord.expiresAt < Date.now()) {
+        throw new Error("رمز التحقق منتهي الصلاحية، الرجاء طلب رمز جديد");
+      }
+
+      // Update user password with hash using bcrypt
+      const hashedPassword = await bcrypt.hash(args.newPassword, 10);
+      await ctx.runMutation(api.security.updateUserPassword, {
+        userId: otpRecord.userId,
+        passwordHash: hashedPassword,
+      });
+
+      // Delete OTP record
+      await ctx.runMutation(api.security.deleteOTP, { otpId: otpRecord._id });
+
+      return {
+        success: true,
+        message: "تم إعادة تعيين كلمة المرور بنجاح",
+      };
+    } catch (error) {
+      console.error("Error in resetPasswordWithOTP:", error);
+      throw error;
     }
-
-    // Validate password strength
-    if (args.newPassword.length < 8) {
-      throw new ConvexError("كلمة المرور يجب أن تكون 8 أحرف على الأقل");
-    }
-
-    // Find and verify OTP
-    const otpRecord = await ctx.db
-      .query("otpVerifications")
-      .withIndex("by_identifier_type", (q) =>
-        q.eq("identifier", args.identifier).eq("identifierType", args.identifierType)
-      )
-      .first();
-
-    if (!otpRecord || !otpRecord.isVerified) {
-      throw new ConvexError("يجب التحقق من رمز OTP أولاً");
-    }
-
-    if (otpRecord.expiresAt < Date.now()) {
-      throw new ConvexError("رمز التحقق منتهي الصلاحية");
-    }
-
-    // Update user password with hash
-    const hashedPassword = await bcrypt.hash(args.newPassword, 10);
-    await ctx.db.patch(otpRecord.userId, {
-      passwordHash: hashedPassword,
-    });
-
-    // Delete OTP record
-    await ctx.db.delete(otpRecord._id);
-
-    // Log security event
-    await logSecurityEvent(
-      ctx,
-      "password_reset_complete",
-      otpRecord.userId,
-      true,
-      `Password reset for ${args.identifier}`
-    );
-
-    return {
-      success: true,
-      message: "تم إعادة تعيين كلمة المرور بنجاح",
-    };
   },
 });
 
@@ -599,13 +626,12 @@ export const changePassword = mutation({
     });
 
     // Log security event
-    await logSecurityEvent(
-      ctx,
-      "password_change",
+    await ctx.runMutation(api.security.logSecurityEvent, {
+      eventType: "password_change",
       userId,
-      true,
-      "Password changed by user"
-    );
+      success: true,
+      details: "Password changed by user",
+    });
 
     return {
       success: true,

@@ -130,7 +130,7 @@ export const ensureAdminRole = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx, args.sessionToken);
     if (!userId) {
-      throw new ConvexError("يجب تسجيل الدخول أولاً");
+      return null;
     }
 
     const user = await ctx.db.get(userId);

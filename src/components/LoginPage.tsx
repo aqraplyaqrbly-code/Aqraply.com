@@ -225,12 +225,15 @@ function AuthForm({ role, onBack, t }: { role: "merchant" | "captain" | "admin";
 
     try {
       // Use custom auth signIn
-      await signIn(email, password);
+      const signInResult = await signIn(email, password);
 
       // Admin verification runs once only after authentication is confirmed
       if (role === "admin") {
-        const adminResult = await ensureAdminRole({ sessionToken: sessionToken || undefined });
-        if (!adminResult.ok) {
+        if (!signInResult.sessionToken) {
+          throw new Error(t('auth.unauthorizedAdmin'));
+        }
+        const adminResult = await ensureAdminRole({ sessionToken: signInResult.sessionToken });
+        if (!adminResult || !adminResult.ok) {
           throw new Error(t('auth.unauthorizedAdmin'));
         }
       }

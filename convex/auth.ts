@@ -78,71 +78,47 @@ export const signIn = action({
   handler: async (ctx, args): Promise<{ success: boolean; sessionToken: string; userId: Id<"users"> }> => {
     const email = normalizeEmail(args.email);
 
-    console.log("[signIn] Input email:", args.email);
-    console.log("[signIn] Normalized email:", email);
-
     // Find user by email
     const user = await ctx.runQuery(internal.authInternal.findUserByEmail, { email });
 
-    console.log("[signIn] Found user:", user ? "YES" : "NO");
-    if (user) {
-      console.log("[signIn] User ID:", user._id);
-      console.log("[signIn] User email:", user.email);
-      console.log("[signIn] User passwordHash:", user.passwordHash ? "EXISTS" : "MISSING");
-      console.log("[signIn] User passwordHash type:", user.passwordHash?.startsWith("$2") ? "BCRYPT" : "PLAINTEXT");
-    }
-
     if (!user) {
-      console.log("[signIn] ERROR: User not found");
       throw new ConvexError("Invalid credentials");
     }
 
     if (!user.passwordHash) {
-      console.log("[signIn] ERROR: User has no passwordHash");
       throw new ConvexError("Invalid credentials");
     }
 
     // Verify password
     let isPasswordValid: boolean;
     if (user.passwordHash.startsWith("$2") || user.passwordHash.startsWith("$2a") || user.passwordHash.startsWith("$2b")) {
-      console.log("[signIn] Using bcrypt comparison");
       isPasswordValid = await bcrypt.compare(args.password, user.passwordHash);
-      console.log("[signIn] Bcrypt comparison result:", isPasswordValid);
     } else {
-      // Legacy: plain text comparison
-      console.log("[signIn] Using plaintext comparison");
+      // Legacy: plain text comparison - will be upgraded on success
       isPasswordValid = args.password === user.passwordHash;
-      console.log("[signIn] Plaintext comparison result:", isPasswordValid);
     }
 
     if (!isPasswordValid) {
-      console.log("[signIn] ERROR: Password verification failed");
       throw new ConvexError("Invalid credentials");
     }
 
     // Upgrade legacy plain text passwords to bcrypt hash
     if (!user.passwordHash.startsWith("$2") && !user.passwordHash.startsWith("$2a") && !user.passwordHash.startsWith("$2b")) {
-      console.log("[signIn] Upgrading plaintext password to bcrypt");
       const hashedPassword = await bcrypt.hash(args.password, 10);
       await ctx.runMutation(internal.authInternal.upgradeUserPassword, {
         userId: user._id,
         hashedPassword,
       });
-      console.log("[signIn] Password upgraded successfully");
     }
 
     // Generate session token
     const sessionToken = generateSessionToken();
-    console.log("[signIn] Generated sessionToken");
 
     // Store session using internal mutation
     await ctx.runMutation(internal.authInternal.createSession, {
       userId: user._id,
       token: sessionToken,
     });
-    console.log("[signIn] Session created successfully");
-
-    console.log("[signIn] Login successful for user:", user._id);
 
     return {
       success: true,

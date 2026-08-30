@@ -52,8 +52,6 @@ export const sendPushNotification = action({
   handler: async (ctx, args) => {
     const { fcmToken, title, body, data } = args;
 
-    console.log("🔔 Sending notification:", { title, body, fcmToken: fcmToken.substring(0, 20) + "..." });
-
     // تحويل كل قيم الـ data إلى Strings لتفادي رفض Firebase FCM
     const formattedData: Record<string, string> = {};
     if (data) {
@@ -78,10 +76,8 @@ export const sendPushNotification = action({
     try {
       // 1. توليد التوكن
       const accessToken = await getAccessToken();
-      console.log("🔑 Access token generated successfully");
 
       // 2. إرسال الطلب لـ FCM
-      console.log("📡 Sending to FCM HTTP v1 API...");
       const response = await fetch(
         `https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/messages:send`,
         {
@@ -94,16 +90,12 @@ export const sendPushNotification = action({
         }
       );
 
-      console.log("📊 FCM Response status:", response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ FCM Error Body:", errorText);
         throw new ConvexError(`FCM API Error [${response.status}]: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log("✅ Notification sent successfully:", result);
       return { success: true, result };
     } catch (error: any) {
       console.error("❌ Final Execution Error:", error);
