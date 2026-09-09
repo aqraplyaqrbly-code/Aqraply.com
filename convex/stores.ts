@@ -256,6 +256,18 @@ export const createStore = mutation({
       console.error("Error sending store notification:", error);
     }
 
+    // Update user profile with storeId
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (profile) {
+      await ctx.db.patch(profile._id, {
+        storeId: storeId,
+      });
+    }
+
     return storeId;
   },
 });

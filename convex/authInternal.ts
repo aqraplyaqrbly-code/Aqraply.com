@@ -167,7 +167,7 @@ export const createAdminPermissions = internalMutation({
       manage_settings: true,
       view_activity_logs: true,
       isActive: true,
-      createdAt: Date.now(),
+      grantedAt: Date.now(),
       updatedAt: Date.now(),
     });
   },

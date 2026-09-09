@@ -163,13 +163,28 @@ function OrderRow({
       <td className="px-3 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-xs text-gray-500">
         {new Date(order._creationTime).toLocaleDateString("ar-EG")}
       </td>
-      <td className="px-3 sm:px-4 py-2 sm:py-3">
+      <td className="px-3 sm:px-4 py-2 sm:py-3" style={{ position: 'sticky', right: 0, backgroundColor: 'white', boxShadow: '-2px 0 5px rgba(0,0,0,0.1)' }}>
         <div className="flex gap-1 sm:gap-2 flex-wrap">
-          {order.paymentMethod === 'wallet' && order.paymentReceiptImage && (
+          {(() => {
+            console.log('Order payment check:', {
+              orderId: order._id,
+              paymentMethod: order.paymentMethod,
+              paymentReceiptImageUrl: order.paymentReceiptImageUrl,
+              paymentReceiptImage: order.paymentReceiptImage
+            });
+            return null;
+          })()}
+          {order.paymentMethod === 'wallet' && (
             <button
-              onClick={() => window.open(order.paymentReceiptImage, '_blank')}
+              onClick={() => {
+                if (order.paymentReceiptImageUrl) {
+                  window.open(order.paymentReceiptImageUrl, '_blank');
+                } else {
+                  toast.error('لا توجد صورة إيصال لهذا الطلب');
+                }
+              }}
               className="text-[10px] sm:text-xs bg-green-100 text-green-700 hover:bg-green-200 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1"
-              title={t('admin.ordersTable.viewReceipt')}
+              title={order.paymentReceiptImageUrl ? t('admin.ordersTable.viewReceipt') : 'لا توجد صورة إيصال'}
             >
               <Eye className="w-3 h-3" />
             </button>

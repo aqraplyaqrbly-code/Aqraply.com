@@ -25,12 +25,17 @@ import {
   ArrowUpRight,
   Printer,
   Eye,
+  DollarSign,
+  Zap,
+  Wallet,
 } from "lucide-react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContextNew";
 import ProductsManager from "./ProductsManager";
 import StoreSettings from "./StoreSettings";
 import InvoicePrint from "./InvoicePrint";
+import SponsoredProductsManager from "./SponsoredProductsManager";
+import BalanceRequestManager from "./BalanceRequestManager";
 import { Id } from "../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
 
@@ -46,6 +51,8 @@ export default function MerchantDashboardContent({ profile }: MerchantDashboardC
         <Route path="/products" element={<MerchantLayout profile={profile}><ProductsManager /></MerchantLayout>} />
         <Route path="/orders" element={<MerchantLayout profile={profile}><Orders profile={profile} /></MerchantLayout>} />
         <Route path="/analytics" element={<MerchantLayout profile={profile}><Analytics profile={profile} /></MerchantLayout>} />
+        <Route path="/sponsored" element={<MerchantLayout profile={profile}><SponsoredProductsManager /></MerchantLayout>} />
+        <Route path="/balance" element={<MerchantLayout profile={profile}><BalanceRequestManager /></MerchantLayout>} />
         <Route path="/settings" element={<MerchantLayout profile={profile}><StoreSettings /></MerchantLayout>} />
       </Routes>
     </div>
@@ -65,6 +72,8 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
     { path: "/merchant/products", label: t('errors.products'), icon: Package },
     { path: "/merchant/orders", label: t('errors.orders'), icon: ShoppingBag },
     { path: "/merchant/analytics", label: t('errors.reports'), icon: TrendingUp },
+    { path: "/merchant/sponsored", label: "الإعلانات المموّلة", icon: DollarSign },
+    { path: "/merchant/balance", label: "شحن الرصيد", icon: Wallet },
     { path: "/merchant/settings", label: t('errors.settings'), icon: Settings },
   ];
 

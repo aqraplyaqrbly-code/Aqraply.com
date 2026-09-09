@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { mapOldCategoryToNew } from "../../src/constants/categories";
 
@@ -147,5 +147,65 @@ export const migrateStoreProducts = mutation({
       productsUpdated: updated,
       totalProducts: products.length,
     };
+  },
+});
+
+/**
+ * Migration script to remigrate products that were incorrectly assigned to 'other/other'
+ */
+export const remigrateOtherProducts = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Get all products in 'other/other'
+    const products = await ctx.db
+      .query("products")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("mainCategory"), "other"),
+          q.eq(q.field("subcategory"), "other")
+        )
+      )
+      .collect();
+
+    let productsUpdated = 0;
+
+    for (const product of products) {
+      // Remap using the updated OLD_CATEGORY_MAPPING
+      if (product.category) {
+        const mapped = mapOldCategoryToNew(product.category);
+        
+        // Only update if not already 'other/other'
+        if (mapped.mainCategory !== "other" || mapped.subcategory !== "other") {
+          await ctx.db.patch(product._id, {
+            mainCategory: mapped.mainCategory,
+            subcategory: mapped.subcategory,
+          });
+          
+          productsUpdated++;
+        }
+      }
+    }
+    
+    return {
+      productsUpdated,
+      totalOtherProducts: products.length,
+    };
+  },
+});
+
+/**
+ * Query to check product categories
+ */
+export const checkProductCategories = query({
+  args: {},
+  handler: async (ctx: any) => {
+    const products = await ctx.db.query("products").take(10);
+    return products.map((p: any) => ({
+      _id: p._id,
+      nameAr: p.nameAr,
+      category: p.category,
+      mainCategory: p.mainCategory,
+      subcategory: p.subcategory,
+    }));
   },
 });

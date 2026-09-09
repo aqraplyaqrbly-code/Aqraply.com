@@ -71,6 +71,17 @@ export const getAllProductsWithImages = query({
       price: product.price,
       originalPrice: product.originalPrice,
       category: product.category,
+      mainCategory: product.mainCategory,
+      subcategory: product.subcategory,
+      // Deal fields
+      isDeal: product.isDeal,
+      dealEndTime: product.dealEndTime,
+      dealDiscount: product.dealDiscount,
+      // Sponsored fields
+      isSponsored: product.isSponsored,
+      sponsoredPriority: product.sponsoredPriority,
+      sponsoredStartDate: product.sponsoredStartDate,
+      sponsoredEndDate: product.sponsoredEndDate,
       images: product.images?.length ? product.images : product.imageIds || [],
       imageIds: product.imageIds,
       isAvailable: product.isAvailable,

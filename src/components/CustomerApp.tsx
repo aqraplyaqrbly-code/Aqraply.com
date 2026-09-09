@@ -474,6 +474,9 @@ function StoresList() {
           ?.subcategories.find(sub => sub.id === selectedSubcategory);
         if (subCat && p.category === subCat.nameAr) return true;
         
+        // Additional fallback: check if product's mainCategory matches and category matches subcategory name
+        if (p.mainCategory === selectedCategory && p.category === subCat?.nameAr) return true;
+        
         return false;
       });
     }
@@ -743,7 +746,7 @@ function StoresList() {
                 {filteredProducts.slice(0, 8).map((product) => (
                   <button
                     key={product._id}
-                    onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                    onClick={() => navigate(`/customer/store/${product.storeId}#product-${product._id}`)}
                     className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
                   >
                     <h5 className="font-semibold text-gray-900 text-sm">{isArabic ? product.nameAr : product.name}</h5>
@@ -2110,11 +2113,14 @@ function Checkout() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (receiptUrlOverride?: string | null) => {
     if (!address.addressAr) {
       toast.error('يرجى إدخال عنوان التوصيل');
       return;
     }
+
+    const finalReceiptUrl = receiptUrlOverride ?? paymentReceiptUrl;
+    console.log('Submitting order with paymentMethod:', paymentMethod, 'and paymentReceiptUrl:', finalReceiptUrl);
 
     setIsSubmitting(true);
     try {
@@ -2133,7 +2139,7 @@ function Checkout() {
         deliveryAddress: address.address || address.addressAr,
         deliveryAddressAr: address.addressAr,
         paymentMethod,
-        paymentReceiptImage: paymentMethod === 'wallet' ? paymentReceiptUrl : undefined,
+        paymentReceiptImage: paymentMethod === 'wallet' && finalReceiptUrl ? finalReceiptUrl : undefined,
         customerNotes: notes || undefined,
       });
 
@@ -2142,14 +2148,26 @@ function Checkout() {
       navigate(`/customer/order-success/${result.orderId}`);
     } catch (error) {
       let message = 'حدث خطأ أثناء إرسال الطلب';
-      
+
       // معالجة خاصة لـ ConvexError
       if (error && typeof error === 'object' && 'message' in error) {
-        message = String(error.message);
+        const errorMessage = String(error.message);
+        // إخفاء رسائل Convex التقنية
+        if (errorMessage.includes('CONVEX') || errorMessage.includes('ArgumentValidationError') || errorMessage.includes('Validator')) {
+          message = 'حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.';
+        } else {
+          message = errorMessage;
+        }
       } else if (error instanceof Error) {
-        message = error.message;
+        const errorMessage = error.message;
+        // إخفاء رسائل Convex التقنية
+        if (errorMessage.includes('CONVEX') || errorMessage.includes('ArgumentValidationError') || errorMessage.includes('Validator')) {
+          message = 'حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.';
+        } else {
+          message = errorMessage;
+        }
       }
-      
+
       // رسائل مخصصة للأخطاء الشائعة
       if (message.includes('غير متوفر حالياً')) {
         message = 'عذراً، هذا المنتج غير متوفر حالياً';
@@ -2289,7 +2307,11 @@ function Checkout() {
             </button>
 
             <button
-              onClick={() => setShowWalletPayment(true)}
+              onClick={() => {
+                console.log('Setting paymentMethod to wallet');
+                setPaymentMethod('wallet');
+                setShowWalletPayment(true);
+              }}
               className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
                 paymentMethod === 'wallet'
                   ? 'border-orange-500 bg-orange-50'
@@ -2355,11 +2377,13 @@ function Checkout() {
             <WalletPayment
               onBack={() => setShowWalletPayment(false)}
               amount={totals.total}
+              sessionToken={sessionToken}
               onPaymentComplete={(receiptUrl) => {
-                setShowWalletPayment(false);
+                console.log('Payment complete, receiptUrl:', receiptUrl);
                 setPaymentMethod('wallet');
                 setPaymentReceiptUrl(receiptUrl || null);
-                handleSubmit();
+                setShowWalletPayment(false);
+                setTimeout(() => handleSubmit(receiptUrl), 100);
               }}
             />
           </div>

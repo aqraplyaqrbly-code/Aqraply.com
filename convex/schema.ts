@@ -53,6 +53,7 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     address: v.optional(v.string()),
     totalEarnings: v.optional(v.number()),
+    storeId: v.optional(v.id("stores")), // Store ID for merchants
   })
     .index("by_user", ["userId"])
     .index("by_phone", ["phone"])
@@ -133,6 +134,15 @@ export default defineSchema({
     condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition for second-hand items
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+    // Deal/Flash Sale fields
+    isDeal: v.optional(v.boolean()), // New: Is this product currently on deal
+    dealEndTime: v.optional(v.number()), // New: When the deal expires (timestamp)
+    dealDiscount: v.optional(v.number()), // New: Discount percentage for the deal
+    // Sponsored products fields
+    isSponsored: v.optional(v.boolean()), // New: Is this product sponsored (paid promotion)
+    sponsoredPriority: v.optional(v.number()), // New: Priority for sponsored products (higher = more prominent)
+    sponsoredStartDate: v.optional(v.number()), // New: When sponsorship starts
+    sponsoredEndDate: v.optional(v.number()), // New: When sponsorship ends
     // Fields from old data format
     allergens: v.optional(v.array(v.any())),
     certifications: v.optional(v.array(v.any())),
@@ -154,7 +164,9 @@ export default defineSchema({
     .index("by_subcategory", ["subcategory"])
     .index("by_available", ["isAvailable"])
     .index("by_updated", ["updatedAt"])
-    .index("by_condition", ["condition"]),
+    .index("by_condition", ["condition"])
+    .index("by_deal", ["isDeal"])
+    .index("by_sponsored", ["isSponsored"]),
 
   orders: defineTable({
     customerId: v.id("profiles"),
@@ -603,9 +615,53 @@ export default defineSchema({
     manage_settings: v.boolean(),
     view_activity_logs: v.boolean(),
     isActive: v.boolean(),
-    createdAt: v.number(),
+    grantedAt: v.optional(v.number()),
+    createdAt: v.optional(v.number()), // Legacy field for backward compatibility
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_active", ["isActive"]),
+
+  // Search history for personalization
+  searchHistory: defineTable({
+    userId: v.optional(v.id("users")), // Optional for anonymous users
+    sessionId: v.optional(v.string()), // For anonymous users
+    searchTerm: v.string(),
+    resultsCount: v.number(),
+    timestamp: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_session", ["sessionId"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // Browsing history for personalization
+  browsingHistory: defineTable({
+    userId: v.optional(v.id("users")), // Optional for anonymous users
+    sessionId: v.optional(v.string()), // For anonymous users
+    productId: v.id("products"),
+    timestamp: v.number(),
+    duration: v.optional(v.number()), // Time spent viewing product
+  })
+    .index("by_user", ["userId"])
+    .index("by_session", ["sessionId"])
+    .index("by_product", ["productId"])
+    .index("by_timestamp", ["timestamp"]),
+
+
+  balanceRequests: defineTable({
+    userId: v.id("users"),
+    amount: v.number(),
+    paymentMethod: v.string(),
+    notes: v.optional(v.string()),
+    receiptImageId: v.optional(v.id("_storage")),
+    receiptImageUrl: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+    rejectionReason: v.optional(v.string()),
+    processedBy: v.optional(v.id("users")),
+    processedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_created", ["createdAt"]),
 });

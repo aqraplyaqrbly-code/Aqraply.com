@@ -404,6 +404,7 @@ export const getMyOrders = query({
                 phone: store.phone,
               }
             : null,
+          paymentReceiptImageUrl: order.paymentReceiptImage ? await ctx.storage.getUrl(order.paymentReceiptImage) : null,
         };
       }),
     );
@@ -619,6 +620,8 @@ export const getAllOrders = query({
           })
         );
 
+        const paymentReceiptImageUrl = order.paymentReceiptImage ? await ctx.storage.getUrl(order.paymentReceiptImage) : null;
+
         return {
           ...order,
           items: itemsWithProductDetails,
@@ -649,6 +652,7 @@ export const getAllOrders = query({
                 phone: store.phone,
               }
             : null,
+          paymentReceiptImageUrl: paymentReceiptImageUrl,
         };
       }),
     );

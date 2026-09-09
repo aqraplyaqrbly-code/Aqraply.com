@@ -9,9 +9,10 @@ interface WalletPaymentProps {
   onBack: () => void;
   amount?: number;
   onPaymentComplete: (receiptUrl?: string) => void;
+  sessionToken?: string;
 }
 
-export default function WalletPayment({ onBack, amount, onPaymentComplete }: WalletPaymentProps) {
+export default function WalletPayment({ onBack, amount, onPaymentComplete, sessionToken }: WalletPaymentProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
@@ -78,12 +79,11 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
       return;
     }
     
-    setPaymentConfirmed(true);
     setIsUploading(true);
     
     try {
       // Upload receipt image to Convex storage
-      const uploadUrl = await generateUploadUrl();
+      const uploadUrl = await generateUploadUrl({ sessionToken });
       
       const result = await fetch(uploadUrl, {
         method: "POST",
@@ -96,14 +96,14 @@ export default function WalletPayment({ onBack, amount, onPaymentComplete }: Wal
       }
 
       const { storageId } = await result.json();
-      
+
+      console.log('Receipt uploaded successfully, storageId:', storageId);
+
       setIsUploading(false);
       toast.success(t('errors.paymentConfirmed'));
-      
-      // Pass the storage ID to the parent component
-      setTimeout(() => {
-        onPaymentComplete(storageId);
-      }, 500);
+
+      // Pass the storage ID to the parent component immediately
+      onPaymentComplete(storageId);
     } catch (error) {
       setIsUploading(false);
       toast.error(t('errors.errorUploadingReceipt'));

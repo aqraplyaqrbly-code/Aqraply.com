@@ -1,0 +1,126 @@
+import { mutation, query } from "./_generated/server";
+import { ConvexError } from "convex/values";
+import { v } from "convex/values";
+import { getAuthUserId } from "./auth";
+
+// Set product as sponsored
+export const setProductSponsored = mutation({
+  args: {
+    sessionToken: v.optional(v.string()),
+    productId: v.id("products"),
+    isSponsored: v.boolean(),
+    priority: v.optional(v.number()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      throw new Error("Product not found");
+    }
+
+    // Verify user owns the store
+    const store = await ctx.db.get(product.storeId);
+    if (!store || store.ownerId !== userId) {
+      throw new Error("You don't have permission to sponsor this product");
+    }
+
+    await ctx.db.patch(args.productId, {
+      isSponsored: args.isSponsored,
+      sponsoredPriority: args.priority || 1,
+      sponsoredStartDate: args.startDate || Date.now(),
+      sponsoredEndDate: args.endDate,
+    });
+
+    return { success: true };
+  },
+});
+
+// Get sponsored products for homepage
+export const getSponsoredProducts = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 4;
+    const now = Date.now();
+
+    // Get active sponsored products
+    const sponsoredProducts = await ctx.db
+      .query("products")
+      .withIndex("by_sponsored", (q) => q.eq("isSponsored", true))
+      .collect();
+
+    // Filter by date range and sort by priority
+    const activeSponsored = sponsoredProducts
+      .filter(p => {
+        const startDate = p.sponsoredStartDate || 0;
+        const endDate = p.sponsoredEndDate || Infinity;
+        return startDate <= now && endDate >= now && p.isAvailable;
+      })
+      .sort((a, b) => (b.sponsoredPriority || 1) - (a.sponsoredPriority || 1))
+      .slice(0, limit);
+
+    return activeSponsored;
+  },
+});
+
+// Get sponsored products for a specific store
+export const getStoreSponsoredProducts = query({
+  args: {
+    storeId: v.id("stores"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const sponsoredProducts = await ctx.db
+      .query("products")
+      .withIndex("by_store", (q) => q.eq("storeId", args.storeId))
+      .collect();
+
+    return sponsoredProducts.filter(p => {
+      const startDate = p.sponsoredStartDate || 0;
+      const endDate = p.sponsoredEndDate || Infinity;
+      return p.isSponsored === true && startDate <= now && endDate >= now;
+    });
+  },
+});
+
+// Get sponsored products statistics
+export const getSponsoredStats = query({
+  args: {
+    storeId: v.id("stores"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const sponsoredProducts = await ctx.db
+      .query("products")
+      .withIndex("by_store", (q) => q.eq("storeId", args.storeId))
+      .collect();
+
+    const activeSponsored = sponsoredProducts.filter(p => {
+      const startDate = p.sponsoredStartDate || 0;
+      const endDate = p.sponsoredEndDate || Infinity;
+      return p.isSponsored === true && startDate <= now && endDate >= now;
+    });
+
+    const expiredSponsored = sponsoredProducts.filter(p => {
+      const endDate = p.sponsoredEndDate || Infinity;
+      return p.isSponsored === true && endDate < now;
+    });
+
+    return {
+      total: sponsoredProducts.filter(p => p.isSponsored).length,
+      active: activeSponsored.length,
+      expired: expiredSponsored.length,
+    };
+  },
+});
+
+

@@ -39,6 +39,7 @@ export interface User {
     imageUrl?: string;
     address?: string;
     totalEarnings?: number;
+    storeId?: Id<"stores">;
   } | null;
 }
 

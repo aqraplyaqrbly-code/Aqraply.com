@@ -9,6 +9,7 @@ import SystemSettings from "./AdminSystemSettings";
 import AdminSuperStoreManagement from "./AdminSuperStoreManagement";
 import AdminDataExport from "./AdminDataExport";
 import AdminManagement from "./AdminManagement";
+import AdminBalanceRequestsManager from "./AdminBalanceRequestsManager";
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
 import { normalizeArabicText } from "../lib/utils";
 import {
@@ -116,6 +117,7 @@ export default function AdminDashboard() {
           <Route path="/super-stores" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_stores"><AdminSuperStoreManagement /></ProtectedAdminRoute></AdminLayout>} />
           <Route path="/export" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="view_reports"><AdminDataExport /></ProtectedAdminRoute></AdminLayout>} />
           <Route path="/admin-management" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_settings"><AdminManagement /></ProtectedAdminRoute></AdminLayout>} />
+          <Route path="/balance-requests" element={<AdminLayout showChangePassword={showChangePassword} setShowChangePassword={setShowChangePassword}><ProtectedAdminRoute requiredPermission="manage_settings"><AdminBalanceRequestsManager /></ProtectedAdminRoute></AdminLayout>} />
         </Routes>
       </div>
     </>
@@ -147,7 +149,8 @@ function AdminLayout({ children, showChangePassword, setShowChangePassword }: { 
     { path: "/admin/settings", label: "الإعدادات", icon: Settings, permission: "manage_settings" },
     { path: "/admin/super-stores", label: "الإدارة الشاملة", icon: Store, permission: "manage_stores" },
     { path: "/admin/export", label: "تصدير البيانات", icon: Database, permission: "view_reports" },
-    { path: "/admin/admin-management", label: "إدارة الإداريين", icon: Shield, permission: "manage_settings" },
+    { path: "/admin/admin-management", label: "إدارة المشرفين", icon: Shield, permission: "manage_settings" },
+    { path: "/admin/balance-requests", label: "طلبات الشحن", icon: DollarSign, permission: "manage_settings" },
   ];
 
   // Filter nav items based on permissions

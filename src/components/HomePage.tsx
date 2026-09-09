@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { ProductImage } from "./ProductImage";
 import LocationTracker from "./LocationTracker";
 import LanguageSwitcher from "./LanguageSwitcher";
+import CountdownTimer from "./CountdownTimer";
+import SponsoredAdsCarousel from "./SponsoredAdsCarousel";
+import DualSponsoredAds from "./DualSponsoredAds";
 import { useAuth } from "../contexts/AuthContextNew";
 import { normalizeArabicText } from "../lib/utils";
 import { MAIN_CATEGORIES, getSubcategoriesByMainCategory } from "../constants/categories";
@@ -56,6 +59,12 @@ export default function HomePage() {
   } | null>(null);
   const productsRef = useRef<HTMLElement>(null);
 
+  // All Products Section State
+  const [allProductsPage, setAllProductsPage] = useState(1);
+  const [allProductsPerPage] = useState(12);
+  const [allProductsFilter, setAllProductsFilter] = useState<string>('all');
+  const [allProductsSort, setAllProductsSort] = useState<string>('newest');
+
   // Fetch data
   const { sessionToken } = useAuth();
   const stores = useQuery(api.stores.getActiveStores);
@@ -64,10 +73,19 @@ export default function HomePage() {
     ...(sessionToken && { sessionToken }),
   }) || [];
   const systemSettings = useQuery(api.systemSettings.getSettings);
-  
-  // Mutations for seeding/updating products with images
+  const recentlyViewedProducts = useQuery(api.browsingHistory.getRecentlyViewedProducts, sessionToken ? {
+    sessionId: sessionToken,
+    limit: 8,
+  } : "skip") || [];
+  const sponsoredProducts = useQuery(api.sponsoredProducts.getSponsoredProducts, {
+    limit: 10,
+  }) || [];
+
+  // Mutations
   const seedProducts = useMutation(api.products.seedProductsWithImages);
   const updateProductImages = useMutation(api.products.updateAllProductsWithImages);
+  const saveSearch = useMutation(api.searchHistory.saveSearch);
+  const saveProductView = useMutation(api.browsingHistory.saveProductView);
   const [imagesUpdated, setImagesUpdated] = useState(false);
 
   // تحديث الصور تلقائياً عند جلب المنتجات لأول مرة
@@ -128,6 +146,8 @@ export default function HomePage() {
 
   // Filter products by main category and subcategory
   const filteredProducts = useMemo(() => {
+    if (!allProducts) return [];
+    
     // Today's offers - products with discount
     if (selectedCategory === t('errors.todaysOffers')) {
       return allProducts.filter(p => p.originalPrice && p.originalPrice > p.price);
@@ -136,14 +156,21 @@ export default function HomePage() {
     // Filter by subcategory if selected
     if (selectedSubcategory) {
       // Support both new (subcategory) and legacy (category) fields
+      const subCat = MAIN_CATEGORIES.find(cat => cat.id === selectedCategory)
+        ?.subcategories.find(sub => sub.id === selectedSubcategory);
+      
       let filtered = allProducts.filter(p => {
         // Check new structure first
         if (p.subcategory === selectedSubcategory) return true;
         
-        // Fallback to legacy structure
-        const subCat = MAIN_CATEGORIES.find(cat => cat.id === selectedCategory)
-          ?.subcategories.find(sub => sub.id === selectedSubcategory);
+        // Fallback to legacy structure - check category field
         if (subCat && p.category === subCat.nameAr) return true;
+        
+        // Additional fallback: check if product's mainCategory matches and category matches subcategory name
+        if (p.mainCategory === selectedCategory && p.category === subCat?.nameAr) return true;
+        
+        // Last fallback: check if category matches subcategory name regardless of mainCategory
+        if (p.category === subCat?.nameAr) return true;
         
         return false;
       });
@@ -153,34 +180,92 @@ export default function HomePage() {
 
     // Filter by main category
     // Support both new (mainCategory) and legacy (category) fields
-    let storesInCategory = stores.filter(s => s.mainCategory === selectedCategory);
+    let storesInCategory = stores?.filter(s => s.mainCategory === selectedCategory) || [];
     
     // Also include stores with legacy category mapping
     const mainCat = MAIN_CATEGORIES.find(cat => cat.id === selectedCategory);
     if (mainCat) {
-      const legacyStores = stores.filter(s => {
-        if (!s.category) return false;
-        return mainCat.subcategories.some(sub => sub.nameAr === s.category);
-      });
-      storesInCategory = [...storesInCategory, ...legacyStores];
+      const legacyStores = stores?.filter(s => s.category === mainCat.nameAr) || [];
+      storesInCategory = [...new Set([...storesInCategory, ...legacyStores])];
     }
     
-    if (storesInCategory.length === 0) return [];
-
-    // Get all products from stores in this category
+    // Get products from stores in the category
     const storeIds = storesInCategory.map(s => s._id);
-    let filtered = allProducts.filter(p => storeIds.includes(p.storeId));
+    const productsInCategory = allProducts.filter(p => storeIds.includes(p.storeId));
     
-    // If no products found with store-based filtering, try direct product category filtering
-    if (filtered.length === 0 && mainCat) {
-      filtered = allProducts.filter(p => {
-        if (!p.category) return false;
-        return mainCat.subcategories.some(sub => sub.nameAr === p.category);
-      });
+    return productsInCategory;
+  }, [allProducts, stores, selectedCategory, selectedSubcategory, t]);
+
+  // Get unique products for each section to avoid duplication
+  const todaysOffersProducts = useMemo(() => {
+    // Filter products that are on deal (isDeal = true and dealEndTime > now)
+    const now = Date.now();
+    const dealProducts = allProducts.filter(p => 
+      (p.isDeal === true && p.dealEndTime && p.dealEndTime > now) ||
+      (p.originalPrice && p.originalPrice > p.price)
+    ).slice(0, 8);
+    return dealProducts;
+  }, [allProducts]);
+
+  const bestSellingProducts = useMemo(() => {
+    // Products with multiple images (indicates popularity)
+    const bestSelling = allProducts.filter(p => p.images && p.images.length > 1);
+    // Exclude products already in today's offers
+    const todaysOffersIds = new Set(todaysOffersProducts.map(p => p._id));
+    return bestSelling.filter(p => !todaysOffersIds.has(p._id)).slice(0, 8);
+  }, [allProducts, todaysOffersProducts]);
+
+  const newProducts = useMemo(() => {
+    // Newest products by createdAt
+    const newest = allProducts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    // Exclude products already in today's offers or best selling
+    const usedIds = new Set([...todaysOffersProducts.map(p => p._id), ...bestSellingProducts.map(p => p._id)]);
+    return newest.filter(p => !usedIds.has(p._id)).slice(0, 8);
+  }, [allProducts, todaysOffersProducts, bestSellingProducts]);
+
+  // All Products Section Logic
+  const filteredAllProducts = useMemo(() => {
+    let filtered = [...allProducts];
+    
+    // Apply category filter
+    if (allProductsFilter !== 'all') {
+      const mainCat = MAIN_CATEGORIES.find(cat => cat.id === allProductsFilter);
+      if (mainCat) {
+        filtered = filtered.filter(p => {
+          if (p.mainCategory === allProductsFilter) return true;
+          if (p.category === mainCat.nameAr) return true;
+          return false;
+        });
+      }
+    }
+    
+    // Apply sorting
+    switch (allProductsSort) {
+      case 'newest':
+        filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        break;
+      case 'price_low':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price_high':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'name':
+        filtered.sort((a, b) => a.nameAr.localeCompare(b.nameAr, 'ar'));
+        break;
+      default:
+        break;
     }
     
     return filtered;
-  }, [selectedCategory, selectedSubcategory, allProducts, stores, t]);
+  }, [allProducts, allProductsFilter, allProductsSort]);
+
+  const paginatedAllProducts = useMemo(() => {
+    const startIndex = (allProductsPage - 1) * allProductsPerPage;
+    return filteredAllProducts.slice(startIndex, startIndex + allProductsPerPage);
+  }, [filteredAllProducts, allProductsPage, allProductsPerPage]);
+
+  const totalAllProductsPages = Math.ceil(filteredAllProducts.length / allProductsPerPage);
 
   // Handle location search
   const handleLocationSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,24 +299,33 @@ export default function HomePage() {
 
     setFilteredStores(filteredStores);
     setSearchFilteredProducts(filteredProducts);
-    
-    // Show first matching store or product at top
-    if (filteredStores.length > 0) {
-      // Move first matching store to top of stores list
-      const firstStore = filteredStores[0];
-      // You can add logic here to highlight or promote this store
-    }
-    
-    if (filteredProducts.length > 0) {
-      // You can add logic here to show first matching product prominently
-      const firstProduct = filteredProducts[0];
-      // You can add logic here to highlight or promote this product
-    }
   };
+
+  // Save search to history (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchLocation.trim().length >= 2) {
+        saveSearch({
+          searchTerm: searchLocation.trim(),
+          resultsCount: filteredStores.length + searchFilteredProducts.length,
+          sessionId: sessionToken,
+        }).catch(err => console.error("Failed to save search:", err));
+      }
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchLocation, sessionToken, saveSearch]);
 
   // Handle store navigation from search results
   const handleStoreSelect = (storeId: string) => {
     navigate(`/customer/store/${storeId}`);
+    setSearchLocation("");
+    setFilteredStores([]);
+  };
+
+  // Handle product navigation from search results
+  const handleProductSelect = (productId: string, storeId: string) => {
+    navigate(`/customer/store/${storeId}#product-${productId}`);
     setSearchLocation("");
     setFilteredStores([]);
   };
@@ -446,9 +540,9 @@ export default function HomePage() {
       </div>
 
       <main>
-        {/* Hero Section */}
-        <section className="relative h-[350px] sm:h-[400px] md:h-[450px] overflow-hidden bg-gradient-to-br from-orange-600 via-red-600 to-orange-700">
-          {/* Video Background */}
+        {/* Hero Section with Sponsored Ads */}
+        <section className="relative h-[470px] overflow-hidden bg-gradient-to-br from-orange-600 via-red-600 to-orange-700 py-0">
+          {/* Video Background - Covers entire section */}
           <video
             autoPlay
             loop
@@ -471,181 +565,232 @@ export default function HomePage() {
           {/* Gradient overlay - Light Red */}
           <div className="absolute inset-0 bg-gradient-to-r from-orange-800/50 via-red-700/45 to-orange-800/50"></div>
 
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <div className="max-w-2xl w-full">
-              {/* Main heading - Always Visible */}
-              <h1 className="text-2xl md:text-4xl font-black text-white mb-3 leading-tight drop-shadow-2xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
-                {t('errors.discoverNearbyStores')} <br />
-                <span className="bg-gradient-to-r from-yellow-200 via-yellow-100 to-orange-200 bg-clip-text text-transparent drop-shadow-2xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
-                  {t('errors.nearbyStores')}
-                </span>
-              </h1>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 h-full">
+            {/* Hero Content - Left Side */}
+            <div className="flex-1">
+              <div className="max-w-2xl w-full">
+                {/* Main heading - Always Visible */}
+                <h1 className="text-2xl md:text-4xl font-black text-white mb-3 leading-tight drop-shadow-2xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
+                  {t('errors.discoverNearbyStores')} <br />
+                  <span className="bg-gradient-to-r from-yellow-200 via-yellow-100 to-orange-200 bg-clip-text text-transparent drop-shadow-2xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
+                    {t('errors.nearbyStores')}
+                  </span>
+                </h1>
 
-              {/* Description - Always Visible */}
-              <p className="text-xs md:text-sm text-white mb-4 leading-relaxed font-semibold drop-shadow-lg" style={{textShadow: '0 3px 15px rgba(0,0,0,0.7)'}}>
-                {t('errors.smartPlatform')}
-              </p>
-              <p className="text-xs md:text-xs text-white mb-6 font-semibold drop-shadow-lg" style={{textShadow: '0 3px 15px rgba(0,0,0,0.7)'}}>
-                {t('errors.orderNow')}
-              </p>
+                {/* Description - Always Visible */}
+                <p className="text-xs md:text-sm text-white mb-4 leading-relaxed font-semibold drop-shadow-lg" style={{textShadow: '0 3px 15px rgba(0,0,0,0.7)'}}>
+                  {t('errors.smartPlatform')}
+                </p>
+                <p className="text-xs md:text-xs text-white mb-6 font-semibold drop-shadow-lg" style={{textShadow: '0 3px 15px rgba(0,0,0,0.7)'}}>
+                  {t('errors.orderNow')}
+                </p>
 
-              {/* Search Bar - Always Visible */}
-              <div className="relative max-w-xl mb-8">
-                <div className="bg-white rounded-2xl shadow-2xl p-2.5 flex items-center gap-2 hover:shadow-3xl transition-shadow" style={{boxShadow: '0 10px 40px rgba(0,0,0,0.25)'}}>
-                  <MapPin className="w-5 h-5 text-orange-600 ms-3 flex-shrink-0 font-bold" />
-                  <input
-                    type="text"
-                    placeholder={t('errors.enterLocation')}
-                    className="flex-1 px-3 py-2.5 outline-none text-gray-700 text-sm font-semibold placeholder-gray-500"
-                    value={searchLocation}
-                    onChange={handleLocationSearch}
-                  />
-                  <button
-                    onClick={() => navigate("/customer")}
-                    className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-xl transition-all hover:scale-105 flex-shrink-0 drop-shadow-lg"
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Search Bar - Always Visible */}
+                <div className="relative max-w-xl mb-8">
+                  <div className="bg-white rounded-2xl shadow-2xl p-2.5 flex items-center gap-2 hover:shadow-3xl transition-shadow" style={{boxShadow: '0 10px 40px rgba(0,0,0,0.25)'}}>
+                    <MapPin className="w-5 h-5 text-orange-600 ms-3 flex-shrink-0 font-bold" />
+                    <input
+                      type="text"
+                      placeholder={t('errors.enterLocation')}
+                      className="flex-1 px-3 py-2.5 outline-none text-gray-700 text-sm font-semibold placeholder-gray-500"
+                      value={searchLocation}
+                      onChange={handleLocationSearch}
+                    />
+                    <button
+                      onClick={() => navigate("/customer")}
+                      className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-xl transition-all hover:scale-105 flex-shrink-0 drop-shadow-lg"
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                {/* Search Results Dropdown */}
-                {searchLocation && (filteredStores.length > 0 || searchFilteredProducts.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-80 overflow-y-auto z-40">
-                    {filteredStores.length > 0 && (
-                      <div className="border-b border-gray-200">
-                        <div className="px-6 py-2 bg-orange-50 text-orange-700 font-bold text-sm">
-                          المتاجر ({filteredStores.length})
-                        </div>
-                        {filteredStores.map((store) => (
-                          <button
-                            key={store._id}
-                            onClick={() => handleStoreSelect(store._id)}
-                            className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="text-start">
-                                <h4 className="font-bold text-gray-900">{store.nameAr}</h4>
-                                <p className="text-sm text-gray-600">{store.location?.addressAr}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
-                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                  <span className="font-semibold text-sm">{store.rating}</span>
+                  {/* Search Results Dropdown */}
+                  {searchLocation && (filteredStores.length > 0 || searchFilteredProducts.length > 0) && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-80 overflow-y-auto z-40">
+                      {filteredStores.length > 0 && (
+                        <div className="border-b border-gray-200">
+                          <div className="px-6 py-2 bg-orange-50 text-orange-700 font-bold text-sm">
+                            المتاجر ({filteredStores.length})
+                          </div>
+                          {filteredStores.map((store) => (
+                            <button
+                              key={store._id}
+                              onClick={() => handleStoreSelect(store._id)}
+                              className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="text-start">
+                                  <h4 className="font-bold text-gray-900">{store.nameAr}</h4>
+                                  <p className="text-sm text-gray-600">{store.location?.addressAr}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
+                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                    <span className="font-semibold text-sm">{store.rating}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {searchFilteredProducts.length > 0 && (
-                      <div>
-                        <div className="px-6 py-2 bg-blue-50 text-blue-700 font-bold text-sm">
-                          المنتجات ({searchFilteredProducts.length})
+                            </button>
+                          ))}
                         </div>
-                        {searchFilteredProducts.slice(0, 5).map((product) => (
-                          <button
-                            key={product._id}
-                            onClick={() => handleStoreSelect(product.storeId)}
-                            className="w-full px-6 py-3 text-right hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="text-start">
-                                <h4 className="font-bold text-gray-900 text-sm">{product.nameAr}</h4>
-                                <p className="text-xs text-gray-600">{product.category}</p>
+                      )}
+                      {searchFilteredProducts.length > 0 && (
+                        <div>
+                          <div className="px-6 py-2 bg-blue-50 text-blue-700 font-bold text-sm">
+                            المنتجات ({searchFilteredProducts.length})
+                          </div>
+                          {searchFilteredProducts.slice(0, 5).map((product) => (
+                            <button
+                              key={product._id}
+                              onClick={() => handleProductSelect(product._id, product.storeId)}
+                              className="w-full px-6 py-3 text-right hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="text-start">
+                                  <h4 className="font-bold text-gray-900 text-sm">{product.nameAr}</h4>
+                                  <p className="text-xs text-gray-600">{product.category}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-orange-600">{product.price} EGP</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-orange-600">{product.price} EGP</span>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {searchLocation && filteredStores.length === 0 && searchFilteredProducts.length === 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
-                    <p className="text-gray-600">{t('errors.noStoresFound')}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Animated Stats - Always Visible */}
-              <div className="grid grid-cols-3 gap-2 md:gap-4">
-                {/* Stores Card */}
-                <div className="text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400/40 to-yellow-400/40 rounded-xl blur-lg"></div>
-                    <div className="relative bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-3 border border-white/40 hover:border-white/60 transition-all hover:bg-white/25 shadow-2xl" style={{boxShadow: '0 8px 32px rgba(0,0,0,0.3)'}}>
-                      <div className="flex items-center justify-center gap-0.5 mb-1">
-                        <span className="text-3xl md:text-4xl font-black text-white tabular-nums drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>
-                          {displayStats.stores}
-                        </span>
-                        <span className="text-2xl text-yellow-300 font-black drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>+</span>
-                      </div>
-                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('customer.home.stores')}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
+
+                  {searchLocation && filteredStores.length === 0 && searchFilteredProducts.length === 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
+                      <p className="text-gray-600">{t('errors.noStoresFound')}</p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Orders Card */}
-                <div className="text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/40 to-orange-400/40 rounded-xl blur-lg"></div>
-                    <div className="relative bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-3 border border-white/40 hover:border-white/60 transition-all hover:bg-white/25 shadow-2xl" style={{boxShadow: '0 8px 32px rgba(0,0,0,0.3)'}}>
-                      <div className="flex items-center justify-center gap-0.5 mb-1">
-                        <span className="text-3xl md:text-4xl font-black text-white tabular-nums drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>
-                          {(displayStats.orders / 1000).toFixed(1)}
-                        </span>
-                        <span className="text-xl text-yellow-300 font-black drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>K</span>
+                {/* Animated Stats - Always Visible */}
+                <div className="grid grid-cols-3 gap-2 md:gap-4">
+                  {/* Stores Card */}
+                  <div className="text-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/40 to-yellow-400/40 rounded-xl blur-lg"></div>
+                      <div className="relative bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-3 border border-white/40 hover:border-white/60 transition-all hover:bg-white/25 shadow-2xl" style={{boxShadow: '0 8px 32px rgba(0,0,0,0.3)'}}>
+                        <div className="flex items-center justify-center gap-0.5 mb-1">
+                          <span className="text-3xl md:text-4xl font-black text-white tabular-nums drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>
+                            {displayStats.stores}
+                          </span>
+                          <span className="text-2xl text-yellow-300 font-black drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>+</span>
+                        </div>
+                        <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('customer.home.stores')}</div>
                       </div>
-                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('customer.home.orders')}</div>
                     </div>
                   </div>
-                </div>
 
-                {/* Delivery Time Card */}
-                <div className="text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400/40 to-red-400/40 rounded-xl blur-lg"></div>
-                    <div className="relative bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-3 border border-white/40 hover:border-white/60 transition-all hover:bg-white/25 shadow-2xl" style={{boxShadow: '0 8px 32px rgba(0,0,0,0.3)'}}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Clock className="w-5 h-5 text-yellow-300 drop-shadow-lg" style={{filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}} />
-                        <span className="text-3xl md:text-4xl font-black text-white drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>15</span>
+                  {/* Orders Card */}
+                  <div className="text-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/40 to-orange-400/40 rounded-xl blur-lg"></div>
+                      <div className="relative bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-3 border border-white/40 hover:border-white/60 transition-all hover:bg-white/25 shadow-2xl" style={{boxShadow: '0 8px 32px rgba(0,0,0,0.3)'}}>
+                        <div className="flex items-center justify-center gap-0.5 mb-1">
+                          <span className="text-3xl md:text-4xl font-black text-white tabular-nums drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>
+                            {(displayStats.orders / 1000).toFixed(1)}
+                          </span>
+                          <span className="text-xl text-yellow-300 font-black drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>K</span>
+                        </div>
+                        <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('customer.home.orders')}</div>
                       </div>
-                      <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('errors.minute')}</div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Time Card */}
+                  <div className="text-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/40 to-red-400/40 rounded-xl blur-lg"></div>
+                      <div className="relative bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-xl p-3 border border-white/40 hover:border-white/60 transition-all hover:bg-white/25 shadow-2xl" style={{boxShadow: '0 8px 32px rgba(0,0,0,0.3)'}}>
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Clock className="w-5 h-5 text-yellow-300 drop-shadow-lg" style={{filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}} />
+                          <span className="text-3xl md:text-4xl font-black text-white drop-shadow-lg" style={{textShadow: '0 3px 10px rgba(0,0,0,0.6)'}}>15</span>
+                        </div>
+                        <div className="text-white text-xs md:text-xs font-bold drop-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>{t('errors.minute')}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Sponsored Ads - Right Side (Two cards) */}
+            {sponsoredProducts.length > 0 && (
+              <div className="hidden lg:flex gap-4 w-auto flex-shrink-0 h-[470px]">
+                {/* First carousel */}
+                <div className="w-[360px] h-[470px]">
+                  <DualSponsoredAds 
+                    products={sponsoredProducts.filter((_, i) => i % 2 === 0)} 
+                    isSideLayout={true} 
+                  />
+                </div>
+                {/* Second carousel */}
+                <div className="w-[360px] h-[470px]">
+                  <DualSponsoredAds 
+                    products={sponsoredProducts.filter((_, i) => i % 2 === 1)} 
+                    isSideLayout={true} 
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </section>
+
+        {/* Mobile Sponsored Ads - Only show on small screens */}
+        {sponsoredProducts.length > 0 && (
+          <section className="lg:hidden py-8 bg-gradient-to-r from-orange-50 to-red-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <DualSponsoredAds products={sponsoredProducts} />
+            </div>
+          </section>
+        )}
 
         {/* Featured Product Sections */}
         <section className="py-12 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* عروض اليوم */}
-            {allProducts.filter(p => p.originalPrice && p.originalPrice > p.price).length > 0 && (
+            {todaysOffersProducts.length > 0 && (
               <div className="mb-16">
-                <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">🎉 {t('errors.todaysOffers')}</h2>
-                  <p className="text-gray-600">{t('errors.enjoyBestDiscounts')}</p>
+                <div className="mb-8 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">🔥 {t('errors.todaysOffers')}</h2>
+                    <p className="text-gray-600">{t('errors.limitedTime')}</p>
+                  </div>
+                  {/* Global Countdown for deals */}
+                  {(() => {
+                    const dealEndTimes = todaysOffersProducts
+                      .filter(p => p.isDeal && p.dealEndTime)
+                      .map(p => p.dealEndTime || 0);
+                    return dealEndTimes.length > 0 && (
+                      <CountdownTimer 
+                        endTime={Math.max(...dealEndTimes)} 
+                      />
+                    );
+                  })()}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  {allProducts.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 8).map((product) => (
+                  {todaysOffersProducts.map((product) => (
                     <div
                       key={product._id}
-                      onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                      onClick={() => {
+                        navigate(`/customer/store/${product.storeId}`);
+                        saveProductView({ productId: product._id, sessionId: sessionToken });
+                      }}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-red-300"
                     >
                       <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
-                            -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                        <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                          🔥 {t('errors.discount')}
+                        </div>
+                        {product.isDeal && product.dealEndTime && (
+                          <div className="absolute top-3 left-3">
+                            <CountdownTimer endTime={product.dealEndTime} />
                           </div>
                         )}
                       </div>
@@ -668,6 +813,8 @@ export default function HomePage() {
                 </div>
               </div>
             )}
+
+
 
             {/* أفضل المنتجات */}
             {allProducts.filter(p => p.price < 500).length > 0 && (
@@ -707,14 +854,14 @@ export default function HomePage() {
             )}
 
             {/* الأكثر مبيعا */}
-            {allProducts.filter(p => p.images && p.images.length > 1).length > 0 && (
+            {bestSellingProducts.length > 0 && (
               <div className="mb-16">
                 <div className="mb-8">
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">🔥 {t('errors.bestSelling')}</h2>
                   <p className="text-gray-600">{t('errors.millionsChose')}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  {allProducts.filter(p => p.images && p.images.length > 1).slice(0, 8).map((product) => (
+                  {bestSellingProducts.map((product) => (
                     <div
                       key={product._id}
                       onClick={() => navigate(`/customer/store/${product.storeId}`)}
@@ -744,17 +891,20 @@ export default function HomePage() {
             )}
 
             {/* المنتجات الجديدة */}
-            {allProducts.length > 0 && (
+            {newProducts.length > 0 && (
               <div className="mb-16">
                 <div className="mb-8">
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">✨ {t('errors.newProducts')}</h2>
                   <p className="text-gray-600">{t('errors.latestAdditions')}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  {allProducts.sort((a, b) => (b._creationTime || 0) - (a._creationTime || 0)).slice(0, 8).map((product) => (
+                  {newProducts.map((product) => (
                     <div
                       key={product._id}
-                      onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                      onClick={() => {
+                        navigate(`/customer/store/${product.storeId}`);
+                        saveProductView({ productId: product._id, sessionId: sessionToken });
+                      }}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-blue-300"
                     >
                       <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
@@ -779,6 +929,154 @@ export default function HomePage() {
                 </div>
               </div>
             )}
+
+            {/* اقتراحات لك - بناءً على سجل التصفح */}
+            {recentlyViewedProducts.length > 0 && (
+              <div className="mb-16">
+                <div className="mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">💡 اقتراحات لك</h2>
+                  <p className="text-gray-600">بناءً على تصفحك السابق</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                  {recentlyViewedProducts.map((product) => (
+                    <div
+                      key={product._id}
+                      onClick={() => {
+                        navigate(`/customer/store/${product.storeId}`);
+                        saveProductView({ productId: product._id, sessionId: sessionToken });
+                      }}
+                      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-purple-300"
+                    >
+                      <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                        <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <div className="absolute top-3 right-3 bg-purple-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                          💡 مقترح
+                        </div>
+                      </div>
+                      <div className="flex-1 p-4 flex flex-col">
+                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                          {isArabic ? product.nameAr : product.name}
+                        </h4>
+                        <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-bold text-orange-600">{product.price}</span>
+                            <span className="text-xs text-gray-600">EGP</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* جميع المنتجات */}
+            <div className="mb-16">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">📦 جميع المنتجات</h2>
+                <p className="text-gray-600">تصفح جميع المنتجات المتاحة</p>
+              </div>
+
+              {/* Filters and Sort */}
+              <div className="mb-6 flex flex-wrap gap-4 items-center">
+                {/* Category Filter */}
+                <select
+                  value={allProductsFilter}
+                  onChange={(e) => { setAllProductsFilter(e.target.value); setAllProductsPage(1); }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="all">جميع التصنيفات</option>
+                  {MAIN_CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                  ))}
+                </select>
+
+                {/* Sort */}
+                <select
+                  value={allProductsSort}
+                  onChange={(e) => { setAllProductsSort(e.target.value); setAllProductsPage(1); }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="newest">الأحدث</option>
+                  <option value="price_low">السعر: من الأقل</option>
+                  <option value="price_high">السعر: من الأعلى</option>
+                  <option value="name">الاسم</option>
+                </select>
+
+                {/* Results Count */}
+                <span className="text-sm text-gray-600">
+                  {filteredAllProducts.length} منتج
+                </span>
+              </div>
+
+              {/* Products Grid */}
+              {paginatedAllProducts.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                    {paginatedAllProducts.map((product) => (
+                      <div
+                        key={product._id}
+                        onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                        className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-purple-300"
+                      >
+                        <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                          <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          {product.originalPrice && product.originalPrice > product.price && (
+                            <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                              -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 p-4 flex flex-col">
+                          <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                            {isArabic ? product.nameAr : product.name}
+                          </h4>
+                          <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-xl font-bold text-orange-600">{product.price}</span>
+                              <span className="text-xs text-gray-600">EGP</span>
+                            </div>
+                            {product.originalPrice && product.originalPrice > product.price && (
+                              <div className="text-xs text-gray-400 line-through">{product.originalPrice} EGP</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalAllProductsPages > 1 && (
+                    <div className="flex justify-center items-center gap-2">
+                      <button
+                        onClick={() => setAllProductsPage(prev => Math.max(1, prev - 1))}
+                        disabled={allProductsPage === 1}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      >
+                        السابق
+                      </button>
+                      <span className="px-4 py-2">
+                        صفحة {allProductsPage} من {totalAllProductsPages}
+                      </span>
+                      <button
+                        onClick={() => setAllProductsPage(prev => Math.min(totalAllProductsPages, prev + 1))}
+                        disabled={allProductsPage === totalAllProductsPages}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      >
+                        التالي
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+                  <Package className="w-20 h-20 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg font-semibold">
+                    لا توجد منتجات
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

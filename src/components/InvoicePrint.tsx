@@ -189,7 +189,7 @@ export default function InvoicePrint({ order, onClose }: InvoicePrintProps) {
               <div>
                 <p className="text-gray-500">طريقة الدفع</p>
                 <p className="font-semibold text-gray-900">
-                  {paymentMethod === 'cash' ? 'نقدي' : paymentMethod === 'card' ? 'بطاقة' : paymentMethod}
+                  {paymentMethod === 'cash' ? 'نقدي' : paymentMethod === 'wallet' ? 'محفظة إلكترونية' : paymentMethod === 'card' ? 'بطاقة' : paymentMethod}
                 </p>
               </div>
               <div>

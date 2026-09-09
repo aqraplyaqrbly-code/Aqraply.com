@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Package, User, MapPin, Phone, Mail, Clock, DollarSign, Store, Star, TrendingUp, Code } from "lucide-react";
+import { Package, User, MapPin, Phone, Mail, Clock, DollarSign, Store, Star, TrendingUp, Code, XCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContextNew";
@@ -10,9 +10,11 @@ import { useTranslation } from "react-i18next";
 const currency = "EGP";
 
 export default function AdminOrdersManager() {
+  console.log('AdminOrdersManager component rendering');
   const { t } = useTranslation();
   const { sessionToken, isAuthenticated } = useAuth();
   const orders = useQuery(api.orders.getAllOrders, isAuthenticated && sessionToken ? { sessionToken } : "skip") || [];
+  console.log('Orders loaded:', orders.length);
   const captains = useQuery(api.captains.getAvailableCaptains, isAuthenticated && sessionToken ? { sessionToken } : "skip") || [];
   const assignCaptain = useMutation(api.admin.assignCaptainToOrder);
   const updateStatus = useMutation(api.orders.updateOrderStatus);
@@ -51,6 +53,8 @@ export default function AdminOrdersManager() {
 
   const [selectedOrder, setSelectedOrder] = useState<Id<"orders"> | null>(null);
   const [selectedCaptain, setSelectedCaptain] = useState<Id<"users"> | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const handleAssignCaptain = useCallback(async () => {
     if (!selectedOrder || !selectedCaptain) {
@@ -171,8 +175,8 @@ export default function AdminOrdersManager() {
 
         {/* Orders Table */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto" style={{ overflowX: 'auto', maxWidth: '100%' }}>
+            <table className="w-full" style={{ borderCollapse: 'collapse', minWidth: '1800px' }}>
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.orderNumber')}</th>
@@ -184,7 +188,7 @@ export default function AdminOrdersManager() {
                   <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.store')}</th>
                   <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.captain')}</th>
                   <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.date')}</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('errors.actions')}</th>
+                  <th className="px-8 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ backgroundColor: '#fef3c7', minWidth: '120px', position: 'sticky', right: 0, zIndex: 10, boxShadow: '-2px 0 5px rgba(0,0,0,0.1)' }}>{t('errors.actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -278,13 +282,31 @@ export default function AdminOrdersManager() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(order._creationTime).toLocaleDateString('ar-EG')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-left">
-                      <button
-                        onClick={() => setSelectedOrder(order._id)}
-                        className="text-purple-600 hover:text-purple-900 font-medium text-sm"
+                    <td className="px-8 py-4 whitespace-nowrap text-center" style={{ minWidth: '100px', backgroundColor: '#f3f4f6', position: 'sticky', right: 0, zIndex: 9, boxShadow: '-2px 0 5px rgba(0,0,0,0.1)' }}>
+                      <div
+                        onClick={() => {
+                          console.log('View button clicked for order:', order._id);
+                          setSelectedOrder(order._id);
+                        }}
+                        style={{
+                          backgroundColor: '#7c3aed',
+                          color: 'white',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'inline-block',
+                          minWidth: '80px',
+                          textAlign: 'center',
+                          border: '2px solid #5b21b6',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
                       >
-                        {t('errors.view')}
-                      </button>
+                        عرض
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -295,7 +317,13 @@ export default function AdminOrdersManager() {
 
         {/* Order Details */}
         <div className="grid gap-6">
-          {orders.filter(order => selectedOrder === order._id).map((order) => (
+          {orders.filter(order => selectedOrder === order._id).map((order) => {
+            console.log('Order details:', {
+              paymentMethod: order.paymentMethod,
+              paymentReceiptImageUrl: order.paymentReceiptImageUrl,
+              paymentReceiptImage: order.paymentReceiptImage
+            });
+            return (
             <div key={order._id} className="bg-white rounded-2xl shadow-sm p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -313,6 +341,14 @@ export default function AdminOrdersManager() {
                   <p className="text-2xl font-bold text-purple-600">{order.total.toFixed(2)} {currency}</p>
                   <p className="text-xs text-gray-500">{t('errors.total')}</p>
                 </div>
+              </div>
+
+              {/* طريقة الدفع */}
+              <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">طريقة الدفع</h4>
+                <p className="text-sm font-medium text-blue-700">
+                  {order.paymentMethod === 'cash' ? 'كاش' : order.paymentMethod === 'wallet' ? 'محفظة إلكترونية' : order.paymentMethod === 'card' ? 'بطاقة' : order.paymentMethod}
+                </p>
               </div>
 
               {/* معلومات المتجر */}
@@ -545,6 +581,33 @@ export default function AdminOrdersManager() {
                 </div>
               </div>
 
+              {/* صورة الإيصال للدفع بالمحفظة */}
+              {order.paymentMethod === "wallet" && (
+                <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-green-600" />
+                    صورة الإيصال
+                  </h4>
+                  {order.paymentReceiptImageUrl ? (
+                    <img
+                      src={order.paymentReceiptImageUrl}
+                      alt="صورة الإيصال"
+                      onClick={() => {
+                        setSelectedImageUrl(order.paymentReceiptImageUrl);
+                        setShowImageModal(true);
+                      }}
+                      className="w-32 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-green-300"
+                      onError={(e) => {
+                        console.error('Error loading receipt image:', order.paymentReceiptImageUrl);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-500">لم يتم رفع صورة الإيصال</p>
+                  )}
+                </div>
+              )}
+
               {/* تعيين الكابتن */}
               {order.status === "confirmed" && (
                 <div className="bg-purple-50 rounded-xl p-4">
@@ -621,7 +684,8 @@ export default function AdminOrdersManager() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {orders.length === 0 && (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
@@ -632,6 +696,28 @@ export default function AdminOrdersManager() {
           )}
         </div>
       </div>
+
+      {/* Image Modal */}
+      {showImageModal && selectedImageUrl && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-4xl w-full">
+            <button
+              onClick={() => {
+                setShowImageModal(false);
+                setSelectedImageUrl(null);
+              }}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <XCircle className="w-8 h-8" />
+            </button>
+            <img
+              src={selectedImageUrl}
+              alt="صورة الإيصال"
+              className="w-full h-auto rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

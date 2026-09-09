@@ -243,7 +243,7 @@ export const upsertAdminPermissions = mutation({
         manage_settings: permissionData.manage_settings,
         view_activity_logs: permissionData.view_activity_logs,
         isActive: true,
-        createdAt: now,
+        grantedAt: now,
         updatedAt: now,
       });
     }
