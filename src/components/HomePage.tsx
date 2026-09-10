@@ -562,11 +562,31 @@ export default function HomePage() {
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-500/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
           </div>
           
-          {/* Gradient overlay - Light Red */}
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-800/50 via-red-700/45 to-orange-800/50"></div>
+          {/* Gradient overlay - Light Red - Expanded */}
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-800/70 via-red-700/65 to-orange-800/70"></div>
 
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 h-full">
-            {/* Hero Content - Left Side */}
+          <div className="relative z-10 max-w-7xl mx-auto pl-0 pr-0 flex items-center gap-6 h-full flex-row-reverse">
+            {/* Sponsored Ads - Left Side (Two cards) */}
+            {sponsoredProducts.length > 0 && (
+              <div className="hidden lg:flex gap-4 w-auto flex-shrink-0 h-[470px]">
+                {/* First carousel */}
+                <div className="w-[360px] h-[470px]">
+                  <DualSponsoredAds 
+                    products={sponsoredProducts.filter((_, i) => i % 2 === 0)} 
+                    isSideLayout={true} 
+                  />
+                </div>
+                {/* Second carousel */}
+                <div className="w-[360px] h-[470px]">
+                  <DualSponsoredAds 
+                    products={sponsoredProducts.filter((_, i) => i % 2 === 1)} 
+                    isSideLayout={true} 
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Hero Content - Right Side */}
             <div className="flex-1">
               <div className="max-w-2xl w-full">
                 {/* Main heading - Always Visible */}
@@ -718,33 +738,13 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
-            {/* Sponsored Ads - Right Side (Two cards) */}
-            {sponsoredProducts.length > 0 && (
-              <div className="hidden lg:flex gap-4 w-auto flex-shrink-0 h-[470px]">
-                {/* First carousel */}
-                <div className="w-[360px] h-[470px]">
-                  <DualSponsoredAds 
-                    products={sponsoredProducts.filter((_, i) => i % 2 === 0)} 
-                    isSideLayout={true} 
-                  />
-                </div>
-                {/* Second carousel */}
-                <div className="w-[360px] h-[470px]">
-                  <DualSponsoredAds 
-                    products={sponsoredProducts.filter((_, i) => i % 2 === 1)} 
-                    isSideLayout={true} 
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
         {/* Mobile Sponsored Ads - Only show on small screens */}
         {sponsoredProducts.length > 0 && (
           <section className="lg:hidden py-8 bg-gradient-to-r from-orange-50 to-red-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full pr-4">
               <DualSponsoredAds products={sponsoredProducts} />
             </div>
           </section>
@@ -752,7 +752,7 @@ export default function HomePage() {
 
         {/* Featured Product Sections */}
         <section className="py-12 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full pr-16 sm:pr-20 lg:pr-24 pl-4 sm:pl-6 lg:pl-8">
             {/* عروض اليوم */}
             {todaysOffersProducts.length > 0 && (
               <div className="mb-16">
@@ -783,25 +783,40 @@ export default function HomePage() {
                       }}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-red-300"
                     >
-                      <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                      <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        
+                        {/* Rating Badge */}
+                        {product.rating && (
+                          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                          </div>
+                        )}
+                        
+                        <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                           🔥 {t('errors.discount')}
                         </div>
                         {product.isDeal && product.dealEndTime && (
-                          <div className="absolute top-3 left-3">
+                          <div className="absolute bottom-4 right-4">
                             <CountdownTimer endTime={product.dealEndTime} />
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 p-4 flex flex-col">
-                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                      <div className="flex-1 p-3 flex flex-col">
+                        <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                           {isArabic ? product.nameAr : product.name}
                         </h4>
-                        <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-bold text-red-600">{product.price}</span>
-                            <span className="text-xs text-gray-600">EGP</span>
+                        <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                          <div className="flex items-baseline gap-1">
+                            {product.price ? (
+                              <>
+                                <span className="text-2xl font-bold text-red-600">{product.price}</span>
+                                <span className="text-xs text-gray-600 font-medium">EGP</span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                            )}
                           </div>
                           {product.originalPrice && (
                             <div className="text-xs text-gray-400 line-through">{product.originalPrice} EGP</div>
@@ -830,20 +845,35 @@ export default function HomePage() {
                       onClick={() => navigate(`/customer/store/${product.storeId}`)}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-yellow-300"
                     >
-                      <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                      <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute top-3 right-3 bg-yellow-400 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        
+                        {/* Rating Badge */}
+                        {product.rating && (
+                          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                          </div>
+                        )}
+                        
+                        <div className="absolute top-4 right-4 bg-yellow-400 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                           ⭐ {t('errors.selected')}
                         </div>
                       </div>
-                      <div className="flex-1 p-4 flex flex-col">
-                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                      <div className="flex-1 p-3 flex flex-col">
+                        <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                           {isArabic ? product.nameAr : product.name}
                         </h4>
-                        <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-bold text-orange-600">{product.price}</span>
-                            <span className="text-xs text-gray-600">EGP</span>
+                        <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                          <div className="flex items-baseline gap-1">
+                            {product.price ? (
+                              <>
+                                <span className="text-2xl font-bold text-orange-600">{product.price}</span>
+                                <span className="text-xs text-gray-600 font-medium">EGP</span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -867,20 +897,35 @@ export default function HomePage() {
                       onClick={() => navigate(`/customer/store/${product.storeId}`)}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-green-300"
                     >
-                      <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                      <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute top-3 right-3 bg-green-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        
+                        {/* Rating Badge */}
+                        {product.rating && (
+                          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                          </div>
+                        )}
+                        
+                        <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                           🔥 {t('errors.famous')}
                         </div>
                       </div>
-                      <div className="flex-1 p-4 flex flex-col">
-                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                      <div className="flex-1 p-3 flex flex-col">
+                        <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                           {isArabic ? product.nameAr : product.name}
                         </h4>
-                        <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-bold text-orange-600">{product.price}</span>
-                            <span className="text-xs text-gray-600">EGP</span>
+                        <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                          <div className="flex items-baseline gap-1">
+                            {product.price ? (
+                              <>
+                                <span className="text-2xl font-bold text-orange-600">{product.price}</span>
+                                <span className="text-xs text-gray-600 font-medium">EGP</span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -907,20 +952,35 @@ export default function HomePage() {
                       }}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-blue-300"
                     >
-                      <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                      <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute top-3 right-3 bg-blue-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        
+                        {/* Rating Badge */}
+                        {product.rating && (
+                          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                          </div>
+                        )}
+                        
+                        <div className="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                           {t('errors.new')}
                         </div>
                       </div>
-                      <div className="flex-1 p-4 flex flex-col">
-                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                      <div className="flex-1 p-3 flex flex-col">
+                        <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                           {isArabic ? product.nameAr : product.name}
                         </h4>
-                        <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-bold text-orange-600">{product.price}</span>
-                            <span className="text-xs text-gray-600">EGP</span>
+                        <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                          <div className="flex items-baseline gap-1">
+                            {product.price ? (
+                              <>
+                                <span className="text-2xl font-bold text-orange-600">{product.price}</span>
+                                <span className="text-xs text-gray-600 font-medium">EGP</span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -947,20 +1007,35 @@ export default function HomePage() {
                       }}
                       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-purple-300"
                     >
-                      <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                      <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                         <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute top-3 right-3 bg-purple-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        
+                        {/* Rating Badge */}
+                        {product.rating && (
+                          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                          </div>
+                        )}
+                        
+                        <div className="absolute top-4 right-4 bg-purple-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                           💡 مقترح
                         </div>
                       </div>
-                      <div className="flex-1 p-4 flex flex-col">
-                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                      <div className="flex-1 p-3 flex flex-col">
+                        <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                           {isArabic ? product.nameAr : product.name}
                         </h4>
-                        <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-bold text-orange-600">{product.price}</span>
-                            <span className="text-xs text-gray-600">EGP</span>
+                        <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                          <div className="flex items-baseline gap-1">
+                            {product.price ? (
+                              <>
+                                <span className="text-2xl font-bold text-orange-600">{product.price}</span>
+                                <span className="text-xs text-gray-600 font-medium">EGP</span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1019,22 +1094,37 @@ export default function HomePage() {
                         onClick={() => navigate(`/customer/store/${product.storeId}`)}
                         className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-purple-300"
                       >
-                        <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                        <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                           <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          
+                          {/* Rating Badge */}
+                          {product.rating && (
+                            <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                              <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                            </div>
+                          )}
+                          
                           {product.originalPrice && product.originalPrice > product.price && (
-                            <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                            <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                               -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 p-4 flex flex-col">
-                          <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                        <div className="flex-1 p-3 flex flex-col">
+                          <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                             {isArabic ? product.nameAr : product.name}
                           </h4>
-                          <div className="pt-3 border-t border-gray-100 space-y-2 mt-auto">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xl font-bold text-orange-600">{product.price}</span>
-                              <span className="text-xs text-gray-600">EGP</span>
+                          <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                            <div className="flex items-baseline gap-1">
+                              {product.price ? (
+                                <>
+                                  <span className="text-2xl font-bold text-orange-600">{product.price}</span>
+                                  <span className="text-xs text-gray-600 font-medium">EGP</span>
+                                </>
+                              ) : (
+                                <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                              )}
                             </div>
                             {product.originalPrice && product.originalPrice > product.price && (
                               <div className="text-xs text-gray-400 line-through">{product.originalPrice} EGP</div>
@@ -1082,7 +1172,7 @@ export default function HomePage() {
 
         {/* Products Section */}
         <section ref={productsRef} className="py-12 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full pr-16 sm:pr-20 lg:pr-24 pl-4 sm:pl-6 lg:pl-8">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 {selectedCategory}
@@ -1110,50 +1200,57 @@ export default function HomePage() {
                     className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer border border-gray-100 hover:border-orange-200"
                   >
                     {/* Product Image */}
-                    <div className="relative w-full h-40 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
+                    <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                       <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                       
+                      {/* Rating Badge */}
+                      {product.rating && (
+                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                          <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                        </div>
+                      )}
+                      
                       {product.originalPrice && product.originalPrice > product.price && (
-                        <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                        <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                           -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
                         </div>
                       )}
 
                       {/* Image Counter */}
                       {product.images && product.images.length > 1 && (
-                        <div className="absolute top-3 left-3 bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                        <div className="absolute bottom-4 left-4 bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-semibold">
                           {product.images.length} {t('errors.images')}
                         </div>
                       )}
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex-1 p-4 flex flex-col">
-                      <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors text-sm mb-1">
+                    <div className="flex-1 p-3 flex flex-col">
+                      <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                         {product.nameAr}
                       </h4>
-                      <p className="text-xs text-gray-600 line-clamp-1 mb-3 flex-1">
-                        {product.descriptionAr}
-                      </p>
 
-                      <div className="pt-3 border-t border-gray-100 space-y-2">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl font-bold text-orange-600">
-                            {product.price}
-                          </span>
-                          <span className="text-xs text-gray-600 font-medium">
-                            EGP
-                          </span>
+                      <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
+                        <div className="flex items-baseline gap-1">
+                          {product.price ? (
+                            <>
+                              <span className="text-2xl font-bold text-orange-600">
+                                {product.price}
+                              </span>
+                              <span className="text-xs text-gray-600 font-medium">
+                                EGP
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                          )}
                         </div>
                         {product.originalPrice && product.originalPrice > product.price && (
                           <div className="text-xs text-gray-400 line-through">
                             {product.originalPrice} EGP
                           </div>
                         )}
-
-                        <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-semibold">
-                          {product.category}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -1165,7 +1262,7 @@ export default function HomePage() {
 
         {/* Nearby Stores Section */}
         <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full pr-16 sm:pr-20 lg:pr-24 pl-4 sm:pl-6 lg:pl-8">
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 {t('errors.discoverNearbyStoresSection')}

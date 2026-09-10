@@ -73,6 +73,7 @@ import ProductRatingsPage from "./ProductRatingsPage";
 import ChangePasswordModal from "./ChangePasswordModal";
 import NotificationBell from "./NotificationBell";
 import LanguageSwitcher from "./LanguageSwitcher";
+import DualSponsoredAds from "./DualSponsoredAds";
 import { useTranslation } from "react-i18next";
 
 // Fallback NavigationBar component in case import fails
@@ -429,6 +430,9 @@ function StoresList() {
   const { sessionToken } = useAuth();
   const stores = useQuery(api.stores.getActiveStores);
   const allProducts = useQuery(api.products.getAllProductsWithImages, { availableOnly: true, ...(sessionToken && { sessionToken }) });
+  const sponsoredProducts = useQuery(api.sponsoredProducts.getSponsoredProducts, {
+    limit: 20,
+  }) || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showNearby, setShowNearby] = useState(false);
@@ -781,6 +785,53 @@ function StoresList() {
         <div className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-6 text-center">
           <p className="text-gray-600">{t('customer.noStoresOrProductsFound')}</p>
         </div>
+      )}
+
+      {/* Mobile Sponsored Ads - Only show on small screens */}
+      {sponsoredProducts.length > 0 && (
+        <section className="lg:hidden py-6 bg-gradient-to-r from-orange-50 to-red-50">
+          <div className="w-full pr-4">
+            <DualSponsoredAds products={sponsoredProducts} />
+          </div>
+        </section>
+      )}
+
+      {/* Desktop Sponsored Ads - 4 Cards Layout */}
+      {sponsoredProducts.length > 0 && (
+        <section className="hidden lg:block py-6 bg-gradient-to-r from-orange-50 to-red-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="hidden lg:flex gap-4 w-auto flex-shrink-0 h-[470px]">
+              {/* First carousel */}
+              <div className="w-[360px] h-[470px]">
+                <DualSponsoredAds
+                  products={sponsoredProducts.filter((_, i) => i % 4 === 0)}
+                  isSideLayout={true}
+                />
+              </div>
+              {/* Second carousel */}
+              <div className="w-[360px] h-[470px]">
+                <DualSponsoredAds
+                  products={sponsoredProducts.filter((_, i) => i % 4 === 1)}
+                  isSideLayout={true}
+                />
+              </div>
+              {/* Third carousel */}
+              <div className="w-[360px] h-[470px]">
+                <DualSponsoredAds
+                  products={sponsoredProducts.filter((_, i) => i % 4 === 2)}
+                  isSideLayout={true}
+                />
+              </div>
+              {/* Fourth carousel */}
+              <div className="w-[360px] h-[470px]">
+                <DualSponsoredAds
+                  products={sponsoredProducts.filter((_, i) => i % 4 === 3)}
+                  isSideLayout={true}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Products by Category */}

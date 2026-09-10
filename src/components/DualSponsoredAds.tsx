@@ -51,7 +51,7 @@ export default function DualSponsoredAds({ products, isSideLayout = false }: Dua
 
   // Regular layout: side-by-side dual cards
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="w-full flex flex-row-reverse gap-4 pr-[50px]">
       {/* Left Card */}
       <SponsoredCard 
         products={leftProducts} 
@@ -152,16 +152,11 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
   }
 
   return (
-    <div className="relative bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-xl border border-white/40 h-full flex flex-col">
+    <div className="relative bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-xl border border-white/40 h-full flex flex-col focus-within:ring-2 focus-within:ring-orange-500">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-900/95 to-orange-900/95 backdrop-blur-sm px-4 py-3 border-b border-orange-300/30 flex-shrink-0">
-        <div className="flex flex-col gap-1">
-          <div className="bg-yellow-500 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg w-fit">
-            ⭐ إعلانات ممولة
-          </div>
-          <p className="text-white/90 text-xs font-medium">
-            منتجات ممولة من قبل التجار
-          </p>
+      <div className="bg-gradient-to-r from-red-900/95 to-orange-900/95 backdrop-blur-sm px-3 py-2 border-b border-orange-300/30 flex-shrink-0">
+        <div className="bg-yellow-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg w-fit">
+          ⭐ إعلانات ممولة
         </div>
       </div>
 
@@ -170,26 +165,28 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
         <button
           onClick={() => handleScroll('up')}
           disabled={!canScrollUp}
-          className={`p-2 rounded-full transition-all ${
+          className={`p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-orange-400 ${
             canScrollUp
               ? 'bg-white/20 text-white hover:bg-white/30'
               : 'bg-white/10 text-white/50 cursor-not-allowed'
           }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          aria-label="السابق"
         >
           <ChevronUp className="w-5 h-5" />
         </button>
         <button
           onClick={() => handleScroll('down')}
           disabled={!canScrollDown}
-          className={`p-2 rounded-full transition-all ${
+          className={`p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-orange-400 ${
             canScrollDown
               ? 'bg-white/20 text-white hover:bg-white/30'
               : 'bg-white/10 text-white/50 cursor-not-allowed'
           }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          aria-label="التالي"
         >
           <ChevronDown className="w-5 h-5" />
         </button>
@@ -211,40 +208,48 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
             <div
               key={product._id}
               onClick={() => handleProductClick(product)}
-              className="flex-shrink-0 p-3 cursor-pointer group"
+              className="flex-shrink-0 p-2 cursor-pointer group"
               style={{ scrollSnapAlign: 'start' }}
             >
               <div className="bg-white rounded-xl overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:border-orange-300">
                 {/* Product Image */}
-                <div className="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
                   <ProductImage
                     product={product}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   
+                  {/* Rating Badge */}
+                  {product.rating && (
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                      <span className="text-sm font-bold text-gray-800">{product.rating}</span>
+                    </div>
+                  )}
+                  
                   {/* Sponsored Badge */}
-                  <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg">
+                  <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                     ممول
                   </div>
                 </div>
 
                 {/* Product Details */}
-                <div className="p-3">
-                  <h3 className="font-bold text-gray-900 text-sm mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                <div className="p-2">
+                  <h3 className="font-bold text-gray-900 text-xs mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
                     {isArabic ? product.nameAr : product.name}
                   </h3>
                   
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-lg font-bold text-orange-600">{product.price}</span>
-                      <span className="text-xs text-gray-600 font-medium">EGP</span>
+                      {product.price ? (
+                        <>
+                          <span className="text-sm font-bold text-orange-600">{product.price}</span>
+                          <span className="text-xs text-gray-600 font-medium">EGP</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                      )}
                     </div>
-                    {product.rating && (
-                      <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
-                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                        <span className="text-xs font-bold text-gray-800">{product.rating}</span>
-                      </div>
-                    )}
                   </div>
                   
                   {product.originalPrice && product.originalPrice > product.price && (
@@ -272,10 +277,10 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
                 container.scrollTo({ top: index * cardHeight, behavior: 'smooth' });
               }
             }}
-            className={`h-2 rounded-full transition-all ${
+            className={`h-2 rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-orange-400 ${
               index === currentIndex
-                ? 'w-8 bg-orange-500'
-                : 'w-2 bg-orange-200 hover:bg-orange-300'
+                ? 'w-8 bg-orange-500 shadow-orange-300'
+                : 'w-2 bg-orange-200 hover:bg-orange-300 hover:shadow-sm'
             }`}
           />
         ))}
@@ -364,17 +369,12 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
   }
 
   return (
-    <div className="relative bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl overflow-hidden shadow-xl border border-orange-200">
+    <div className="relative w-[360px] h-[500px] bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl overflow-hidden shadow-xl border border-orange-200 flex-shrink-0 focus-within:ring-2 focus-within:ring-orange-500">
       {/* Header - Dark Brown/Burgundy Semi-transparent */}
-      <div className="bg-gradient-to-r from-red-900/90 to-orange-900/90 backdrop-blur-sm px-6 py-4 border-b border-orange-300/30">
+      <div className="bg-gradient-to-r from-red-900/90 to-orange-900/90 backdrop-blur-sm px-3 py-2 border-b border-orange-300/30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg">
-              ⭐ إعلانات ممولة
-            </div>
-            <p className="text-white/90 text-sm font-medium">
-              منتجات ممولة من قبل التجار
-            </p>
+          <div className="bg-yellow-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg">
+            ⭐ إعلانات ممولة
           </div>
           
           {/* Navigation Arrows */}
@@ -382,26 +382,28 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
             <button
               onClick={() => handleScroll('left')}
               disabled={!canScrollLeft}
-              className={`p-2 rounded-full transition-all ${
+              className={`p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-orange-400 ${
                 canScrollLeft
                   ? 'bg-white/20 text-white hover:bg-white/30'
                   : 'bg-white/10 text-white/50 cursor-not-allowed'
               }`}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
+              aria-label="السابق"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
             <button
               onClick={() => handleScroll('right')}
               disabled={!canScrollRight}
-              className={`p-2 rounded-full transition-all ${
+              className={`p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-orange-400 ${
                 canScrollRight
                   ? 'bg-white/20 text-white hover:bg-white/30'
                   : 'bg-white/10 text-white/50 cursor-not-allowed'
               }`}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
+              aria-label="التالي"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -425,12 +427,12 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
             <div
               key={product._id}
               onClick={() => handleProductClick(product)}
-              className="flex-shrink-0 w-full p-6 cursor-pointer group"
+              className="flex-shrink-0 w-full h-full p-3 cursor-pointer group"
               style={{ scrollSnapAlign: 'start' }}
             >
               <div className="flex flex-col items-center">
                 {/* Product Image */}
-                <div className="relative w-full max-w-[280px] aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-all duration-300 border border-gray-100 group-hover:border-orange-300">
+                <div className="relative w-full max-w-[280px] aspect-[4/5] bg-white rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-all duration-300 border border-gray-100 group-hover:border-orange-300">
                   <ProductImage
                     product={product}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -451,35 +453,27 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
                 </div>
 
                 {/* Product Details */}
-                <div className="w-full max-w-[280px] mt-4 text-center">
-                  <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                <div className="w-full max-w-[280px] mt-2 text-center">
+                  <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
                     {isArabic ? product.nameAr : product.name}
                   </h3>
                   
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl font-bold text-orange-600">{product.price}</span>
-                    <span className="text-sm text-gray-600 font-medium">EGP</span>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    {product.price ? (
+                      <>
+                        <span className="text-lg font-bold text-orange-600">{product.price}</span>
+                        <span className="text-xs text-gray-600 font-medium">EGP</span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">السعر غير متوفر</span>
+                    )}
                   </div>
                   
                   {product.originalPrice && product.originalPrice > product.price && (
-                    <div className="text-sm text-gray-400 line-through">
+                    <div className="text-xs text-gray-400 line-through">
                       {product.originalPrice} EGP
                     </div>
                   )}
-                  
-                  {/* 5-Star Rating */}
-                  <div className="flex items-center justify-center gap-1 mt-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < (product.rating || 5)
-                            ? 'text-yellow-500 fill-yellow-500'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>
@@ -487,7 +481,7 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
         </div>
 
         {/* Carousel Indicators */}
-        <div className="flex justify-center gap-2 pb-6">
+        <div className="flex justify-center gap-2 pb-3">
           {products.map((_, index) => (
             <button
               key={index}
@@ -499,10 +493,10 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
                   container.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
                 }
               }}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-orange-400 ${
                 index === currentIndex
-                  ? 'w-8 bg-orange-500'
-                  : 'w-2 bg-orange-200 hover:bg-orange-300'
+                  ? 'w-8 bg-orange-500 shadow-orange-300'
+                  : 'w-2 bg-orange-200 hover:bg-orange-300 hover:shadow-sm'
               }`}
             />
           ))}
