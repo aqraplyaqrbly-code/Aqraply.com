@@ -102,8 +102,10 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
         const nextIndex = (prev + 1) % products.length;
         if (scrollContainerRef.current) {
           const container = scrollContainerRef.current;
-          const cardHeight = 280; // Approximate card height
-          container.scrollTo({ top: nextIndex * cardHeight, behavior: 'smooth' });
+          const cards = container.children;
+          if (cards[nextIndex]) {
+            cards[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
         }
         return nextIndex;
       });
@@ -135,14 +137,20 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
   const handleScroll = (direction: 'up' | 'down') => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const cardHeight = 280;
-      
+      const cards = container.children;
+
       if (direction === 'up') {
-        container.scrollBy({ top: -cardHeight, behavior: 'smooth' });
-        setCurrentIndex((prev) => Math.max(0, prev - 1));
+        const newIndex = Math.max(0, currentIndex - 1);
+        if (cards[newIndex]) {
+          cards[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          setCurrentIndex(newIndex);
+        }
       } else {
-        container.scrollBy({ top: cardHeight, behavior: 'smooth' });
-        setCurrentIndex((prev) => Math.min(products.length - 1, prev + 1));
+        const newIndex = Math.min(products.length - 1, currentIndex + 1);
+        if (cards[newIndex]) {
+          cards[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          setCurrentIndex(newIndex);
+        }
       }
     }
   };
@@ -218,7 +226,7 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
                     product={product}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  
+
                   {/* Rating Badge */}
                   {product.rating && (
                     <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
@@ -226,10 +234,22 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
                       <span className="text-sm font-bold text-gray-800">{product.rating}</span>
                     </div>
                   )}
-                  
+
                   {/* Sponsored Badge */}
                   <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                     ممول
+                  </div>
+
+                  {/* Price Badge on Image */}
+                  <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg border border-orange-200">
+                    {product.price ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-lg font-bold text-orange-600">{product.price}</span>
+                        <span className="text-xs text-gray-600 font-medium">EGP</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm font-bold text-gray-500">اتصل للسعر</span>
+                    )}
                   </div>
                 </div>
 
@@ -238,20 +258,7 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
                   <h3 className="font-bold text-gray-900 text-xs mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
                     {isArabic ? product.nameAr : product.name}
                   </h3>
-                  
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1">
-                      {product.price ? (
-                        <>
-                          <span className="text-sm font-bold text-orange-600">{product.price}</span>
-                          <span className="text-xs text-gray-600 font-medium">EGP</span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-400">السعر غير متوفر</span>
-                      )}
-                    </div>
-                  </div>
-                  
+
                   {product.originalPrice && product.originalPrice > product.price && (
                     <div className="text-xs text-gray-400 line-through">
                       {product.originalPrice} EGP
@@ -273,8 +280,10 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
               setCurrentIndex(index);
               if (scrollContainerRef.current) {
                 const container = scrollContainerRef.current;
-                const cardHeight = 280;
-                container.scrollTo({ top: index * cardHeight, behavior: 'smooth' });
+                const cards = container.children;
+                if (cards[index]) {
+                  cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
               }
             }}
             className={`h-2 rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-orange-400 ${
@@ -318,8 +327,10 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
         const nextIndex = (prev + 1) % products.length;
         if (scrollContainerRef.current) {
           const container = scrollContainerRef.current;
-          const cardWidth = container.clientWidth;
-          container.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
+          const cards = container.children;
+          if (cards[nextIndex]) {
+            cards[nextIndex].scrollIntoView({ behavior: 'smooth', inline: 'nearest' });
+          }
         }
         return nextIndex;
       });
@@ -351,15 +362,20 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const cardWidth = container.clientWidth;
-      const scrollAmount = cardWidth;
-      
+      const cards = container.children;
+
       if (direction === 'left') {
-        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-        setCurrentIndex((prev) => Math.max(0, prev - 1));
+        const newIndex = Math.max(0, currentIndex - 1);
+        if (cards[newIndex]) {
+          cards[newIndex].scrollIntoView({ behavior: 'smooth', inline: 'nearest' });
+          setCurrentIndex(newIndex);
+        }
       } else {
-        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        setCurrentIndex((prev) => Math.min(products.length - 1, prev + 1));
+        const newIndex = Math.min(products.length - 1, currentIndex + 1);
+        if (cards[newIndex]) {
+          cards[newIndex].scrollIntoView({ behavior: 'smooth', inline: 'nearest' });
+          setCurrentIndex(newIndex);
+        }
       }
     }
   };
@@ -437,7 +453,7 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
                     product={product}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  
+
                   {/* Rating Badge */}
                   {product.rating && (
                     <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
@@ -445,10 +461,22 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
                       <span className="text-sm font-bold text-gray-800">{product.rating}</span>
                     </div>
                   )}
-                  
+
                   {/* Sponsored Badge */}
                   <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                     ممول
+                  </div>
+
+                  {/* Price Badge on Image */}
+                  <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg border border-orange-200">
+                    {product.price ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-lg font-bold text-orange-600">{product.price}</span>
+                        <span className="text-xs text-gray-600 font-medium">EGP</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm font-bold text-gray-500">اتصل للسعر</span>
+                    )}
                   </div>
                 </div>
 
@@ -457,18 +485,7 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
                   <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
                     {isArabic ? product.nameAr : product.name}
                   </h3>
-                  
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    {product.price ? (
-                      <>
-                        <span className="text-lg font-bold text-orange-600">{product.price}</span>
-                        <span className="text-xs text-gray-600 font-medium">EGP</span>
-                      </>
-                    ) : (
-                      <span className="text-xs text-gray-400">السعر غير متوفر</span>
-                    )}
-                  </div>
-                  
+
                   {product.originalPrice && product.originalPrice > product.price && (
                     <div className="text-xs text-gray-400 line-through">
                       {product.originalPrice} EGP
@@ -489,8 +506,10 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
                 setCurrentIndex(index);
                 if (scrollContainerRef.current) {
                   const container = scrollContainerRef.current;
-                  const cardWidth = container.clientWidth;
-                  container.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+                  const cards = container.children;
+                  if (cards[index]) {
+                    cards[index].scrollIntoView({ behavior: 'smooth', inline: 'nearest' });
+                  }
                 }
               }}
               className={`h-2 rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-orange-400 ${

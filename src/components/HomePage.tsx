@@ -45,6 +45,7 @@ export default function HomePage() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [searchLocation, setSearchLocation] = useState("");
   const [filteredStores, setFilteredStores] = useState<any[]>([]);
   const [searchFilteredProducts, setSearchFilteredProducts] = useState<any[]>([]);
@@ -139,10 +140,11 @@ export default function HomePage() {
 
   // Scroll to products section when category changes
   useEffect(() => {
-    if (productsRef.current) {
+    if (productsRef.current && !isInitialLoad) {
       productsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [selectedCategory, selectedSubcategory]);
+    setIsInitialLoad(false);
+  }, [selectedCategory, selectedSubcategory, isInitialLoad]);
 
   // Filter products by main category and subcategory
   const filteredProducts = useMemo(() => {
@@ -565,10 +567,10 @@ export default function HomePage() {
           {/* Gradient overlay - Light Red - Expanded */}
           <div className="absolute inset-0 bg-gradient-to-r from-orange-800/70 via-red-700/65 to-orange-800/70"></div>
 
-          <div className="relative z-10 max-w-7xl mx-auto pl-0 pr-0 flex items-center gap-6 h-full flex-row-reverse">
+          <div className="relative z-10 w-full pl-0 pr-4 sm:pr-6 lg:pr-8 flex items-center gap-6 h-full flex-row-reverse">
             {/* Sponsored Ads - Left Side (Two cards) */}
             {sponsoredProducts.length > 0 && (
-              <div className="hidden lg:flex gap-4 w-auto flex-shrink-0 h-[470px]">
+              <div className="hidden lg:flex gap-5 w-auto flex-shrink-0 h-[470px]">
                 {/* First carousel */}
                 <div className="w-[360px] h-[470px]">
                   <DualSponsoredAds 
@@ -752,7 +754,7 @@ export default function HomePage() {
 
         {/* Featured Product Sections */}
         <section className="py-12 bg-white">
-          <div className="w-full pr-16 sm:pr-20 lg:pr-24 pl-4 sm:pl-6 lg:pl-8">
+          <div className="w-full pr-4 sm:pr-6 lg:pr-8 pl-4 sm:pl-6 lg:pl-8">
             {/* عروض اليوم */}
             {todaysOffersProducts.length > 0 && (
               <div className="mb-16">
@@ -1172,7 +1174,7 @@ export default function HomePage() {
 
         {/* Products Section */}
         <section ref={productsRef} className="py-12 bg-gray-50">
-          <div className="w-full pr-16 sm:pr-20 lg:pr-24 pl-4 sm:pl-6 lg:pl-8">
+          <div className="w-full pr-4 sm:pr-6 lg:pr-8 pl-4 sm:pl-6 lg:pl-8">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 {selectedCategory}
@@ -1262,7 +1264,7 @@ export default function HomePage() {
 
         {/* Nearby Stores Section */}
         <section className="py-16 bg-white">
-          <div className="w-full pr-16 sm:pr-20 lg:pr-24 pl-4 sm:pl-6 lg:pl-8">
+          <div className="w-full pr-4 sm:pr-6 lg:pr-8 pl-4 sm:pl-6 lg:pl-8">
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 {t('errors.discoverNearbyStoresSection')}
