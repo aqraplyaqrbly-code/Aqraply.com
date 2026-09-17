@@ -137,6 +137,8 @@ export default function SponsoredAdsCarousel({ products, isMobile = false, isFul
             }`}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
           >
             <ChevronRight className={`${isFullWidth ? 'w-6 h-6' : (isMobile ? 'w-3 h-3' : 'w-4 h-4')}`} />
           </button>
@@ -150,6 +152,8 @@ export default function SponsoredAdsCarousel({ products, isMobile = false, isFul
             }`}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
           >
             <ChevronLeft className={`${isFullWidth ? 'w-6 h-6' : (isMobile ? 'w-3 h-3' : 'w-4 h-4')}`} />
           </button>
@@ -160,13 +164,16 @@ export default function SponsoredAdsCarousel({ products, isMobile = false, isFul
       <div
         ref={scrollContainerRef}
         className={`flex overflow-x-auto scrollbar-hide ${isMobile ? '' : 'flex-1'}`}
-        style={{ 
+        style={{
           gap: `${gap}px`,
           scrollSnapType: 'x mandatory',
           WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
         }}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
       >
         {products.map((product) => (
           <div

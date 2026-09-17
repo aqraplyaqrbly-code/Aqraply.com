@@ -180,6 +180,8 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
           }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
           aria-label="السابق"
         >
           <ChevronUp className="w-5 h-5" />
@@ -194,6 +196,8 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
           }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
           aria-label="التالي"
         >
           <ChevronDown className="w-5 h-5" />
@@ -208,9 +212,12 @@ function VerticalSponsoredCarousel({ products, isArabic, navigate, saveProductVi
           style={{
             scrollSnapType: 'y mandatory',
             WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
           }}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
         >
           {products.map((product) => (
             <div
@@ -405,6 +412,8 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
               }`}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
+              onTouchStart={() => setIsPaused(true)}
+              onTouchEnd={() => setIsPaused(false)}
               aria-label="السابق"
             >
               <ChevronRight className="w-5 h-5" />
@@ -419,6 +428,8 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
               }`}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
+              onTouchStart={() => setIsPaused(true)}
+              onTouchEnd={() => setIsPaused(false)}
               aria-label="التالي"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -435,9 +446,12 @@ function SponsoredCard({ products, isArabic, navigate, saveProductView, sessionT
           style={{
             scrollSnapType: 'x mandatory',
             WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x',
           }}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
         >
           {products.map((product) => (
             <div

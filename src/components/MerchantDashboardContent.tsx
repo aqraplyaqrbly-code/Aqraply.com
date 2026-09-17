@@ -139,7 +139,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
                 <Store className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-base sm:text-lg font-bold text-gray-900">لوحة التاجر</h1>
+                <h1 className="text-base sm:text-lg font-bold text-gray-900">سجل كتاجر</h1>
                 <p className="text-xs text-gray-500 truncate max-w-[100px] sm:max-w-[120px]">
                   {profile.businessNameAr || profile.businessName || profile.fullName}
                 </p>
@@ -164,7 +164,7 @@ function MerchantLayout({ profile, children }: { profile: any; children: React.R
                     <Store className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-base sm:text-lg font-bold">لوحة التاجر</h1>
+                    <h1 className="text-base sm:text-lg font-bold">سجل كتاجر</h1>
                     <p className="text-xs text-orange-200 truncate max-w-[120px] sm:max-w-[140px]">
                       {profile.businessNameAr || profile.businessName || profile.fullName}
                     </p>

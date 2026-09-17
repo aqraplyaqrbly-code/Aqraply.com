@@ -445,9 +445,122 @@ export default function HomePage() {
         )}
       </header>
 
-      {/* Categories Bar - Sticky at Top */}
-      <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm pb-12">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+      {/* Combined Sticky Container - Search and Categories */}
+      <div className="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
+        {/* Search Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="relative max-w-2xl mx-auto">
+            <div className="bg-white rounded-xl shadow-md p-1.5 flex items-center gap-2 border-2 border-transparent focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-200 transition-all">
+              <MapPin className="w-4 h-4 text-orange-600 ms-3 flex-shrink-0 font-bold" />
+              <input
+                type="text"
+                placeholder={t('errors.enterLocation')}
+                className="flex-1 px-3 py-1.5 outline-none text-gray-700 text-sm font-semibold placeholder-gray-500"
+                value={searchLocation}
+                onChange={handleLocationSearch}
+              />
+              <button
+                onClick={() => navigate("/customer")}
+                className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-lg hover:shadow-xl transition-all hover:scale-105 flex-shrink-0"
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Search Results Dropdown */}
+            {searchLocation && (filteredStores.length > 0 || searchFilteredProducts.length > 0) && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-96 overflow-y-auto z-50">
+                {filteredStores.length > 0 && (
+                  <div className="border-b border-gray-200">
+                    <div className="px-6 py-3 bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 font-bold text-sm flex items-center gap-2">
+                      <Store className="w-4 h-4" />
+                      المتاجر ({filteredStores.length})
+                    </div>
+                    {filteredStores.slice(0, 5).map((store) => (
+                      <button
+                        key={store._id}
+                        onClick={() => handleStoreSelect(store._id)}
+                        className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="text-start flex-1">
+                            <h4 className="font-bold text-gray-900 text-sm">{store.nameAr}</h4>
+                            <p className="text-xs text-gray-600 truncate">{store.location?.addressAr}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                              <span className="font-semibold text-xs">{store.rating}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {filteredStores.length > 5 && (
+                      <button
+                        onClick={() => navigate("/customer")}
+                        className="w-full px-6 py-3 text-center text-orange-600 hover:bg-orange-50 text-sm font-semibold"
+                      >
+                        عرض جميع المتاجر ({filteredStores.length})
+                      </button>
+                    )}
+                  </div>
+                )}
+                {searchFilteredProducts.length > 0 && (
+                  <div>
+                    <div className="px-6 py-3 bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 font-bold text-sm flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      المنتجات ({searchFilteredProducts.length})
+                    </div>
+                    {searchFilteredProducts.slice(0, 5).map((product) => (
+                      <button
+                        key={product._id}
+                        onClick={() => navigate(`/customer/store/${product.storeId}`)}
+                        className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="text-start flex-1">
+                            <h4 className="font-bold text-gray-900 text-sm">{product.nameAr}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm font-bold text-orange-600">{product.price} EGP</span>
+                              {product.originalPrice && product.originalPrice > product.price && (
+                                <span className="text-xs text-gray-400 line-through">{product.originalPrice} EGP</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {searchFilteredProducts.length > 5 && (
+                      <button
+                        onClick={() => navigate("/customer")}
+                        className="w-full px-6 py-3 text-center text-orange-600 hover:bg-orange-50 text-sm font-semibold"
+                      >
+                        عرض جميع المنتجات ({searchFilteredProducts.length})
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* No Results Found */}
+            {searchLocation && filteredStores.length === 0 && searchFilteredProducts.length === 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 z-50">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Search className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 font-semibold text-sm">{t('errors.noStoresFound')}</p>
+                  <p className="text-gray-500 text-xs mt-1">جرب البحث بكلمات مختلفة</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Categories Bar */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 border-t border-gray-100">
           <div className="flex items-center gap-3 py-3" dir="ltr">
             <button
               onClick={() => handleScroll("left")}
@@ -607,89 +720,6 @@ export default function HomePage() {
                   {t('errors.orderNow')}
                 </p>
 
-                {/* Search Bar - Always Visible */}
-                <div className="relative max-w-xl mb-8">
-                  <div className="bg-white rounded-2xl shadow-2xl p-2.5 flex items-center gap-2 hover:shadow-3xl transition-shadow" style={{boxShadow: '0 10px 40px rgba(0,0,0,0.25)'}}>
-                    <MapPin className="w-5 h-5 text-orange-600 ms-3 flex-shrink-0 font-bold" />
-                    <input
-                      type="text"
-                      placeholder={t('errors.enterLocation')}
-                      className="flex-1 px-3 py-2.5 outline-none text-gray-700 text-sm font-semibold placeholder-gray-500"
-                      value={searchLocation}
-                      onChange={handleLocationSearch}
-                    />
-                    <button
-                      onClick={() => navigate("/customer")}
-                      className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:shadow-xl transition-all hover:scale-105 flex-shrink-0 drop-shadow-lg"
-                    >
-                      <Search className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Search Results Dropdown */}
-                  {searchLocation && (filteredStores.length > 0 || searchFilteredProducts.length > 0) && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl max-h-80 overflow-y-auto z-40">
-                      {filteredStores.length > 0 && (
-                        <div className="border-b border-gray-200">
-                          <div className="px-6 py-2 bg-orange-50 text-orange-700 font-bold text-sm">
-                            المتاجر ({filteredStores.length})
-                          </div>
-                          {filteredStores.map((store) => (
-                            <button
-                              key={store._id}
-                              onClick={() => handleStoreSelect(store._id)}
-                              className="w-full px-6 py-4 text-right hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="text-start">
-                                  <h4 className="font-bold text-gray-900">{store.nameAr}</h4>
-                                  <p className="text-sm text-gray-600">{store.location?.addressAr}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
-                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                    <span className="font-semibold text-sm">{store.rating}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {searchFilteredProducts.length > 0 && (
-                        <div>
-                          <div className="px-6 py-2 bg-blue-50 text-blue-700 font-bold text-sm">
-                            المنتجات ({searchFilteredProducts.length})
-                          </div>
-                          {searchFilteredProducts.slice(0, 5).map((product) => (
-                            <button
-                              key={product._id}
-                              onClick={() => handleProductSelect(product._id, product.storeId)}
-                              className="w-full px-6 py-3 text-right hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="text-start">
-                                  <h4 className="font-bold text-gray-900 text-sm">{product.nameAr}</h4>
-                                  <p className="text-xs text-gray-600">{product.category}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-orange-600">{product.price} EGP</span>
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {searchLocation && filteredStores.length === 0 && searchFilteredProducts.length === 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-6 text-center z-40">
-                      <p className="text-gray-600">{t('errors.noStoresFound')}</p>
-                    </div>
-                  )}
-                </div>
-
                 {/* Animated Stats - Always Visible */}
                 <div className="grid grid-cols-3 gap-2 md:gap-4">
                   {/* Stores Card */}
@@ -747,7 +777,7 @@ export default function HomePage() {
         {sponsoredProducts.length > 0 && (
           <section className="lg:hidden py-8 bg-gradient-to-r from-orange-50 to-red-50">
             <div className="w-full pr-4">
-              <DualSponsoredAds products={sponsoredProducts} />
+              <SponsoredAdsCarousel products={sponsoredProducts} isMobile={true} />
             </div>
           </section>
         )}

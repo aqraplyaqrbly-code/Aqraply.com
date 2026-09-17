@@ -434,6 +434,7 @@ function StoresList() {
     limit: 20,
   }) || [];
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showNearby, setShowNearby] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(t('errors.todaysOffers'));
@@ -441,6 +442,8 @@ function StoresList() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const { getItemCount } = useCart();
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+  const firstProductRef = useRef<HTMLButtonElement>(null);
   
   const isArabic = i18n.language === 'ar';
 
@@ -581,6 +584,22 @@ function StoresList() {
     return { ...store, distance };
   }) || [];
 
+  // Handle search action
+  const handleSearch = () => {
+    setHasSearched(true);
+    // Scroll to first highlighted product
+    setTimeout(() => {
+      firstProductRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  // Handle Enter key press
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -602,23 +621,31 @@ function StoresList() {
         />
       </div>
 
-      {/* Search */}
-      <div className="max-w-7xl mx-auto px-4 mb-6">
-        <div className="relative">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('customer.searchPlaceholder')}
-            className="w-full pr-12 pl-4 py-4 bg-white rounded-xl shadow-lg border-2 border-transparent focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-          />
+      {/* Combined Sticky Container - Search and Categories */}
+      <div className="sticky top-14 z-40 bg-white border-b border-gray-200 shadow-sm">
+        {/* Search Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="relative">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
+              placeholder={t('errors.enterLocation')}
+              className="w-full pr-12 pl-4 py-2 bg-white rounded-lg shadow-md border-2 border-transparent focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+            />
+            <button
+              onClick={handleSearch}
+              className="absolute left-3 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-lg hover:shadow-xl transition-all hover:scale-105 text-sm"
+            >
+              {t('common.search')}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Categories Bar */}
-      <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm mb-6 pb-12">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+        {/* Categories Bar */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 border-t border-gray-100">
           <div className="flex items-center gap-3 py-3" dir="ltr">
             <button
               onClick={() => {
@@ -723,45 +750,86 @@ function StoresList() {
       </div>
 
       {/* Search Results */}
-      {searchQuery && (filteredStores.length > 0 || filteredProducts.length > 0) && (
-        <div className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-4">
+      {hasSearched && searchQuery && (filteredStores.length > 0 || filteredProducts.length > 0) && (
+        <div ref={searchResultsRef} className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-4 border border-gray-200">
           {filteredStores.length > 0 && (
-            <div className="mb-4">
-              <h4 className="font-semibold text-gray-900 mb-3">🏪 {t('customer.matchingStores')}</h4>
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Store className="w-5 h-5 text-orange-600" />
+                <h4 className="font-bold text-gray-900">{t('customer.matchingStores')} ({filteredStores.length})</h4>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredStores.slice(0, 6).map((store) => (
                   <button
                     key={store._id}
                     onClick={() => navigate(`/customer/store/${store._id}`)}
-                    className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
+                    className="bg-gradient-to-br from-gray-50 to-orange-50 rounded-lg p-4 text-right hover:from-orange-50 hover:to-red-50 transition-all border border-gray-200 hover:border-orange-300 hover:shadow-md"
                   >
-                    <h5 className="font-semibold text-gray-900">{isArabic ? store.nameAr : store.name}</h5>
-                    <p className="text-sm text-gray-600">{isArabic ? store.location?.addressAr : store.location?.address}</p>
+                    <div className="flex items-start justify-between mb-2">
+                      <h5 className="font-bold text-gray-900 text-sm">{isArabic ? store.nameAr : store.name}</h5>
+                      <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        <span className="font-semibold text-xs">{store.rating}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 line-clamp-2">{isArabic ? store.location?.addressAr : store.location?.address}</p>
                   </button>
                 ))}
               </div>
+              {filteredStores.length > 6 && (
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => navigate("/customer")}
+                    className="text-orange-600 hover:text-orange-700 font-semibold text-sm"
+                  >
+                    عرض جميع المتاجر ({filteredStores.length})
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {filteredProducts.length > 0 && (
             <div>
-              <h4 className="font-semibold text-gray-900 mb-3">🔍 {t('customer.matchingProducts')}</h4>
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="w-5 h-5 text-orange-600" />
+                <h4 className="font-bold text-gray-900">{t('customer.matchingProducts')} ({filteredProducts.length})</h4>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                {filteredProducts.slice(0, 8).map((product) => (
+                {filteredProducts.slice(0, 8).map((product, index) => (
                   <button
                     key={product._id}
+                    ref={index === 0 ? firstProductRef : null}
                     onClick={() => navigate(`/customer/store/${product.storeId}#product-${product._id}`)}
-                    className="bg-gray-50 rounded-lg p-3 text-right hover:bg-orange-50 transition-colors border border-gray-200 hover:border-orange-300"
+                    className={`bg-gradient-to-br from-gray-50 to-orange-50 rounded-lg overflow-hidden text-right hover:from-orange-50 hover:to-red-50 transition-all border ${
+                      index === 0 && hasSearched 
+                        ? 'border-orange-500 ring-2 ring-orange-300 shadow-lg' 
+                        : 'border-gray-200 hover:border-orange-300 hover:shadow-md'
+                    } group`}
                   >
-                    <h5 className="font-semibold text-gray-900 text-sm">{isArabic ? product.nameAr : product.name}</h5>
-                    <p className="text-xs text-gray-600 mb-2">{product.category}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-orange-600">{product.price !== null && product.price !== undefined ? product.price.toFixed(2) : '—'} {t('common.currency')}</span>
+                    {/* Product Image */}
+                    <div className="relative h-32 bg-gray-100 overflow-hidden">
+                      <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                       {product.originalPrice && product.originalPrice > product.price && (
-                        <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
                           -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                        </span>
+                        </div>
                       )}
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="p-3">
+                      <h5 className="font-bold text-gray-900 text-sm mb-1 line-clamp-2 group-hover:text-orange-600 transition-colors">{isArabic ? product.nameAr : product.name}</h5>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">{product.category}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-orange-600 text-sm">{product.price !== null && product.price !== undefined ? product.price.toFixed(2) : '—'} {t('common.currency')}</span>
+                        {product.rating && (
+                          <div className="flex items-center gap-1 bg-yellow-50 px-1.5 py-0.5 rounded">
+                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            <span className="font-semibold text-xs">{product.rating}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -770,7 +838,7 @@ function StoresList() {
                 <div className="text-center mt-4">
                   <button
                     onClick={() => navigate(`/customer?search=${encodeURIComponent(searchQuery)}`)}
-                    className="text-orange-600 hover:text-orange-700 font-semibold"
+                    className="text-orange-600 hover:text-orange-700 font-semibold text-sm"
                   >
                     {t('customer.viewAllProducts')} ({filteredProducts.length})
                   </button>
@@ -781,9 +849,13 @@ function StoresList() {
         </div>
       )}
 
-      {searchQuery && filteredStores.length === 0 && filteredProducts.length === 0 && (
-        <div className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-6 text-center">
-          <p className="text-gray-600">{t('customer.noStoresOrProductsFound')}</p>
+      {hasSearched && searchQuery && filteredStores.length === 0 && filteredProducts.length === 0 && (
+        <div ref={searchResultsRef} className="max-w-7xl mx-auto px-4 mb-6 bg-white rounded-xl shadow-lg p-8 text-center border border-gray-200">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-gray-600 font-semibold mb-2">{t('customer.noStoresOrProductsFound')}</p>
+          <p className="text-gray-500 text-sm">جرب البحث بكلمات مختلفة</p>
         </div>
       )}
 
