@@ -74,6 +74,7 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import NotificationBell from "./NotificationBell";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DualSponsoredAds from "./DualSponsoredAds";
+import PromotionalPopup from "./PromotionalPopup";
 import { useTranslation } from "react-i18next";
 
 // Fallback NavigationBar component in case import fails
@@ -419,6 +420,9 @@ export default function CustomerApp() {
         <Route path="/ratings/store/:storeId" element={<StoreRatingsPage />} />
         <Route path="/ratings/product/:productId" element={<ProductRatingsPage />} />
       </Routes>
+
+      {/* Promotional Popup */}
+      <PromotionalPopup page="/customer" />
       </ErrorBoundary>
     </SuspensionCheck>
   );

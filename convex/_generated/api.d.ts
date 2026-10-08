@@ -39,6 +39,7 @@ import type * as passwordResetInternal from "../passwordResetInternal.js";
 import type * as permissions from "../permissions.js";
 import type * as products from "../products.js";
 import type * as profiles from "../profiles.js";
+import type * as promotionalPopups from "../promotionalPopups.js";
 import type * as promotions from "../promotions.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as rateLimitTest from "../rateLimitTest.js";
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   permissions: typeof permissions;
   products: typeof products;
   profiles: typeof profiles;
+  promotionalPopups: typeof promotionalPopups;
   promotions: typeof promotions;
   rateLimit: typeof rateLimit;
   rateLimitTest: typeof rateLimitTest;

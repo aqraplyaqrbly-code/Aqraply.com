@@ -664,4 +664,32 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_created", ["createdAt"]),
+
+  // Promotional popups table
+  promotionalPopups: defineTable({
+    title: v.string(),
+    titleAr: v.optional(v.string()),
+    description: v.string(),
+    descriptionAr: v.optional(v.string()),
+    ctaText: v.string(),
+    ctaTextAr: v.optional(v.string()),
+    ctaLink: v.string(),
+    imageUrl: v.optional(v.string()),
+    imageId: v.optional(v.id("_storage")),
+    backgroundColor: v.optional(v.string()),
+    iconType: v.optional(v.union(v.literal("merchant-signup"), v.literal("giveaway"), v.literal("discount"), v.literal("custom"))),
+    showOnce: v.boolean(),
+    showDaily: v.boolean(),
+    delay: v.number(),
+    targetPages: v.optional(v.array(v.string())),
+    isActive: v.boolean(),
+    priority: v.number(),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_active", ["isActive"])
+    .index("by_priority", ["priority"])
+    .index("by_dates", ["startDate", "endDate"]),
 });

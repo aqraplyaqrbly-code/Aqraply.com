@@ -8,6 +8,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import CountdownTimer from "./CountdownTimer";
 import SponsoredAdsCarousel from "./SponsoredAdsCarousel";
 import DualSponsoredAds from "./DualSponsoredAds";
+import PromotionalPopup from "./PromotionalPopup";
 import { useAuth } from "../contexts/AuthContextNew";
 import { normalizeArabicText } from "../lib/utils";
 import { MAIN_CATEGORIES, getSubcategoriesByMainCategory } from "../constants/categories";
@@ -1637,6 +1638,9 @@ export default function HomePage() {
             </div>
           </div>
         </footer>
+
+        {/* Promotional Popup */}
+        <PromotionalPopup page="/" />
       </main>
     </div>
   );
