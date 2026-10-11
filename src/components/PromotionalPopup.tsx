@@ -5,6 +5,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { X, Gift, Store, Sparkles, Tag } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Package } from "lucide-react";
 
 interface PromotionalPopupProps {
   page?: string;
@@ -18,51 +19,82 @@ export default function PromotionalPopup({ page }: PromotionalPopupProps) {
     page: page || location.pathname,
   });
 
-  // Get image URL - for now, only support external URLs, not Convex storage
-  const getImageUrl = (imageId?: Id<"_storage">, imageUrl?: string) => {
-    if (imageUrl) return imageUrl;
-    // Convex storage will be implemented later
-    return null;
-  };
-
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentPopup, setCurrentPopup] = useState<any>(null);
 
+  // Get image URL using the same pattern as ProductImage
+  const imageKey = currentPopup?.imageId || currentPopup?.imageUrl;
+  const isDirectUrl = typeof imageKey === "string" && (imageKey.startsWith("http://") || imageKey.startsWith("https://"));
+  const resolvedImageUrl = useQuery(
+    api.files.getFileUrl,
+    imageKey && !isDirectUrl ? { storageId: imageKey } : "skip"
+  );
+  const imageUrl = isDirectUrl ? imageKey : resolvedImageUrl;
+
   useEffect(() => {
     if (!popups || popups.length === 0) {
-      // Fallback hardcoded popup for testing if no database popups exist
-      const fallbackPopup = {
-        _id: 'fallback',
-        title: '🎉 اشتري بـ 1000 جنيه وادخل سحب iPhone!',
-        description: 'مع كل عملية شراء بقيمة 1000 جنيه أو أكثر، تشارك تلقائياً في سحب iPhone 15 Pro Max. الفرصة لك!',
-        ctaText: 'ابدأ التسوق الآن',
-        ctaLink: '/customer',
-        backgroundColor: 'from-orange-500 to-red-600',
-        iconType: 'giveaway' as const,
-        showOnce: false,
-        showDaily: false,
-        delay: 2000,
-      };
-
-      setCurrentPopup(fallbackPopup);
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-        setIsAnimating(true);
-      }, fallbackPopup.delay);
-      return () => clearTimeout(timer);
+      // No popups available, do nothing
+      return;
     }
 
-    // Get the highest priority active popup
-    const sortedPopups = [...popups].sort((a, b) => b.priority - a.priority);
-    const popup = sortedPopups[0];
+    // Get active popups with rotation mode enabled
+    const rotationPopups = popups.filter(p => p.rotationMode === true);
+    const regularPopups = popups.filter(p => p.rotationMode !== true);
 
-    if (!popup) return;
+    // If no rotation popups, use regular priority logic
+    if (rotationPopups.length === 0) {
+      const sortedPopups = [...regularPopups].sort((a, b) => b.priority - a.priority);
+      const popup = sortedPopups[0];
+
+      if (!popup) return;
+
+      const checkPopup = () => {
+        const storageKey = `popup-${popup._id}`;
+
+        if (popup.showOnce) {
+          const hasSeen = localStorage.getItem(storageKey);
+          if (!hasSeen) {
+            return true;
+          }
+          return false;
+        }
+
+        if (popup.showDaily) {
+          const lastSeen = localStorage.getItem(`${storageKey}-date`);
+          const today = new Date().toDateString();
+          if (lastSeen !== today) {
+            return true;
+          }
+          return false;
+        }
+
+        return true;
+      };
+
+      if (checkPopup()) {
+        setCurrentPopup(popup);
+        const timer = setTimeout(() => {
+          setIsVisible(true);
+          setIsAnimating(true);
+        }, popup.delay);
+        return () => clearTimeout(timer);
+      }
+      return;
+    }
+
+    // Rotation logic: get the next popup in rotation
+    const rotationKey = 'popup-rotation-index';
+    const rotationIndex = parseInt(localStorage.getItem(rotationKey) || '0');
+    const sortedRotationPopups = [...rotationPopups].sort((a, b) => b.priority - a.priority);
+    const nextPopup = sortedRotationPopups[rotationIndex % sortedRotationPopups.length];
+
+    if (!nextPopup) return;
 
     const checkPopup = () => {
-      const storageKey = `popup-${popup._id}`;
+      const storageKey = `popup-${nextPopup._id}`;
 
-      if (popup.showOnce) {
+      if (nextPopup.showOnce) {
         const hasSeen = localStorage.getItem(storageKey);
         if (!hasSeen) {
           return true;
@@ -70,7 +102,7 @@ export default function PromotionalPopup({ page }: PromotionalPopupProps) {
         return false;
       }
 
-      if (popup.showDaily) {
+      if (nextPopup.showDaily) {
         const lastSeen = localStorage.getItem(`${storageKey}-date`);
         const today = new Date().toDateString();
         if (lastSeen !== today) {
@@ -83,11 +115,14 @@ export default function PromotionalPopup({ page }: PromotionalPopupProps) {
     };
 
     if (checkPopup()) {
-      setCurrentPopup(popup);
+      setCurrentPopup(nextPopup);
+      // Update rotation index for next time
+      localStorage.setItem(rotationKey, String((rotationIndex + 1) % sortedRotationPopups.length));
+
       const timer = setTimeout(() => {
         setIsVisible(true);
         setIsAnimating(true);
-      }, popup.delay);
+      }, nextPopup.delay);
       return () => clearTimeout(timer);
     }
   }, [popups, page, location.pathname]);
@@ -112,9 +147,32 @@ export default function PromotionalPopup({ page }: PromotionalPopupProps) {
   const handleCTA = () => {
     if (!currentPopup) return;
 
+    console.log('CTA clicked');
+    console.log('Popup data:', currentPopup);
+    console.log('CTA Link:', currentPopup.ctaLink);
+    console.log('Navigate function:', typeof navigate);
+
+    // Extract path from full URL if present
+    let targetLink = currentPopup.ctaLink;
+    if (targetLink.startsWith('http://') || targetLink.startsWith('https://')) {
+      try {
+        const url = new URL(targetLink);
+        targetLink = url.pathname;
+        console.log('Extracted path from URL:', targetLink);
+      } catch (e) {
+        console.error('Error parsing URL:', e);
+      }
+    }
+
     handleClose();
     setTimeout(() => {
-      navigate(currentPopup.ctaLink);
+      console.log('About to navigate to:', targetLink);
+      try {
+        navigate(targetLink);
+        console.log('Navigation executed successfully');
+      } catch (error) {
+        console.error('Navigation error:', error);
+      }
     }, 300);
   };
 
@@ -154,9 +212,9 @@ export default function PromotionalPopup({ page }: PromotionalPopupProps) {
         </button>
 
         <div className={`relative h-48 bg-gradient-to-br ${backgroundColor}`}>
-          {getImageUrl(currentPopup.imageId, currentPopup.imageUrl) ? (
+          {imageUrl ? (
             <img
-              src={getImageUrl(currentPopup.imageId, currentPopup.imageUrl)!}
+              src={imageUrl}
               alt={title}
               className="w-full h-full object-cover"
             />

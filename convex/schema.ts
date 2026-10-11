@@ -684,6 +684,7 @@ export default defineSchema({
     targetPages: v.optional(v.array(v.string())),
     isActive: v.boolean(),
     priority: v.number(),
+    rotationMode: v.optional(v.boolean()), // If true, rotate through popups
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
     createdAt: v.number(),

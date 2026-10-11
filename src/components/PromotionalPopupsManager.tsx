@@ -38,6 +38,7 @@ interface Popup {
   targetPages?: string[];
   isActive: boolean;
   priority: number;
+  rotationMode?: boolean;
   startDate?: number;
   endDate?: number;
   createdAt: number;
@@ -73,6 +74,7 @@ export default function PromotionalPopupsManager() {
     targetPages: [] as string[],
     isActive: true,
     priority: 1,
+    rotationMode: false,
     startDate: "",
     endDate: "",
   });
@@ -127,6 +129,7 @@ export default function PromotionalPopupsManager() {
         ...formData,
         imageId,
         imageUrl: undefined, // We'll use imageId from storage
+        rotationMode: formData.rotationMode,
         startDate: formData.startDate ? new Date(formData.startDate).getTime() : undefined,
         endDate: formData.endDate ? new Date(formData.endDate).getTime() : undefined,
       };
@@ -168,6 +171,7 @@ export default function PromotionalPopupsManager() {
       targetPages: popup.targetPages || [],
       isActive: popup.isActive,
       priority: popup.priority,
+      rotationMode: popup.rotationMode || false,
       startDate: popup.startDate ? new Date(popup.startDate).toISOString().split('T')[0] : "",
       endDate: popup.endDate ? new Date(popup.endDate).toISOString().split('T')[0] : "",
     });
@@ -212,6 +216,7 @@ export default function PromotionalPopupsManager() {
       targetPages: [],
       isActive: true,
       priority: 1,
+      rotationMode: false,
       startDate: "",
       endDate: "",
     });
@@ -295,6 +300,11 @@ export default function PromotionalPopupsManager() {
                       <Target className="w-4 h-4" />
                       الأولوية: {popup.priority}
                     </div>
+                    {popup.rotationMode && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-purple-600 font-semibold">تناوب</span>
+                      </div>
+                    )}
                     {popup.startDate && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -565,6 +575,22 @@ export default function PromotionalPopupsManager() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     min="1"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    وضع التناوب
+                  </label>
+                  <select
+                    value={formData.rotationMode ? "true" : "false"}
+                    onChange={(e) => setFormData({ ...formData, rotationMode: e.target.value === "true" })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="false">لا (إعلان واحد فقط)</option>
+                    <option value="true">نعم (تناوب بين الإعلانات)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    عند التفعيل، سيتم عرض الإعلانات بالتناوب في كل زيارة
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
