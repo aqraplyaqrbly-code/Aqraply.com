@@ -346,6 +346,16 @@ export const createProduct = mutation({
     sizes: sizeValidator,
     isAvailable: v.optional(v.boolean()),
     condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition
+    // Real Estate specific fields
+    listingType: v.optional(v.union(v.literal("sale"), v.literal("rent"), v.literal("contract_exit"))),
+    ownerPhone: v.optional(v.string()),
+    noBroker: v.optional(v.boolean()),
+    exitDetails: v.optional(v.object({
+      paidAmount: v.number(),
+      remainingInstallments: v.number(),
+      installmentAmount: v.number(),
+      overPrice: v.number(),
+    })),
   },
   handler: async (ctx, args) => {
     const { sessionToken, storeId, ...productData } = args;
@@ -398,6 +408,11 @@ export const createProduct = mutation({
       totalRatings: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      // Real Estate specific fields
+      listingType: productData.listingType,
+      ownerPhone: productData.ownerPhone,
+      noBroker: productData.noBroker,
+      exitDetails: productData.exitDetails,
     });
 
     // Send notification to customers about new product
@@ -468,6 +483,16 @@ export const updateProduct = mutation({
     sizes: sizeValidator,
     isAvailable: v.optional(v.boolean()),
     condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition
+    // Real Estate specific fields
+    listingType: v.optional(v.union(v.literal("sale"), v.literal("rent"), v.literal("contract_exit"))),
+    ownerPhone: v.optional(v.string()),
+    noBroker: v.optional(v.boolean()),
+    exitDetails: v.optional(v.object({
+      paidAmount: v.number(),
+      remainingInstallments: v.number(),
+      installmentAmount: v.number(),
+      overPrice: v.number(),
+    })),
   },
   handler: async (ctx, args) => {
     const { sessionToken, productId, storeId: _storeId, ...updateData } = args;
@@ -657,5 +682,130 @@ export const seedProductsWithImages = mutation({
     }
 
     return { success: true, created };
+  },
+});
+
+// Unlock owner phone for real estate listings
+export const unlockOwnerPhone = mutation({
+  args: {
+    productId: v.id("products"),
+    sessionToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول");
+    }
+
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      throw new ConvexError("المنتج غير موجود");
+    }
+
+    // Check if this is a real estate listing
+    if (!product.listingType) {
+      throw new ConvexError("هذا ليس إعلان عقارات");
+    }
+
+    // Check if user already unlocked
+    if (product.unlockedByUsers && product.unlockedByUsers.includes(userId)) {
+      throw new ConvexError("لقد قمت بفتح هذا الرقم مسبقاً");
+    }
+
+    // Get user wallet
+    const wallet = await ctx.db
+      .query("wallets")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!wallet) {
+      throw new ConvexError("لا توجد محفظة للمستخدم");
+    }
+
+    // Define micro-fee amount (configurable via system settings in future)
+    const microFee = 10; // 10 EGP
+
+    if (wallet.balance < microFee) {
+      throw new ConvexError("رصيد المحفظة غير كافٍ");
+    }
+
+    // Deduct micro-fee from wallet
+    await ctx.db.patch(wallet._id, {
+      balance: wallet.balance - microFee,
+      updatedAt: Date.now(),
+    });
+
+    // Add wallet transaction record
+    await ctx.db.insert("walletTransactions", {
+      userId,
+      walletId: wallet._id,
+      type: "expense",
+      amount: microFee,
+      description: "رسوم فتح رقم المالك - عقارات",
+      descriptionAr: "رسوم فتح رقم المالك - عقارات",
+      productId: args.productId,
+      balance: wallet.balance - microFee,
+      currency: "EGP",
+      createdAt: Date.now(),
+    });
+
+    // Add user to unlocked users list
+    const currentUnlocked = product.unlockedByUsers || [];
+    await ctx.db.patch(args.productId, {
+      unlockedByUsers: [...currentUnlocked, userId],
+      isUnlockedByUser: true,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, phone: product.ownerPhone };
+  },
+});
+
+// Mark real estate listing as sold or rented
+export const markRealEstateTransaction = mutation({
+  args: {
+    productId: v.id("products"),
+    sessionToken: v.string(),
+    transactionType: v.union(v.literal("sold"), v.literal("rented")),
+    commissionAmount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول");
+    }
+
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      throw new ConvexError("المنتج غير موجود");
+    }
+
+    if (!product.listingType) {
+      throw new ConvexError("هذا ليس إعلان عقارات");
+    }
+
+    const now = Date.now();
+
+    if (args.transactionType === "sold") {
+      await ctx.db.patch(args.productId, {
+        isSold: true,
+        soldDate: now,
+        isAvailable: false,
+        commissionPaid: true,
+        commissionAmount: args.commissionAmount,
+        updatedAt: now,
+      });
+    } else if (args.transactionType === "rented") {
+      await ctx.db.patch(args.productId, {
+        isRented: true,
+        rentedDate: now,
+        isAvailable: false,
+        commissionPaid: true,
+        commissionAmount: args.commissionAmount,
+        updatedAt: now,
+      });
+    }
+
+    return { success: true };
   },
 });

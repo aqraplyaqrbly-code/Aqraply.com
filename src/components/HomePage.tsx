@@ -9,6 +9,10 @@ import CountdownTimer from "./CountdownTimer";
 import SponsoredAdsCarousel from "./SponsoredAdsCarousel";
 import DualSponsoredAds from "./DualSponsoredAds";
 import PromotionalPopup from "./PromotionalPopup";
+import PhoneUnlockModal from "./PhoneUnlockModal";
+import RealEstateTransactionModal from "./RealEstateTransactionModal";
+import RealEstateBadge from "./RealEstateBadge";
+import ContractExitCalculator from "./ContractExitCalculator";
 import { useAuth } from "../contexts/AuthContextNew";
 import { normalizeArabicText } from "../lib/utils";
 import { MAIN_CATEGORIES, getSubcategoriesByMainCategory } from "../constants/categories";
@@ -32,8 +36,11 @@ import {
   Instagram,
   Linkedin,
   Mail,
+  Phone,
+  CheckCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Id } from "../../convex/_generated/dataModel";
 
 
 export default function HomePage() {
@@ -66,6 +73,13 @@ export default function HomePage() {
   const [allProductsPerPage] = useState(12);
   const [allProductsFilter, setAllProductsFilter] = useState<string>('all');
   const [allProductsSort, setAllProductsSort] = useState<string>('newest');
+  const [listingTypeFilter, setListingTypeFilter] = useState<string>('all');
+
+  // Real Estate modals state
+  const [selectedProductForPhone, setSelectedProductForPhone] = useState<Id<"products"> | null>(null);
+  const [selectedProductForTransaction, setSelectedProductForTransaction] = useState<Id<"products"> | null>(null);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
   // Fetch data
   const { sessionToken } = useAuth();
@@ -229,7 +243,7 @@ export default function HomePage() {
   // All Products Section Logic
   const filteredAllProducts = useMemo(() => {
     let filtered = [...allProducts];
-    
+
     // Apply category filter
     if (allProductsFilter !== 'all') {
       const mainCat = MAIN_CATEGORIES.find(cat => cat.id === allProductsFilter);
@@ -241,7 +255,15 @@ export default function HomePage() {
         });
       }
     }
-    
+
+    // Apply listing type filter for real estate
+    if (listingTypeFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        if (p.listingType === listingTypeFilter) return true;
+        return false;
+      });
+    }
+
     // Apply sorting
     switch (allProductsSort) {
       case 'newest':
@@ -259,9 +281,9 @@ export default function HomePage() {
       default:
         break;
     }
-    
+
     return filtered;
-  }, [allProducts, allProductsFilter, allProductsSort]);
+  }, [allProducts, allProductsFilter, allProductsSort, listingTypeFilter]);
 
   const paginatedAllProducts = useMemo(() => {
     const startIndex = (allProductsPage - 1) * allProductsPerPage;
@@ -338,12 +360,11 @@ export default function HomePage() {
     const container = document.getElementById("categories-scroll");
     if (container) {
       const scrollAmount = 300;
-      const newPosition =
-        direction === "left"
-          ? Math.max(0, scrollPosition - scrollAmount)
-          : scrollPosition + scrollAmount;
-      setScrollPosition(newPosition);
-      container.scrollLeft = newPosition;
+      if (direction === "left") {
+        container.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+      } else {
+        container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+      }
     }
   };
 
@@ -1090,7 +1111,7 @@ export default function HomePage() {
                 {/* Category Filter */}
                 <select
                   value={allProductsFilter}
-                  onChange={(e) => { setAllProductsFilter(e.target.value); setAllProductsPage(1); }}
+                  onChange={(e) => { setAllProductsFilter(e.target.value); setAllProductsPage(1); setListingTypeFilter('all'); }}
                   className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="all">جميع التصنيفات</option>
@@ -1098,6 +1119,20 @@ export default function HomePage() {
                     <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
                   ))}
                 </select>
+
+                {/* Listing Type Filter - Only show for Real Estate */}
+                {allProductsFilter === 'real_estate' && (
+                  <select
+                    value={listingTypeFilter}
+                    onChange={(e) => { setListingTypeFilter(e.target.value); setAllProductsPage(1); }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="all">جميع أنواع العرض</option>
+                    <option value="sale">للبيع</option>
+                    <option value="rent">للإيجار</option>
+                    <option value="contract_exit">تنازل وتخارج</option>
+                  </select>
+                )}
 
                 {/* Sort */}
                 <select
@@ -1129,7 +1164,7 @@ export default function HomePage() {
                       >
                         <div className="relative w-full h-48 bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                           <ProductImage product={product} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                          
+
                           {/* Rating Badge */}
                           {product.rating && (
                             <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
@@ -1137,8 +1172,20 @@ export default function HomePage() {
                               <span className="text-sm font-bold text-gray-800">{product.rating}</span>
                             </div>
                           )}
-                          
-                          {product.originalPrice && product.originalPrice > product.price && (
+
+                          {/* Real Estate Badges */}
+                          {product.listingType && (
+                            <div className="absolute top-4 right-4 flex flex-col gap-1">
+                              <RealEstateBadge
+                                noBroker={product.noBroker}
+                                listingType={product.listingType}
+                                size="sm"
+                              />
+                            </div>
+                          )}
+
+                          {/* Discount Badge */}
+                          {product.originalPrice && product.originalPrice > product.price && !product.listingType && (
                             <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg">
                               -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
                             </div>
@@ -1148,6 +1195,14 @@ export default function HomePage() {
                           <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors text-sm mb-1">
                             {isArabic ? product.nameAr : product.name}
                           </h4>
+
+                          {/* Contract Exit Calculator */}
+                          {product.listingType === "contract_exit" && product.exitDetails && (
+                            <div className="mb-2">
+                              <ContractExitCalculator exitDetails={product.exitDetails} size="sm" />
+                            </div>
+                          )}
+
                           <div className="pt-2 border-t border-gray-100 space-y-1 mt-auto">
                             <div className="flex items-baseline gap-1">
                               {product.price ? (
@@ -1161,6 +1216,38 @@ export default function HomePage() {
                             </div>
                             {product.originalPrice && product.originalPrice > product.price && (
                               <div className="text-xs text-gray-400 line-through">{product.originalPrice} EGP</div>
+                            )}
+
+                            {/* Real Estate Action Buttons */}
+                            {product.listingType && (
+                              <div className="flex gap-2 mt-2">
+                                {product.ownerPhone && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedProductForPhone(product._id);
+                                      setIsPhoneModalOpen(true);
+                                    }}
+                                    className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-all flex items-center justify-center gap-1"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    فتح الرقم
+                                  </button>
+                                )}
+                                {!product.isSold && !product.isRented && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedProductForTransaction(product._id);
+                                      setIsTransactionModalOpen(true);
+                                    }}
+                                    className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-semibold hover:bg-green-100 transition-all flex items-center justify-center gap-1"
+                                  >
+                                    <CheckCircle className="w-3 h-3" />
+                                    إتمام الصفقة
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1641,6 +1728,38 @@ export default function HomePage() {
 
         {/* Promotional Popup */}
         <PromotionalPopup page="/" />
+
+        {/* Real Estate Phone Unlock Modal */}
+        {isPhoneModalOpen && selectedProductForPhone && (
+          <PhoneUnlockModal
+            productId={selectedProductForPhone}
+            ownerPhone={allProducts.find(p => p._id === selectedProductForPhone)?.ownerPhone || ""}
+            microFee={10}
+            onClose={() => {
+              setIsPhoneModalOpen(false);
+              setSelectedProductForPhone(null);
+            }}
+            onUnlockSuccess={() => {
+              // Refresh products to update unlocked status
+            }}
+          />
+        )}
+
+        {/* Real Estate Transaction Modal */}
+        {isTransactionModalOpen && selectedProductForTransaction && (
+          <RealEstateTransactionModal
+            productId={selectedProductForTransaction}
+            listingType={allProducts.find(p => p._id === selectedProductForTransaction)?.listingType || "sale"}
+            price={allProducts.find(p => p._id === selectedProductForTransaction)?.price || 0}
+            onClose={() => {
+              setIsTransactionModalOpen(false);
+              setSelectedProductForTransaction(null);
+            }}
+            onSuccess={() => {
+              // Refresh products to update sold/rented status
+            }}
+          />
+        )}
       </main>
     </div>
   );

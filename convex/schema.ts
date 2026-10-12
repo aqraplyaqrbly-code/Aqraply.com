@@ -157,6 +157,24 @@ export default defineSchema({
     stock: v.optional(v.number()),
     unit: v.optional(v.string()),
     unitPrice: v.optional(v.number()),
+    // Real Estate specific fields
+    listingType: v.optional(v.union(v.literal("sale"), v.literal("rent"), v.literal("contract_exit"))),
+    noBroker: v.optional(v.boolean()),
+    ownerPhone: v.optional(v.string()),
+    isUnlockedByUser: v.optional(v.boolean()),
+    unlockedByUsers: v.optional(v.array(v.id("users"))),
+    exitDetails: v.optional(v.object({
+      paidAmount: v.number(),
+      remainingInstallments: v.number(),
+      installmentAmount: v.number(),
+      overPrice: v.number(),
+    })),
+    isSold: v.optional(v.boolean()),
+    isRented: v.optional(v.boolean()),
+    soldDate: v.optional(v.number()),
+    rentedDate: v.optional(v.number()),
+    commissionPaid: v.optional(v.boolean()),
+    commissionAmount: v.optional(v.number()),
   })
     .index("by_store", ["storeId"])
     .index("by_category", ["category"])
@@ -508,6 +526,7 @@ export default defineSchema({
     description: v.string(),
     descriptionAr: v.string(),
     orderId: v.optional(v.id("orders")),
+    productId: v.optional(v.id("products")),
     balance: v.number(),
     currency: v.string(),
     createdAt: v.number(),
@@ -515,7 +534,8 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_wallet", ["walletId"])
     .index("by_type", ["type"])
-    .index("by_order", ["orderId"]),
+    .index("by_order", ["orderId"])
+    .index("by_product", ["productId"]),
 
   coupons: defineTable({
     code: v.string(),

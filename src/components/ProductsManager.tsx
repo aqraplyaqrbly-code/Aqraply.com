@@ -292,6 +292,14 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
     colors: product?.colors || [], // {t('errors.availableColors')}
     sizes: product?.sizes || [], // {t('errors.availableSizes')} - Array of {label, name} objects
     condition: product?.condition || "new", // New: Product condition (new, used, refurbished)
+    // Real Estate specific fields
+    listingType: product?.listingType || "",
+    ownerPhone: product?.ownerPhone || "",
+    noBroker: product?.noBroker !== undefined ? product.noBroker : true,
+    exitPaidAmount: product?.exitDetails?.paidAmount?.toString() || "",
+    exitRemainingInstallments: product?.exitDetails?.remainingInstallments?.toString() || "",
+    exitInstallmentAmount: product?.exitDetails?.installmentAmount?.toString() || "",
+    exitOverPrice: product?.exitDetails?.overPrice?.toString() || "",
   });
 
   const [imageUrls, setImageUrls] = useState<string[]>(product?.images || []);
@@ -501,6 +509,20 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
         sizes: formData.sizes,
         isAvailable: true,
         condition: formData.condition, // New: Product condition
+        // Real Estate specific fields
+        ...(formData.mainCategory === "real_estate" && {
+          listingType: formData.listingType as "sale" | "rent" | "contract_exit",
+          ownerPhone: formData.ownerPhone,
+          noBroker: formData.noBroker,
+          ...(formData.listingType === "contract_exit" && {
+            exitDetails: {
+              paidAmount: parseFloat(formData.exitPaidAmount),
+              remainingInstallments: parseFloat(formData.exitRemainingInstallments),
+              installmentAmount: parseFloat(formData.exitInstallmentAmount),
+              overPrice: parseFloat(formData.exitOverPrice),
+            },
+          }),
+        }),
       };
 
       if (product) {
@@ -868,17 +890,127 @@ function ProductFormModal({ stores, product, onClose, sessionToken }: { stores: 
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">وقت التحضير (دقيقة)</label>
-            <input
-              type="number"
-              required
-              value={formData.preparationTime}
-              onChange={(e) => setFormData({ ...formData, preparationTime: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-              placeholder="15"
-            />
-          </div>
+          {/* Real Estate Specific Fields */}
+          {formData.mainCategory === "real_estate" && (
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">إعدادات العقار</h3>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">نوع العرض</label>
+                <div className="relative">
+                  <select
+                    required
+                    value={formData.listingType}
+                    onChange={(e) => setFormData({ ...formData, listingType: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all appearance-none bg-white"
+                  >
+                    <option value="">اختر نوع العرض</option>
+                    <option value="sale">للبيع</option>
+                    <option value="rent">للإيجار</option>
+                    <option value="contract_exit">تنازل وتخارج</option>
+                  </select>
+                  <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">رقم المالك</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.ownerPhone}
+                  onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                  placeholder="01xxxxxxxxx"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="noBroker"
+                  checked={formData.noBroker}
+                  onChange={(e) => setFormData({ ...formData, noBroker: e.target.checked })}
+                  className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="noBroker" className="text-sm font-medium text-gray-700">
+                  مباشر من المالك - بدون سمسار
+                </label>
+              </div>
+
+              {/* Contract Exit Details */}
+              {formData.listingType === "contract_exit" && (
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 space-y-4">
+                  <h4 className="font-semibold text-orange-900">تفاصيل التنازل</h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-start">المقدم المدفوع (EGP)</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.exitPaidAmount}
+                        onChange={(e) => setFormData({ ...formData, exitPaidAmount: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                        placeholder="المبلغ المدفوع"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-start">الزيادة/المتخارج (EGP)</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.exitOverPrice}
+                        onChange={(e) => setFormData({ ...formData, exitOverPrice: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                        placeholder="الزيادة المطلوبة"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-start">عدد الأقساط المتبقية</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.exitRemainingInstallments}
+                        onChange={(e) => setFormData({ ...formData, exitRemainingInstallments: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                        placeholder="عدد الأقساط"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-start">قيمة القسط (EGP)</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.exitInstallmentAmount}
+                        onChange={(e) => setFormData({ ...formData, exitInstallmentAmount: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                        placeholder="قيمة كل قسط"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* وقت التحضير - لا يظهر للعقارات */}
+          {formData.mainCategory !== "real_estate" && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 text-start">وقت التحضير (دقيقة)</label>
+              <input
+                type="number"
+                required
+                value={formData.preparationTime}
+                onChange={(e) => setFormData({ ...formData, preparationTime: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                placeholder="15"
+              />
+            </div>
+          )}
 
           {/* قسم الألوان */}
           <div className="border-t pt-6">

@@ -24,6 +24,21 @@ export const getMyWallet = query({
   },
 });
 
+// Get user wallet by userId (for components that need to check wallet)
+export const getUserWallet = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const wallet = await ctx.db
+      .query("wallets")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return wallet;
+  },
+});
+
 // إضافة رصيد للمحفظة (Admin only - for payment verification)
 export const addBalance = mutation({
   args: {

@@ -22,6 +22,21 @@ export const MAIN_CATEGORIES: MainCategory[] = [
     subcategories: [],
   },
   {
+    id: "real_estate",
+    nameAr: "عقارات",
+    nameEn: "Real Estate",
+    icon: "🏢",
+    subcategories: [
+      { id: "apartments_sale", nameAr: "شقق للبيع", nameEn: "Apartments - Sale" },
+      { id: "apartments_rent", nameAr: "شقق للإيجار", nameEn: "Apartments - Rent" },
+      { id: "contract_exit", nameAr: "تنازل وتخارج عقاري", nameEn: "Contract Exit / AqarExit" },
+      { id: "villas", nameAr: "فيلل للبيع والإيجار", nameEn: "Villas" },
+      { id: "commercial", nameAr: "مكاتب وعقارات تجارية", nameEn: "Commercial Properties" },
+      { id: "land", nameAr: "أراضي", nameEn: "Land" },
+      { id: "garage", nameAr: "جراجات ومخازن", nameEn: "Garages & Storage" },
+    ],
+  },
+  {
     id: "supermarket_food",
     nameAr: "سوبرماركت وأغذية",
     nameEn: "Supermarket & Food",
@@ -104,7 +119,6 @@ export const MAIN_CATEGORIES: MainCategory[] = [
       { id: "spare_parts", nameAr: "قطع غيار", nameEn: "Spare Parts" },
       { id: "laundries", nameAr: "مغاسل", nameEn: "Laundries" },
       { id: "car_services", nameAr: "خدمات سيارات", nameEn: "Car Services" },
-      { id: "real_estate", nameAr: "عقارات", nameEn: "Real Estate" },
       { id: "education_centers", nameAr: "مراكز تعليم", nameEn: "Education Centers" },
       { id: "general_supplies", nameAr: "توريدات عامة", nameEn: "General Supplies" },
       // Individual home services
@@ -221,6 +235,7 @@ export const OLD_CATEGORY_MAPPING: Record<string, { mainCategory: string; subcat
   "مراكز صيانة": { mainCategory: "services_maintenance", subcategory: "maintenance_centers" },
   "خدمات سيارات": { mainCategory: "services_maintenance", subcategory: "car_services" },
   "مغاسل": { mainCategory: "services_maintenance", subcategory: "laundries" },
+  "عقارات": { mainCategory: "real_estate", subcategory: "apartments_sale" },
   "حلاقة وتجميل": { mainCategory: "fashion_beauty", subcategory: "hair_beauty" },
   "جيم ولياقة": { mainCategory: "health_sports", subcategory: "gym_fitness" },
   "مراكز تعليم": { mainCategory: "services_maintenance", subcategory: "education_centers" },

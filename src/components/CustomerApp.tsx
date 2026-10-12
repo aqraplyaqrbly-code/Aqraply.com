@@ -157,40 +157,45 @@ function StoreImage({
   );
 }
 // ─── Product Detail Modal with Image Gallery ───────────────────────────────
-function ProductDetailModal({ 
-  product, 
-  onClose, 
+function ProductDetailModal({
+  product,
+  onClose,
   onAddToCart,
   size,
-  onSelectSize 
-}: { 
-  product: any; 
-  onClose: () => void; 
+  onSelectSize,
+  store
+}: {
+  product: any;
+  onClose: () => void;
   onAddToCart: (product: any, sizeLabel?: string, color?: string, imageUrl?: string) => void;
   size: string | null;
   onSelectSize: (size: string | null) => void;
+  store?: any;
 }) {
   const { t, i18n } = useTranslation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  
+
   const isArabic = i18n.language === 'ar';
   const { sessionToken } = useAuth();
-  
+
   // جلب بيانات المنتج المحدثة من DB (السعر والمقاسات والصور)
-  const liveProduct = useQuery(api.products.getProductWithImage, { 
+  const liveProduct = useQuery(api.products.getProductWithImage, {
     productId: product._id,
     ...(sessionToken ? { sessionToken } : {})
   });
-  
+
   // استخدام البيانات المحدثة أو البيانات المحلية كـ fallback
   const displayProduct = liveProduct || product;
   const images = displayProduct.images && displayProduct.images.length > 0 ? displayProduct.images : [];
-  
+
+  // Get phone number - use owner phone if available, otherwise use store phone
+  const phoneNumber = displayProduct.ownerPhone || store?.phone;
+
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
-  
+
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
@@ -341,22 +346,56 @@ function ProductDetailModal({
             </div>
           )}
 
-          {/* Add to Cart Button */}
+          {/* Add to Cart Button - Only for non-real estate products */}
           <div className="pt-4 space-y-3">
-            <button
-              onClick={() => onAddToCart(displayProduct, size || undefined, selectedColor || undefined, images[currentImageIndex])}
-              className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-lg rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95"
-            >
-              <ShoppingCart className="w-6 h-6" />
-              {t('customer.addToCart')}
-            </button>
-            <button
-              onClick={() => window.open(`/customer/ratings/product/${displayProduct._id}`, '_blank')}
-              className="w-full py-3 px-6 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
-            >
-              <Star className="w-5 h-5" />
-              {t('customer.viewRatings')}
-            </button>
+            {!displayProduct.listingType ? (
+              <>
+                <button
+                  onClick={() => onAddToCart(displayProduct, size || undefined, selectedColor || undefined, images[currentImageIndex])}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-lg rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95"
+                >
+                  <ShoppingCart className="w-6 h-6" />
+                  {t('customer.addToCart')}
+                </button>
+                <button
+                  onClick={() => window.open(`/customer/ratings/product/${displayProduct._id}`, '_blank')}
+                  className="w-full py-3 px-6 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                >
+                  <Star className="w-5 h-5" />
+                  {t('customer.viewRatings')}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Real Estate Action Buttons */}
+                {phoneNumber ? (
+                  <button
+                    onClick={() => {
+                      window.location.href = `tel:${phoneNumber}`;
+                    }}
+                    className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold text-lg rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95"
+                  >
+                    <Phone className="w-6 h-6" />
+                    اتصل بالمالك
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="w-full py-4 px-6 bg-gray-300 text-gray-500 font-bold text-lg rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Phone className="w-6 h-6" />
+                    رقم الهاتف غير متوفر
+                  </button>
+                )}
+                <button
+                  onClick={() => window.open(`/customer/ratings/product/${displayProduct._id}`, '_blank')}
+                  className="w-full py-3 px-6 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                >
+                  <Star className="w-5 h-5" />
+                  {t('customer.viewRatings')}
+                </button>
+              </>
+            )}
             <button
               onClick={onClose}
               className="w-full py-3 px-6 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all"
@@ -1700,6 +1739,7 @@ function StoreDetails() {
           {selectedProduct && (
             <ProductDetailModal
               product={selectedProduct}
+              store={store}
               onClose={() => {
                 setSelectedProduct(null);
                 setSelectedSize(null);
@@ -1712,8 +1752,8 @@ function StoreDetails() {
         </>
       )}
 
-      {/* Floating Cart Button */}
-      {cart && cart.storeId === storeId && getItemCount() > 0 && (
+      {/* Floating Cart Button - Hide for real estate stores */}
+      {cart && cart.storeId === storeId && getItemCount() > 0 && store?.mainCategory !== "real_estate" && (
         <div className="fixed bottom-20 left-4 right-4 z-50">
           <button
             onClick={() => navigate('/customer/cart')}
