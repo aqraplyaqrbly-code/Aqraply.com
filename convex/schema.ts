@@ -132,6 +132,7 @@ export default defineSchema({
     reviewCount: v.optional(v.number()),
     totalRatings: v.optional(v.number()),
     condition: v.optional(v.union(v.literal("new"), v.literal("used"), v.literal("refurbished"))), // New: Product condition for second-hand items
+    isApproved: v.optional(v.boolean()), // Approval status for products
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
     // Deal/Flash Sale fields
@@ -181,6 +182,7 @@ export default defineSchema({
     .index("by_main_category", ["mainCategory"])
     .index("by_subcategory", ["subcategory"])
     .index("by_available", ["isAvailable"])
+    .index("by_approved", ["isApproved"])
     .index("by_updated", ["updatedAt"])
     .index("by_condition", ["condition"])
     .index("by_deal", ["isDeal"])

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Store, Mail, Lock, User, Phone, Building2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContextNew";
+import { useNavigate } from "react-router-dom";
 import {
   validateEmail,
   validatePassword,
@@ -18,6 +19,7 @@ type AuthMode = "login" | "signup" | "profile";
 
 export default function MerchantAuth() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { signIn, signUp, sessionToken } = useAuth();
   const createProfile = useMutation(api.profiles.createProfile);
   const { user, isAuthenticated } = useAuth();
@@ -224,7 +226,7 @@ export default function MerchantAuth() {
         duration: 5000,
       });
       setTimeout(() => {
-        window.location.reload();
+        navigate("/merchant/settings");
       }, 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('merchant.profileCreateFailed');

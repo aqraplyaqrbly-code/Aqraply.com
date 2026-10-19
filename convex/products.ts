@@ -38,7 +38,7 @@ export const getAllProductsWithImages = query({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx, args.sessionToken);
-    
+
     // Check if user is authorized (admin or owner)
     let isAuthorized = false;
     if (userId) {
@@ -46,14 +46,14 @@ export const getAllProductsWithImages = query({
         .query("profiles")
         .withIndex("by_user", (q) => q.eq("userId", userId))
         .first();
-      
-      isAuthorized = !!userProfile && 
+
+      isAuthorized = !!userProfile &&
         (userProfile.role === "admin" || userProfile.role === "owner" || userProfile.isOwner) ? true : false;
     }
 
     // Always filter to available products for unauthorized users
     const shouldFilterAvailable = !isAuthorized || args.availableOnly;
-    
+
     const products = shouldFilterAvailable
       ? await ctx.db
           .query("products")
@@ -61,8 +61,18 @@ export const getAllProductsWithImages = query({
           .collect()
       : await ctx.db.query("products").collect();
 
+    // Filter products from approved stores for unauthorized users
+    const filteredProducts = isAuthorized
+      ? products
+      : await Promise.all(
+          products.map(async (product) => {
+            const store = await ctx.db.get(product.storeId);
+            return store && store.isApproved !== false ? product : null;
+          })
+        ).then((results) => results.filter((p) => p !== null));
+
     // Return only public data, hide sensitive information
-    return products.map((product) => ({
+    return filteredProducts.map((product) => ({
       _id: product._id,
       name: product.name,
       nameAr: product.nameAr,
@@ -104,6 +114,12 @@ export const getStoreProductsWithImages = query({
     availableOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Check if store is approved
+    const store = await ctx.db.get(args.storeId);
+    if (!store || store.isApproved === false) {
+      return [];
+    }
+
     let productsQuery = ctx.db
       .query("products")
       .withIndex("by_store", (q) => q.eq("storeId", args.storeId));
@@ -369,6 +385,15 @@ export const createProduct = mutation({
 
     await assertStoreOwner(ctx, storeId, userId);
 
+    // Check if store is approved
+    const store = await ctx.db.get(storeId);
+    if (!store) {
+      throw new ConvexError("المتجر غير موجود");
+    }
+
+    // Set approval status based on store approval
+    const isStoreApproved = store.isApproved !== false;
+
     // Price validation
     if (productData.price <= 0) {
       throw new ConvexError("السعر يجب أن يكون أكبر من صفر");
@@ -403,6 +428,7 @@ export const createProduct = mutation({
       colors: productData.colors ?? [],
       sizes: productData.sizes ?? [],
       isAvailable: productData.isAvailable ?? true,
+      isApproved: isStoreApproved, // Auto-approve if store is approved, otherwise pending
       rating: 0,
       reviewCount: 0,
       totalRatings: 0,
@@ -415,44 +441,65 @@ export const createProduct = mutation({
       exitDetails: productData.exitDetails,
     });
 
-    // Send notification to customers about new product
-    try {
-      // Get all customer profiles with FCM tokens
-      const customerProfiles = await ctx.db
-        .query("profiles")
-        .withIndex("by_role", (q) => q.eq("role", "customer"))
-        .collect();
+    // Send notification to customers about new product (only for approved stores)
+    if (isStoreApproved) {
+      try {
+        // Get all customer profiles with FCM tokens
+        const customerProfiles = await ctx.db
+          .query("profiles")
+          .withIndex("by_role", (q) => q.eq("role", "customer"))
+          .collect();
 
-      console.log("📢 Found customer profiles:", customerProfiles.length);
-      console.log("📢 Customers with FCM tokens:", customerProfiles.filter(p => p.fcmToken).length);
-      console.log("📢 Starting notification loop...");
+        console.log("📢 Found customer profiles:", customerProfiles.length);
+        console.log("📢 Customers with FCM tokens:", customerProfiles.filter(p => p.fcmToken).length);
+        console.log("📢 Starting notification loop...");
 
-      for (let i = 0; i < customerProfiles.length; i++) {
-        const profile = customerProfiles[i];
-        console.log(`📢 Processing customer ${i + 1}/${customerProfiles.length}:`, profile.userId);
-        
-        if (profile.fcmToken) {
-          console.log("📢 Customer has FCM token, scheduling notification...");
-          try {
-            // Use scheduler to call the action
-            const scheduledId = await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
-              fcmToken: profile.fcmToken,
-              title: "منتج جديد! 🛍️",
-              body: `${productData.nameAr} - ${productData.name}`,
-              data: { type: "new_product", productId: productId.toString() },
-            });
-            console.log("📢 Notification scheduled with ID:", scheduledId);
-          } catch (error) {
-            console.error("❌ Error scheduling notification for customer:", profile.userId, error);
+        for (let i = 0; i < customerProfiles.length; i++) {
+          const profile = customerProfiles[i];
+          console.log(`📢 Processing customer ${i + 1}/${customerProfiles.length}:`, profile.userId);
+
+          if (profile.fcmToken) {
+            console.log("📢 Customer has FCM token, scheduling notification...");
+            try {
+              // Use scheduler to call the action
+              const scheduledId = await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+                fcmToken: profile.fcmToken,
+                title: "منتج جديد! 🛍️",
+                body: `${productData.nameAr} - ${productData.name}`,
+                data: { type: "new_product", productId: productId.toString() },
+              });
+              console.log("📢 Notification scheduled with ID:", scheduledId);
+            } catch (error) {
+              console.error("❌ Error scheduling notification for customer:", profile.userId, error);
+            }
+          } else {
+            console.log("⚠️ Customer has no FCM token:", profile.userId);
           }
-        } else {
-          console.log("⚠️ Customer has no FCM token:", profile.userId);
         }
+
+        console.log("📢 Notification loop completed");
+      } catch (error) {
+        console.error("Error sending product notification:", error);
       }
-      
-      console.log("📢 Notification loop completed");
-    } catch (error) {
-      console.error("Error sending product notification:", error);
+    } else {
+      // Send notification to merchant that product is pending approval
+      try {
+        const merchantProfile = await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .first();
+
+        if (merchantProfile && merchantProfile.fcmToken) {
+          await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+            fcmToken: merchantProfile.fcmToken,
+            title: "منتج في انتظار الموافقة ⏳",
+            body: `تم إضافة المنتج "${productData.nameAr}" وهو في انتظار موافقة الإدارة`,
+            data: { type: "product_pending_approval", productId: productId.toString() },
+          });
+        }
+      } catch (error) {
+        console.error("Error sending merchant notification:", error);
+      }
     }
 
     return productId;
@@ -807,5 +854,112 @@ export const markRealEstateTransaction = mutation({
     }
 
     return { success: true };
+  },
+});
+
+// Approve product (admin only)
+export const approveProduct = mutation({
+  args: {
+    sessionToken: v.optional(v.string()),
+    productId: v.id("products"),
+  },
+  handler: async (ctx, args) => {
+    const { sessionToken, productId } = args;
+    const userId = await getAuthUserId(ctx, sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول أولاً");
+    }
+
+    // Check if user is admin
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "owner")) {
+      throw new ConvexError("ليس لديك صلاحية للموافقة على المنتجات");
+    }
+
+    const product = await ctx.db.get(productId);
+    if (!product) {
+      throw new ConvexError("المنتج غير موجود");
+    }
+
+    await ctx.db.patch(productId, {
+      isApproved: true,
+      isAvailable: true,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+// Reject product (admin only)
+export const rejectProduct = mutation({
+  args: {
+    sessionToken: v.optional(v.string()),
+    productId: v.id("products"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { sessionToken, productId, reason } = args;
+    const userId = await getAuthUserId(ctx, sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول أولاً");
+    }
+
+    // Check if user is admin
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "owner")) {
+      throw new ConvexError("ليس لديك صلاحية لرفض المنتجات");
+    }
+
+    const product = await ctx.db.get(productId);
+    if (!product) {
+      throw new ConvexError("المنتج غير موجود");
+    }
+
+    await ctx.db.patch(productId, {
+      isApproved: false,
+      isAvailable: false,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+// Get pending products (admin only)
+export const getPendingProducts = query({
+  args: {
+    sessionToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx, args.sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول أولاً");
+    }
+
+    // Check if user is admin
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "owner")) {
+      throw new ConvexError("ليس لديك صلاحية لعرض المنتجات المعلقة");
+    }
+
+    const products = await ctx.db
+      .query("products")
+      .filter((q) => q.eq(q.field("isApproved"), false))
+      .collect();
+
+    return products;
   },
 });

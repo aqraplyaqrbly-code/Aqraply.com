@@ -2337,17 +2337,12 @@ function Checkout() {
 
       // رسائل مخصصة للأخطاء الشائعة
       if (message.includes('غير متوفر حالياً')) {
-        message = 'عذراً، هذا المنتج غير متوفر حالياً';
+        message = 'عذراً، هذا المنتج غير متوفر حالياً. تم حذفه من السلة';
         toast.error(message, {
           duration: 5000,
-          action: {
-            label: 'حذف من السلة',
-            onClick: () => {
-              // إزالة المنتجات غير المتوفرة من السلة
-              clearCart();
-            }
-          }
         });
+        // إزالة المنتجات غير المتوفرة من السلة
+        clearCart();
       } else if (message.includes('غير موجود')) {
         message = 'عذراً، أحد المنتجات لم يعد متاحاً';
         toast.error(message);

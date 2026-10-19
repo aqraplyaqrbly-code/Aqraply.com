@@ -278,11 +278,13 @@ function StoresManagement() {
   const toggleStore = useMutation(api.admin.toggleStoreActive);
   const approveStore = useMutation(api.stores.approveStore);
   const rejectStore = useMutation(api.stores.rejectStore);
+  const deleteStore = useMutation(api.stores.deleteStore);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [showPending, setShowPending] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectingStore, setRejectingStore] = useState<string | null>(null);
+  const [deletingStore, setDeletingStore] = useState<string | null>(null);
 
   const filteredStores = (stores || [])
     .filter((s) => filterActive === null || s.isActive === filterActive)
@@ -334,6 +336,22 @@ function StoresManagement() {
       setRejectingStore(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "فشل رفض المتجر");
+    }
+  };
+
+  const handleDeleteStore = async (storeId: string) => {
+    if (!confirm("هل أنت متأكد من حذف هذا المتجر؟ سيتم حذف جميع المنتجات والطلبات المرتبطة به.")) {
+      return;
+    }
+    try {
+      await deleteStore({
+        ...(sessionToken && { sessionToken }),
+        storeId: storeId as Id<"stores">,
+      });
+      toast.success("تم حذف المتجر بنجاح");
+      setDeletingStore(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "فشل حذف المتجر");
     }
   };
 
@@ -547,25 +565,41 @@ function StoresManagement() {
                         </button>
                         <button
                           onClick={() => setRejectingStore(store._id)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition-all"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-sm font-semibold hover:bg-orange-200 transition-all"
                         >
                           <XCircle className="w-4 h-4" />
                           رفض
                         </button>
+                        <button
+                          onClick={() => setDeletingStore(store._id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          حذف
+                        </button>
                       </>
                     )}
                     {store.isApproved !== false && (
-                      <button
-                        onClick={() => handleToggle(store._id, store.isActive)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                          store.isActive
-                            ? "bg-red-100 text-red-700 hover:bg-red-200"
-                            : "bg-green-100 text-green-700 hover:bg-green-200"
-                        }`}
-                      >
-                        <Power className="w-4 h-4" />
-                        {store.isActive ? "تعطيل" : "تفعيل"}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleToggle(store._id, store.isActive)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                            store.isActive
+                              ? "bg-red-100 text-red-700 hover:bg-red-200"
+                              : "bg-green-100 text-green-700 hover:bg-green-200"
+                          }`}
+                        >
+                          <Power className="w-4 h-4" />
+                          {store.isActive ? "تعطيل" : "تفعيل"}
+                        </button>
+                        <button
+                          onClick={() => setDeletingStore(store._id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          حذف
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -602,6 +636,42 @@ function StoresManagement() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
               >
                 رفض
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Store Delete Confirmation Modal */}
+      {deletingStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">تأكيد الحذف</h3>
+                <p className="text-sm text-gray-600">هل أنت متأكد من حذف هذا المتجر؟</p>
+              </div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+              <p className="text-sm text-red-800">
+                ⚠️ سيتم حذف جميع المنتجات والطلبات والتقييمات المرتبطة بهذا المتجر بشكل نهائي.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingStore(null)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => handleDeleteStore(deletingStore)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+              >
+                حذف نهائياً
               </button>
             </div>
           </div>

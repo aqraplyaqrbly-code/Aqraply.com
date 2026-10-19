@@ -105,11 +105,12 @@ export default function StoreSettings() {
             </div>
           </div>
         ) : myStores.length === 0 || showCreateForm ? (
-          <StoreForm 
+          <StoreForm
             sessionToken={sessionToken}
-            onClose={() => setShowCreateForm(false)} 
+            onClose={() => setShowCreateForm(false)}
             onSuccess={() => {
               setShowCreateForm(false);
+              navigate('/merchant/products');
             }}
           />
         ) : selectedStore ? (
@@ -133,6 +134,7 @@ export default function StoreSettings() {
 }
 
 function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; onClose: () => void; onSuccess: () => void; sessionToken?: string | null }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: store?.name || "",
     nameAr: store?.nameAr || "",
@@ -417,8 +419,10 @@ function StoreForm({ store, onClose, onSuccess, sessionToken }: { store?: any; o
       } else {
         await createStore({ sessionToken, ...storeData });
         toast.success("تم إنشاء المتجر بنجاح!");
+        navigate('/merchant/products');
+        return;
       }
-      
+
       onSuccess();
     } catch (error) {
       const message = error instanceof Error ? error.message : "حدث خطأ";

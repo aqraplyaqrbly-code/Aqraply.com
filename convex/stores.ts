@@ -13,9 +13,12 @@ export const getActiveStores = query({
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .collect();
 
+    // Filter to only approved stores
+    const approvedStores = stores.filter(store => store.isApproved !== false);
+
     // Convert imageId to imageUrl for all stores
     return await Promise.all(
-      stores.map(async (store) => {
+      approvedStores.map(async (store) => {
         let imageUrl = store.imageUrl;
         if (store.imageId && !imageUrl) {
           try {
@@ -234,26 +237,28 @@ export const createStore = mutation({
       updatedAt: Date.now(),
     });
 
-    // Send notification to customers about new store
-    try {
-      // Get all customer profiles with FCM tokens
-      const customerProfiles = await ctx.db
-        .query("profiles")
-        .withIndex("by_role", (q) => q.eq("role", "customer"))
-        .collect();
+    // Send notification to customers about new store (only if approved)
+    if (requireApproval === false) {
+      try {
+        // Get all customer profiles with FCM tokens
+        const customerProfiles = await ctx.db
+          .query("profiles")
+          .withIndex("by_role", (q) => q.eq("role", "customer"))
+          .collect();
 
-      for (const profile of customerProfiles) {
-        if (profile.fcmToken) {
-          await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
-            fcmToken: profile.fcmToken,
-            title: "متجر جديد! 🏪",
-            body: `${args.nameAr} - ${args.name}`,
-            data: { type: "new_store", storeId: storeId.toString() },
-          });
+        for (const profile of customerProfiles) {
+          if (profile.fcmToken) {
+            await ctx.scheduler.runAfter(0, api.firebaseNotifications.sendPushNotification, {
+              fcmToken: profile.fcmToken,
+              title: "متجر جديد! 🏪",
+              body: `${args.nameAr} - ${args.name}`,
+              data: { type: "new_store", storeId: storeId.toString() },
+            });
+          }
         }
+      } catch (error) {
+        console.error("Error sending store notification:", error);
       }
-    } catch (error) {
-      console.error("Error sending store notification:", error);
     }
 
     // Update user profile with storeId
@@ -430,7 +435,7 @@ export const approveStore = mutation({
   },
 });
 
-// Reject store (admin only)
+// Reject store (admin only) - marks as rejected and inactive
 export const rejectStore = mutation({
   args: {
     sessionToken: v.optional(v.string()),
@@ -459,6 +464,7 @@ export const rejectStore = mutation({
       throw new ConvexError("المتجر غير موجود");
     }
 
+    // Mark store as rejected and inactive
     await ctx.db.patch(storeId, {
       isApproved: false,
       isActive: false,
@@ -468,6 +474,85 @@ export const rejectStore = mutation({
     });
 
     return { success: true };
+  },
+});
+
+// Delete store (admin only) - deletes store completely
+export const deleteStore = mutation({
+  args: {
+    sessionToken: v.optional(v.string()),
+    storeId: v.id("stores"),
+  },
+  handler: async (ctx, args) => {
+    const { sessionToken, storeId } = args;
+    const userId = await getAuthUserId(ctx, sessionToken);
+    if (!userId) {
+      throw new ConvexError("يجب تسجيل الدخول أولاً");
+    }
+
+    // Check if user is admin
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile || (profile.role !== "admin" && profile.role !== "owner")) {
+      throw new ConvexError("ليس لديك صلاحية لحذف المتاجر");
+    }
+
+    const store = await ctx.db.get(storeId);
+    if (!store) {
+      throw new ConvexError("المتجر غير موجود");
+    }
+
+    // Delete all products for this store
+    const products = await ctx.db
+      .query("products")
+      .withIndex("by_store", (q) => q.eq("storeId", storeId))
+      .collect();
+
+    for (const product of products) {
+      await ctx.db.delete(product._id);
+    }
+
+    // Delete all orders for this store
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_store", (q) => q.eq("storeId", storeId))
+      .collect();
+
+    for (const order of orders) {
+      await ctx.db.delete(order._id);
+    }
+
+    // Delete all store reviews
+    const storeReviews = await ctx.db
+      .query("storeReviews")
+      .withIndex("by_store", (q) => q.eq("storeId", storeId))
+      .collect();
+
+    for (const review of storeReviews) {
+      await ctx.db.delete(review._id);
+    }
+
+    // Delete the store itself
+    await ctx.db.delete(storeId);
+
+    // Update user profile to remove storeId
+    if (store.ownerId) {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", store.ownerId as Id<"users">))
+        .first();
+
+      if (userProfile && userProfile.storeId === storeId) {
+        await ctx.db.patch(userProfile._id, {
+          storeId: undefined,
+        });
+      }
+    }
+
+    return { success: true, deletedProducts: products.length, deletedOrders: orders.length };
   },
 });
 
