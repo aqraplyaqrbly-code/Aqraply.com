@@ -1,9 +1,20 @@
 import { mutation, query, action } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
-import bcrypt from "bcryptjs";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "./auth";
+import { Resend } from "resend";
+import type { Id } from "./_generated/dataModel";
+import bcrypt from "bcryptjs";
+
+// Helper function to hash OTP using crypto.subtle
+async function hashOTP(otp: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(otp + (process.env.OTP_SECRET || "default-secret"));
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 // Helper function to generate OTP
 function generateSecureOTP(): string {
@@ -17,16 +28,15 @@ function generateSecureOTP(): string {
 }
 
 // طلب إعادة تعيين كلمة المرور - يرسل OTP على الإيميل
-export const requestPasswordReset = mutation({
+export const requestPasswordReset = action({
   args: {
     email: v.string(),
   },
   handler: async (ctx, args) => {
+    const email = args.email.trim().toLowerCase();
+
     // البحث عن المستخدم بالبريد الإلكتروني
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
+    const user = await ctx.runQuery(internal.authInternal.findUserByEmail, { email });
 
     if (!user) {
       // لا نكشف وجود المستخدم لأسباب أمنية
@@ -37,22 +47,17 @@ export const requestPasswordReset = mutation({
     }
 
     // تنظيف رموز OTP قديمة منتهية الصلاحية
-    const oldOTPs = await ctx.db
-      .query("otpVerifications")
-      .withIndex("by_identifier_type", (q) =>
-        q.eq("identifier", args.email).eq("identifierType", "email")
-      )
-      .collect();
+    const oldOTPs = await ctx.runQuery(internal.passwordResetInternal.getOTPsByEmail, { email });
 
     for (const otp of oldOTPs) {
       if (otp.expiresAt < Date.now()) {
-        await ctx.db.delete(otp._id);
+        await ctx.runMutation(internal.passwordResetInternal.deleteOtp, { otpId: otp._id });
       }
     }
 
     // التحقق من محاولات متكررة (حماية من الهجمات)
     const recentOTPs = oldOTPs.filter(
-      (otp) => otp.createdAt > Date.now() - 300000 // آخر 5 دقائق
+      (otp: any) => otp.createdAt > Date.now() - 300000 // آخر 5 دقائق
     );
 
     if (recentOTPs.length >= 3) {
@@ -64,40 +69,38 @@ export const requestPasswordReset = mutation({
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 دقائق
 
     // حفظ OTP
-    await ctx.db.insert("otpVerifications", {
+    await ctx.runMutation(internal.passwordResetInternal.createOTP, {
       userId: user._id,
-      identifier: args.email,
+      identifier: email,
       identifierType: "email",
       otp,
-      otpHash: await bcrypt.hash(otp, 10), // Always hash OTP, even in development
       expiresAt,
-      createdAt: Date.now(),
-      isVerified: false,
-      attempts: 0,
-      maxAttempts: 3,
     });
 
-    // TODO: إرسال OTP على الإيميل
-    // Removed console.log for security - OTP should never be logged
-    
+    // إرسال OTP على الإيميل باستخدام Resend
     try {
-      // مثال مع خدمة إرسال بريد إلكتروني
-      // const nodemailer = require("nodemailer");
-      // const transporter = nodemailer.createTransporter({
-      //   service: "gmail",
-      //   auth: {
-      //     user: process.env.EMAIL_USER,
-      //     pass: process.env.EMAIL_PASS,
-      //   },
-      // });
-      // await transporter.sendMail({
-      //   to: args.email,
-      //   subject: "كود إعادة تعيين كلمة المرور",
-      //   html: `<p>كود إعادة تعيين كلمة المرور الخاص بك هو:</p>
-      //          <h2 style="text-align: center; font-size: 32px; color: #333;">${otp}</h2>
-      //          <p>هذا الكود صالح لمدة 10 دقائق فقط</p>
-      //          <p>إذا لم تطلب هذا الكود، يرجى تجاهل هذه الرسالة</p>`,
-      // });
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || "noreply@yourdomain.com",
+        to: email,
+        subject: "كود إعادة تعيين كلمة المرور",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #333; text-align: center;">إعادة تعيين كلمة المرور</h2>
+            <p>مرحباً،</p>
+            <p>كود إعادة تعيين كلمة المرور الخاص بك هو:</p>
+            <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+              <h1 style="font-size: 32px; color: #333; margin: 0; letter-spacing: 3px;">${otp}</h1>
+            </div>
+            <p>هذا الكود صالح لمدة 10 دقائق فقط</p>
+            <p>إذا لم تطلب هذا الكود، يرجى تجاهل هذه الرسالة وعدم مشاركتها مع أحد</p>
+            <p style="color: #666; font-size: 12px; margin-top: 30px;">
+              هذا رسالة آلية، يرجى عدم الرد عليها
+            </p>
+          </div>
+        `,
+      });
     } catch (error) {
       console.error("خطأ في إرسال البريد الإلكتروني:", error);
       // لا نرمي خطأ هنا لأن هذا مجرد إرسال - الكود مخزن بالفعل
@@ -111,18 +114,15 @@ export const requestPasswordReset = mutation({
 });
 
 // التحقق من OTP
-export const verifyResetOTP = mutation({
+export const verifyResetOTP = action({
   args: {
     email: v.string(),
     otp: v.string(),
   },
-  handler: async (ctx, args) => {
-    const otpRecord = await ctx.db
-      .query("otpVerifications")
-      .withIndex("by_identifier_type", (q) =>
-        q.eq("identifier", args.email).eq("identifierType", "email")
-      )
-      .first();
+  handler: async (ctx, args): Promise<{ success: boolean; userId: Id<"users">; message: string }> => {
+    const email = args.email.trim().toLowerCase();
+
+    const otpRecord = await ctx.runQuery(internal.passwordResetInternal.getOtpRecord, { email });
 
     if (!otpRecord) {
       throw new ConvexError("رمز التحقق غير صحيح");
@@ -141,28 +141,21 @@ export const verifyResetOTP = mutation({
     }
 
     // التحقق من OTP
-    if (otpRecord.otpHash !== args.otp) {
-      await ctx.db.patch(otpRecord._id, {
-        attempts: otpRecord.attempts + 1,
-      });
+    const expectedHash = await hashOTP(args.otp);
+    if (expectedHash !== otpRecord.otpHash) {
+      await ctx.runMutation(internal.passwordResetInternal.incrementOtpAttempts, { otpId: otpRecord._id });
       throw new ConvexError("رمز التحقق غير صحيح");
     }
 
     // العثور على المستخدم
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
+    const user: any = await ctx.runQuery(internal.authInternal.findUserByEmail, { email });
 
     if (!user) {
       throw new ConvexError("المستخدم غير موجود");
     }
 
     // تحديث OTP كـ verified
-    await ctx.db.patch(otpRecord._id, {
-      isVerified: true,
-      verifiedAt: Date.now(),
-    });
+    await ctx.runMutation(internal.passwordResetInternal.markOtpVerified, { otpId: otpRecord._id });
 
     return {
       success: true,
@@ -203,8 +196,12 @@ export const resetPassword = action({
       throw new ConvexError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(args.newPassword, 10);
+    // Hash the new password using crypto.subtle
+    const encoder = new TextEncoder();
+    const passwordData = encoder.encode(args.newPassword + (process.env.PASSWORD_SECRET || "default-secret"));
+    const hashBuffer = await crypto.subtle.digest("SHA-256", passwordData);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
     // العثور على المستخدم وتحديث كلمة المرور
     await ctx.runMutation(internal.passwordResetInternal.updateUserPassword, {
@@ -214,6 +211,31 @@ export const resetPassword = action({
 
     // حذف OTP بعد الاستخدام
     await ctx.runMutation(internal.passwordResetInternal.deleteOtp, { otpId: otpRecord._id });
+
+    // إرسال إيميل تأكيد تغيير كلمة المرور
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || "noreply@yourdomain.com",
+        to: args.email,
+        subject: "تم تغيير كلمة المرور بنجاح",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #333; text-align: center;">تم تغيير كلمة المرور</h2>
+            <p>مرحباً،</p>
+            <p>تم تغيير كلمة المرور لحسابك بنجاح.</p>
+            <p>إذا كنت أنت من قام بهذا التغيير، فلا داعي للقلق.</p>
+            <p>إذا لم تكن أنت من قام بتغيير كلمة المرور، يرجى التواصل معنا فوراً أو استخدام خاصية استعادة كلمة المرور.</p>
+            <p style="color: #666; font-size: 12px; margin-top: 30px;">
+              هذا رسالة آلية، يرجى عدم الرد عليها
+            </p>
+          </div>
+        `,
+      });
+    } catch (error) {
+      console.error("خطأ في إرسال البريد الإلكتروني للتأكيد:", error);
+    }
 
     return {
       success: true,
@@ -251,22 +273,59 @@ export const changePassword = action({
 
     // التحقق من كلمة المرور الحالية
     if (user.passwordHash) {
-      const isMatch = await bcrypt.compare(args.currentPassword, user.passwordHash);
-      if (!isMatch) {
+      const encoder = new TextEncoder();
+      const currentPasswordData = encoder.encode(args.currentPassword + (process.env.PASSWORD_SECRET || "default-secret"));
+      const currentHashBuffer = await crypto.subtle.digest("SHA-256", currentPasswordData);
+      const currentHashArray = Array.from(new Uint8Array(currentHashBuffer));
+      const currentHash = currentHashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+      
+      if (currentHash !== user.passwordHash) {
         throw new ConvexError("كلمة المرور الحالية غير صحيحة");
       }
     } else {
       throw new ConvexError("لا يمكن تغيير كلمة المرور. يرجى استخدام إعادة تعيين كلمة المرور");
     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(args.newPassword, 10);
+    // Hash the new password using crypto.subtle
+    const encoder = new TextEncoder();
+    const passwordData = encoder.encode(args.newPassword + (process.env.PASSWORD_SECRET || "default-secret"));
+    const hashBuffer = await crypto.subtle.digest("SHA-256", passwordData);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
     // تحديث كلمة المرور
     await ctx.runMutation(internal.passwordResetInternal.updateUserPasswordById, {
       userId,
       hashedPassword,
     });
+
+    // إرسال إيميل تأكيد تغيير كلمة المرور
+    try {
+      const user = await ctx.runQuery(internal.passwordResetInternal.getUserById, { userId });
+      if (user && user.email) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        await resend.emails.send({
+          from: process.env.RESEND_FROM_EMAIL || "noreply@yourdomain.com",
+          to: user.email,
+          subject: "تم تغيير كلمة المرور بنجاح",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #333; text-align: center;">تم تغيير كلمة المرور</h2>
+              <p>مرحباً،</p>
+              <p>تم تغيير كلمة المرور لحسابك بنجاح.</p>
+              <p>إذا كنت أنت من قام بهذا التغيير، فلا داعي للقلق.</p>
+              <p>إذا لم تكن أنت من قام بتغيير كلمة المرور، يرجى التواصل معنا فوراً أو استخدام خاصية استعادة كلمة المرور.</p>
+              <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                هذا رسالة آلية، يرجى عدم الرد عليها
+              </p>
+            </div>
+          `,
+        });
+      }
+    } catch (error) {
+      console.error("خطأ في إرسال البريد الإلكتروني للتأكيد:", error);
+    }
 
     return {
       success: true,

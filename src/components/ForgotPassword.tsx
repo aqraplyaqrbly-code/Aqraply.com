@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Mail, ArrowRight, CheckCircle, User } from "lucide-react";
@@ -13,7 +13,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
-  const requestPasswordReset = useMutation(api.passwordReset.requestPasswordReset);
+  const requestPasswordReset = useAction(api.passwordReset.requestPasswordReset);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
